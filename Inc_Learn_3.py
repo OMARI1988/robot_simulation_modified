@@ -3,13 +3,11 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import random
 from data_processing import *
-from NLP import *
 import operator
 
 P = process_data()
-N = NLP()
 for scan in range(1):
-  for scene in range(1,300):
+  for scene in range(1,1000):
     if scene in [891,892]: continue
     P._read(scene)                                  # Objects, Graph, Sentences
     P._print_scentenses()
@@ -35,7 +33,8 @@ for scan in range(1):
     #########################################################################################################
     
     P._test_language_hyp()                          # self.hyp_language_pass > .98
-    N._build_parser(P.hyp_language_pass)
+    P._build_parser()                               # 
+    
     #P._test_sentence_hyp()                          # test if the whole sentence make sense
     # it should match 100% of the motion, which means the user should describe every single motion.
     ## so if someone says pick the blue object, and the blue object was trapped under another object, this 

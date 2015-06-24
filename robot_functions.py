@@ -48,14 +48,17 @@ class Robot():
     def _fix_sentences(self):
         S = self.Data['commands'][self.scene]
         for i in S:
-            S[i] = S[i].replace("  ", " ")            
+            S[i] = S[i].replace("    ", " ")
+            S[i] = S[i].replace("   ", " ")
+            S[i] = S[i].replace("  ", " ")
             S[i] = S[i].replace(".", "")
-            S[i] = S[i].replace("-", " ") 
-            S[i] = S[i].replace("/", " ") 
-            S[i] = S[i].replace("!", "")  
-            S[i] = S[i].replace("(", "")            
-            S[i] = S[i].replace(")", "")             
-            S[i] = S[i].replace("?", "")   
+            S[i] = S[i].replace(",", "")
+            S[i] = S[i].replace("-", " ")
+            S[i] = S[i].replace("/", " ")
+            S[i] = S[i].replace("!", "")
+            S[i] = S[i].replace("(", "")
+            S[i] = S[i].replace(")", "")
+            S[i] = S[i].replace("?", "")
         self.Data['commands'][self.scene] = S
                    
     #-----------------------------------------------------------------------------------------------------#     change data
