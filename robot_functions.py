@@ -51,14 +51,22 @@ class Robot():
             S[i] = S[i].replace("    ", " ")
             S[i] = S[i].replace("   ", " ")
             S[i] = S[i].replace("  ", " ")
+            S[i] = S[i].replace("  ", " ")
+            S[i] = S[i].replace("  ", " ")
+            S[i] = S[i].replace("  ", " ")
             S[i] = S[i].replace(".", "")
             S[i] = S[i].replace(",", "")
+            S[i] = S[i].replace("'", "")
             S[i] = S[i].replace("-", " ")
             S[i] = S[i].replace("/", " ")
             S[i] = S[i].replace("!", "")
             S[i] = S[i].replace("(", "")
             S[i] = S[i].replace(")", "")
             S[i] = S[i].replace("?", "")
+            A = S[i].split(' ')
+            while '' in A:         A.remove('')
+            S[i] = ' '.join(A)
+            
         self.Data['commands'][self.scene] = S
                    
     #-----------------------------------------------------------------------------------------------------#     change data
@@ -75,10 +83,10 @@ class Robot():
         change_prism_to = ['ball','sphere','orb']
         change_prisms = ['pyramids','prisms','tetrahedrons']
         change_prisms_to = ['balls','spheres','orbs']
-        change_box = ['block','cube','box']
-        change_box_to = ['cylinder','can','drum']
-        change_boxes = ['cubes','boxes','blocks']
-        change_boxes_to = ['cylinders','cans','drums']
+        change_box = ['block','cube','box','slab']
+        change_box_to = ['cylinder','can','drum','drum']
+        change_boxes = ['cubes','boxes','blocks','slabs']
+        change_boxes_to = ['cylinders','cans','drums','drums']
         
         if      self.scene % 4 < 2: c = 'nothing'
         else:                       c = 'brown'

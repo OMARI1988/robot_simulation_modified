@@ -3,11 +3,11 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import random
 from data_processing import *
-import operator
 
 P = process_data()
 for scan in range(1):
-  for scene in range(1,1000):
+  print 'scan number :',scan
+  for scene in range(1,1001):
     if scene in [891,892]: continue
     P._read(scene)                                  # Objects, Graph, Sentences
     P._print_scentenses()
@@ -48,12 +48,10 @@ for scan in range(1):
     
     
     print '**================= end of scene ===================**'
-for word in P.hyp_language_pass:
-    print word,P.hyp_language_pass[word]['all']
-    
-#print P.hyp_language['red']
-#print P.hyp_language['brown']
-
+print P.pcfg1
+#for word in P.hyp_language_pass:
+#    print word,P.hyp_language_pass[word]['all']
+ 
 ##############################################################################################################
 #   code book                                                                                                #
 #   self.S              = all the sentences for a given scene                                                #

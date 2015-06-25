@@ -2,6 +2,7 @@ import numpy as np
 import networkx as nx
 import itertools
 from nltk import PCFG
+import operator
 
 class process_data():
     def __init__(self):
@@ -23,6 +24,11 @@ class process_data():
         self.hyp['location'] = {}
         self.hyp['direction'] = {}
         self.hyp['?'] = {}
+        
+        # initial language
+        self.N = {}                                             # non-terminals
+        self.N['e'] = {}                                        # non-terminals entity
+        self.N['e']['sum'] = 0.0                                # non-terminals entity counter
         
         self.hyp_language = {}
         
@@ -393,7 +399,7 @@ class process_data():
                 #for direction in self.directions:
                 #    if direction not in self.hyp_language[word]['direction']:   self.hyp_language[word]['direction'][direction] = 1
                 #    else: self.hyp_language[word]['direction'][direction] += 1
-                """
+                '''
                 for location in self.locations_m_i:
                     if location not in self.hyp_language[word]['location']:   self.hyp_language[word]['location'][location] = 1
                     else: self.hyp_language[word]['location'][location] += 1
@@ -401,7 +407,7 @@ class process_data():
                 for location in self.locations_m_f:
                     if location not in self.hyp_language[word]['location']:   self.hyp_language[word]['location'][location] = 1
                     else: self.hyp_language[word]['location'][location] += 1
-                """
+                '''
     #--------------------------------------------------------------------------------------------------------#             
     def _test_language_hyp(self):
         self.hyp_language_pass = {}
@@ -440,42 +446,115 @@ class process_data():
     def _update_terminals(self):
         hypotheses = self.hyp_language_pass
         self.grammar = ''
-        self.F = {}
-        self.F['features'] = {}
-        self.F['sum'] = {}
+        self.T = {}                                             # terminals
+        self.T['features'] = {}
+        self.T['sum'] = {}
         for word in hypotheses:
             for feature in hypotheses[word]:
                 if feature not in ['possibilities','all']:
-                    if feature not in self.F['features']:
-                        self.F['features'][feature] = []
-                        self.F['sum'][feature] = 0
+                    if feature not in self.T['features']:
+                        self.T['features'][feature] = []
+                        self.T['sum'][feature] = 0
                     for hyp in hypotheses[word][feature]:
-                        self.F['features'][feature].append((word,hyp[1]))
-                        self.F['sum'][feature] += hyp[1]
+                        self.T['features'][feature].append((word,hyp[1]))
+                        self.T['sum'][feature] += hyp[1]
                         
-        for feature in self.F['features']:
-            l = len(self.F['features'][feature])
-            for hyp in self.F['features'][feature]:
-                self.grammar += feature+" -> '"+hyp[0]+"' ["+str(hyp[1]/self.F['sum'][feature])+"]"+'\n'
+        for feature in self.T['features']:
+            l = len(self.T['features'][feature])
+            for hyp in self.T['features'][feature]:
+                self.grammar += feature+" -> '"+hyp[0]+"' ["+str(hyp[1]/self.T['sum'][feature])+"]"+'\n'
                 
     #--------------------------------------------------------------------------------------------------------#
     def _update_nonterminals(self,):
+        # there is a threshold in NLTK to drop a hypotheses 9.99500249875e-05 I think it;s 1e-4
+    
+        entity_features = ['color','shape','location']
+        
+        def rotate(l,n):
+            return l[n:] + l[:n]
+            
+        def _find_entities(A):
+            all_e = []
+            e = []
+            k_1 = 0
+            for k in A:
+                if e == []:
+                    e.append(k)
+                    k_1 = k
+                elif k-k_1 == 1:
+                    e.append(k)
+                    k_1 = k
+                else:
+                    all_e.append(e)
+                    e = [k]
+                    k_1 = k
+            all_e.append(e)
+            return all_e
+            
+        # loop through all sentences
+        features = self.T['features'].keys()
         for s in self.S:
             sentence = self.S[s].split(' ')
             indices = {}
-            for feature in self.F['features']:
+            for feature in features:
                 indices[feature] = []
-                for hyp in self.F['features'][feature]:
+                for hyp in self.T['features'][feature]:
                     A = [i for i, x in enumerate(sentence) if x == hyp[0]]
                     for i in A:
                         indices[feature].append(i)
-            print indices
+
+            # plug in the hypotheses of each word
+            parsed_sentence = []
+            entity_sentence = []                        #to check connectivity of an entity
+            for ind,word in enumerate(sentence):
+                parsed_sentence.append('_')
+                entity_sentence.append(0)
+                for feature in indices:
+                    if ind in indices[feature]:
+                        parsed_sentence[ind] = feature
+                        if feature in entity_features:
+                            entity_sentence[ind] = 1
+                            
+            # find the number of entity based on connectivity of features in a sentence
+            A = [i for i, x in enumerate(entity_sentence) if x == 1]
+            all_entities = _find_entities(A)
+                        
+            #print sentence
+            #print self.scene,parsed_sentence
+            #print self.scene,entity_sentence
+                
+            # update the non-terminal counter
+            for entity in all_entities:
+                if entity != []:
+                    h = ()
+                    for j in entity:
+                        h += (parsed_sentence[j],)
+                    if h not in self.N['e']:        self.N['e'][h] =  1.0
+                    else:        self.N['e'][h] += 1.0
+                    self.N['e']['sum'] += 1.0
+                    
+        # add entities, ++ to grammer    
+        for feature in self.N:
+            sorted_f = sorted(self.N[feature].items(), key=operator.itemgetter(1))
+            for l in range(len(sorted_f),0,-1):
+                hyp = sorted_f[l-1]
+                if hyp[0] != 'sum':
+                    val = hyp[1]/self.N[feature]['sum']
+                    if val > 1e-4:
+                        small_msg = ''
+                        if len(hyp[0]) == 1:
+                            small_msg += hyp[0][0]
+                        else:
+                            for j in range(len(hyp[0])-1):
+                                small_msg += hyp[0][j]+' '
+                            small_msg += hyp[0][j+1]
+                        self.grammar += feature+" -> '"+small_msg+"' ["+str(val)+"]"+'\n'
     
     #--------------------------------------------------------------------------------------------------------#
     def _build_PCFG(self):
         if self.grammar != '':
-            pcfg1 = PCFG.fromstring(self.grammar)
-            print pcfg1
+            self.pcfg1 = PCFG.fromstring(self.grammar)
+            print self.pcfg1
             
             
             
