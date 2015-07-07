@@ -3,6 +3,10 @@ import networkx as nx
 import itertools
 from nltk import PCFG
 import operator
+#from sklearn import mixture
+from GMM_functions import *
+from GMM_BIC import *
+from IGMM import *
 
 class process_data():
     def __init__(self):
@@ -36,6 +40,11 @@ class process_data():
         self.step = 3
         self.all_words = []
         #plt.ion()
+        
+        #gmm
+        self.gmm_N = {}
+        self.gmm_M = {}
+        self.M = {}
         
     #--------------------------------------------------------------------------------------------------------#
     def _read(self,scene):
@@ -338,6 +347,134 @@ class process_data():
                 G_all[T]['groups'].append(g.nodes())
         return G_all
         
+        
+    #--------------------------------------------------------------------------------------------------------#
+    def _convert_color_shape_to_gmm(self,plot):
+        self.unique_colors = []
+        self.unique_shapes = []
+        self.X = {}
+        for i in self.Data:
+            if i != 'G':
+                c = self.Data[i]['color']
+                r = np.random.rand(3)*.2-.1
+                c += r
+                #print r
+                for j,c1 in enumerate(c):
+                    if c1<=0:      c[j]+=2*np.abs(r[j])
+                    if c1>=1:      c[j]-=2*np.abs(r[j])
+                C = (c[0],c[1],c[2])
+                
+                s = self.Data[i]['shape']
+                r = np.random.rand(1)*.2-.1
+                s += r[0]
+                if s<=0:      s+=2*np.abs(r[0])
+                if s>=1:      s-=2*np.abs(r[0])
+                self.unique_colors.append(C)
+                self.unique_shapes.append(s)
+        self.gmm_M['color'],self.X['color'] = self._bic_gmm(self.unique_colors,plot)
+        self.gmm_M['shape'],self.X['shape'] = self._bic_gmm(self.unique_shapes,plot)
+        self.M['color'] = len(self.unique_colors)
+        self.M['shape'] = len(self.unique_shapes)
+        
+    #--------------------------------------------------------------------------------------------------------#
+    def _bic_gmm(self,points,plot):
+        lowest_bic = np.infty
+        bic = []
+        X = []
+        for point in points:
+            if X == []:         X = [point]
+            else:               X = np.vstack([X,point])
+        k = np.minimum(len(X),7)
+        cv_types = ['spherical', 'tied', 'diag', 'full']
+        best_gmm, bic = gmm_bic(X, k, cv_types)
+        if plot:
+            plot_data(X, best_gmm, bic, k, cv_types,0, 1)
+            plt.show()
+        return best_gmm,X
+                
+    #--------------------------------------------------------------------------------------------------------#
+    def _igmm(self):
+        for s in self.words:
+            for word in self.words[s]:
+                if word != 'green': continue
+                if word not in self.gmm_N:
+                    self.gmm_N[word] = {}
+                    for f in self.gmm_M:
+                        self.gmm_N[word][f] = {}
+                        self.gmm_N[word][f]['N']    = self.M[f]
+                        self.gmm_N[word][f]['gmm']  = self.gmm_M[f]
+                else:
+                    for f in self.gmm_M:
+                        if f != 'color':    continue
+                        X       = self.X[f]
+                        gmm_N   = self.gmm_N[word][f]['gmm']
+                        gmm_M   = self.gmm_M[f]
+                        N       = self.gmm_N[word][f]['N']
+                        M       = self.M[f]
+                        Y_ = gmm_M.predict(X)
+                        accepted_ind = []
+                        for i, (mean_i, covar_i) in enumerate(zip(gmm_N.means_, gmm_N._get_covars())):
+                            m_min = np.inf
+                            m_ind = []
+                            for j, (mean_j, covar_j) in enumerate(zip(gmm_M.means_, gmm_M._get_covars())):
+                                dis = np.sum((mean_i-mean_j)**2)
+                                if dis < m_min:
+                                    m_min = dis
+                                    m_ind = j
+                                    Dk = X[Y_==j]
+                            Mk = float(len(Dk))
+                            print gmm_N.means_[i]
+                            print gmm_M.means_[m_ind]
+                            print self.gmm_N[word][f]['N']
+                            print M
+                            print self.gmm_N[word][f]['gmm'].weights_[i]
+                            print Mk
+                            print '****'
+                            gmm_N = self._update_gmm(gmm_N, gmm_M, i, m_ind, N, M, Mk)
+                            accepted_ind.append(m_ind)
+                        #print 'new clusters',len(accepted_ind)-len(gmm_M.means_)
+                        self.gmm_N[word][f]['gmm'] = gmm_N
+                        self.gmm_N[word][f]['N'] += M
+                print '********************'
+                        
+        mean = self.gmm_N['green']['color']['gmm'].means_
+        cov = self.gmm_N['green']['color']['gmm']._get_covars()
+        w = self.gmm_N['green']['color']['gmm'].weights_
+        N = self.gmm_N['green']['color']['N']
+        for i in range(len(cov)):
+            print  mean[i]
+            print  cov[i]
+            print  w[i]
+            print N
+            print '---------'
+            
+                    
+                        
+    #----------------------------------------------------------------------------------------------------------------#
+    # 3.3.1 Merging Components
+    def _update_gmm(self,gmm_N_M, gmm_M, j, k, N, M, Mk):
+	    mu_j = gmm_N_M.means_[j]
+	    S_j = gmm_N_M._get_covars()[j]
+	    pi_j = gmm_N_M.weights_[j]
+	    mu_k = gmm_M.means_[k]
+	    S_k = gmm_M._get_covars()[k]
+	    pi_k = gmm_M.weights_[k]
+	    # update the mean
+	    mu = ( N*pi_j*mu_j + Mk*mu_k )/( N*pi_j + Mk )
+	    # update the covariance matrix
+	    S = ((N*pi_j*S_j + Mk*S_k)/(N*pi_j+Mk)) + ((N*pi_j*np.dot(mu_j,mu_j.T)+Mk*np.dot(mu_k,mu_k.T))/(N*pi_j+Mk)) - np.dot(mu,mu.T)
+	    # update the weight
+	    pi = ( N*pi_j + Mk )/( N + M )
+
+	    # update gmm_N_M
+	    gmm_N_M.means_[j] = mu
+	    gmm_N_M.covars_[j] = distribute_covar_matrix_to_match_covariance_type(S, gmm_N_M.covariance_type, 1)
+	    gmm_N_M.weights_[j] = pi
+	    #print j,'and',k,'are now merged in gmm_N and gmm_M'
+	    return gmm_N_M
+                        
+        
+    
     #--------------------------------------------------------------------------------------------------------#
     def _compute_unique_color_shape(self):
         self.unique_colors = []

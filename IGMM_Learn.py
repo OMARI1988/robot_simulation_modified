@@ -5,9 +5,11 @@ import random
 from data_processing import *
 
 P = process_data()
+plot = 0
+
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,1001):
+  for scene in range(1,300):
     #if scene in [891,892]: continue
     P._read(scene)                                  # Objects, Graph, Sentences
     P._print_scentenses()
@@ -23,11 +25,11 @@ for scan in range(1):
     
     #P._transition()                                 # P.transition['motion'] P.transition['touch'] P.transition['all']     
     #P._grouping()                                   # generate the edges between the nodes that are the same in motion or touching
-    P._compute_unique_color_shape()                 # = P.unique_colors
+    P._convert_color_shape_to_gmm(plot)             # = P.gmm_M, P.M
+    P._igmm()                                       # 
+    #P._compute_unique_color_shape()                 # = P.unique_colors
     #P._compute_unique_motion()                      # = P.total_motion = {1: {(0, 1): 1, (1, 0): 1}, 2: {(0, 1, 0): 1}} self.unique_motion
-    
     P._build_obj_hyp()                              # P.hyp_language
-    
     #########################################################################################################
     #   I will pass hypotheses that have probabilities above 98% this needs a formal definition             #
     #########################################################################################################
@@ -48,7 +50,7 @@ for scan in range(1):
     
     
     print '**================= end of scene ===================**'
-print P.pcfg1
+#print P.pcfg1
 #for word in P.hyp_language_pass:
 #    print word,P.hyp_language_pass[word]['all']
  
@@ -80,6 +82,8 @@ print P.pcfg1
 #                                 sub motion
 #   self.unique_motions         = a list contains all the unique motions
 #   self.hyp_language_pass      = a dictionery contains all the passed hypotheses from language
+#   P.gmm_M                     = a dictionery of all bic gmms for all features
+#   P.M                         = a dictionery for all M values of each gmm of each feature
 #
 ##############################################################################################################
 
