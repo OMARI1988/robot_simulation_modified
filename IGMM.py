@@ -6,13 +6,13 @@ from scipy.stats import ks_2samp
 import numpy as np
 from collections import namedtuple
 import scipy
-import copy
+#import copy
 from sklearn import mixture
 from GMM_functions import *
 #----------------------------------------------------------------------------------------------------------------#
 # a GMM based on BCC for a data X and a maximum number of components k and coverince types cv_types
 def igmm(X,gmm_N,gmm_M, N, M):
-	
+
 	# initilizations of the W statitics test
 	W_statistics = np.zeros(shape=(gmm_M.n_components,gmm_N.n_components))
 	W_results = np.zeros(shape=(gmm_M.n_components,gmm_N.n_components))
@@ -39,12 +39,12 @@ def igmm(X,gmm_N,gmm_M, N, M):
 				#print covar_j
 				#print nearPD(covar_j, nit=10) ########################################################################
 				print 'not positive definite in the old clusters j'
-			W_statistics[k][j],W_results[k][j] = Covariance_Test(Dk, covar_j)  
+			W_statistics[k][j],W_results[k][j] = Covariance_Test(Dk, covar_j)
 			# 9. if Dk passed the W statitics test.
 			if W_results[k][j] == 1.0:
 				# 10. Perform the Hotelling's T squared test to see if Dk has the same mean as mean_j
 				H_statistics[k][j],H_results[k][j] = Mean_Test(Dk, mean_j, covar_j)
-	
+
 				# 11. if Dk passed the Hotelling's T squared test
 				if H_results[k][j] == 1.0:
 					# 19 create a new component g N+M by merging j and k
@@ -63,7 +63,7 @@ def igmm(X,gmm_N,gmm_M, N, M):
 	for j in range(gmm_N.n_components):
 		if col_sum[j] == 0.0:
 			gmm_N_M = update_gmm_weights(gmm_N_M, N, M, j)
-	# Print the W statitics on the command window			
+	# Print the W statitics on the command window
 	print_W_statitics(W_results,gmm_M.n_components,gmm_N.n_components,'W')
 	print_W_statitics(H_results,gmm_M.n_components,gmm_N.n_components,'H')
 	# 27. Merge statistically equivalent components in gmm_N_M
@@ -253,7 +253,7 @@ def remove_component(gmm,k):
 	gmm.weights_ = np.delete(gmm.weights_, k, axis=0)
 	gmm.n_components -= 1
 	return gmm
-	
+
 
 #----------------------------------------------------------------------------------------------------------------#
 # fixing the covariance matrix
@@ -350,26 +350,3 @@ def distribute_covar_matrix_to_match_covariance_type(
         raise ValueError("covariance_type must be one of " +
                          "'spherical', 'tied', 'diag', 'full'")
     return cv
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	
-
-
-
-

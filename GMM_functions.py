@@ -64,12 +64,12 @@ def plot_data(X, best_gmm, bic, k, cv_types, GT, fig):
 	spl = plt.subplot(2, 1, 2, projection='3d')
 	spl.cla()
 	Y_ = clf.predict(X)
-	print Y_
+	#print Y_
 	for i in range(clf.n_components):
 		if not np.any(Y_ == i):
 			continue
 		c=color_iter[i]
-		print c
+		#print c
 		if np.size(X[0]) == 1:
 			spl.scatter([r for r in X[Y_ == i, 0]], [.5 for r in X[Y_ == i, 0]], [.5 for r in X[Y_ == i, 0]], c=c, marker='o', alpha=1.0)
 		if np.size(X[0]) == 2:

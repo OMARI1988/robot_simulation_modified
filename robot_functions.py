@@ -8,7 +8,7 @@ import cv2
 import pyscreenshot as ImageGrab
 # http://www.anninaruest.com/pie/2014/07/inverse-kinematics-and-the-m100rak/
 
-	
+
 class Robot():
     #-----------------------------------------------------------------------------------------------------#     initial
     def __init__(self):
@@ -17,8 +17,8 @@ class Robot():
         self.draw_scene()
         self.draw_robot()
         self.Data = read_data()
-	        
-    
+
+
     #-----------------------------------------------------------------------------------------------------#     initial
     def _initilize_values(self):
         self.chess_shift_x = 8
@@ -43,7 +43,7 @@ class Robot():
         self.image_dir = '/home/omari/Datasets/robot_modified/scenes/'
         if not os.path.isdir(self.image_dir):
 	        print 'please change the diroctory in extract_data.py'
-	 
+
     #--------------------------------------------------------------------------------------------------------#
     def _fix_sentences(self):
         S = self.Data['commands'][self.scene]
@@ -66,36 +66,36 @@ class Robot():
             A = S[i].split(' ')
             while '' in A:         A.remove('')
             S[i] = ' '.join(A)
-            
+
         self.Data['commands'][self.scene] = S
-                   
+
     #-----------------------------------------------------------------------------------------------------#     change data
     def _change_data(self):
-    
+
         def _change(words,key):
             for i,word in enumerate(words):
                 indices = [j for j, x in enumerate(s) if x == word]
                 for m in indices:
                     s[m] = key[i]
             self.Data['commands'][self.scene][sentence] = ' '.join(s)
-                
+
         change_prism = ['pyramid','prism','tetrahedron']
         change_prism_to = ['ball','sphere','orb']
         change_prisms = ['pyramids','prisms','tetrahedrons']
         change_prisms_to = ['balls','spheres','orbs']
-        change_box = ['block','cube','box','slab']
-        change_box_to = ['cylinder','can','drum','drum']
+        change_box = ['block','cube','box','slab','parallelipiped']
+        change_box_to = ['cylinder','can','drum','drum','can']
         change_boxes = ['cubes','boxes','blocks','slabs']
         change_boxes_to = ['cylinders','cans','drums','drums']
-        
+
         if      self.scene % 4 < 2: c = 'nothing'
         else:                       c = 'brown'
         if      self.scene % 8 < 4: d = 'nothing'
         else:                       d = 'sphere'    # orb, ball
         if      self.scene % 2 < 1: e = 'nothing'
-        else:                       e = 'cylinder' # can, 
-        
-        
+        else:                       e = 'cylinder' # can,
+
+
         #if self.scene % 2 == 1:
         # change commands
         for sentence in self.Data['commands'][self.scene]:
@@ -108,13 +108,13 @@ class Robot():
                 _change(change_boxes,change_boxes_to)
             if c == 'brown':
                 _change(['red','maroon'],['brown','brown'])
-            
+
         # change scenes
         I = self.Data['scenes'][self.scene]['initial']
         F = self.Data['scenes'][self.scene]['final']
         self.Data['scenes'][self.scene]['initial'] = 1000+I
         self.Data['scenes'][self.scene]['final'] = 1000+F
-        
+
         # change layouts
         self.Data['layouts'][1000+I] = {}
         self.Data['layouts'][1000+F] = {}
@@ -122,39 +122,39 @@ class Robot():
             self.Data['layouts'][1000+I][obj] = dict(self.Data['layouts'][I][obj])
         for obj in self.Data['layouts'][F]:
             self.Data['layouts'][1000+F][obj] = dict(self.Data['layouts'][F][obj])
-        
+
         for obj in self.Data['layouts'][1000+I]:
             if e == 'cylinder':
-                if self.Data['layouts'][1000+I][obj]['shape']=='cube': 
+                if self.Data['layouts'][1000+I][obj]['shape']=='cube':
                     self.Data['layouts'][1000+I][obj]['shape'] = 'cylinder'
-                    
+
             if d == 'sphere':
-                if self.Data['layouts'][1000+I][obj]['shape']=='prism': 
+                if self.Data['layouts'][1000+I][obj]['shape']=='prism':
                     self.Data['layouts'][1000+I][obj]['shape'] = 'sphere'
-        
+
         for obj in self.Data['layouts'][1000+F]:
             if e == 'cylinder':
-                if self.Data['layouts'][1000+F][obj]['shape']=='cube': 
+                if self.Data['layouts'][1000+F][obj]['shape']=='cube':
                     self.Data['layouts'][1000+F][obj]['shape'] = 'cylinder'
-                    
+
             if d == 'sphere':
-                if self.Data['layouts'][1000+F][obj]['shape']=='prism': 
+                if self.Data['layouts'][1000+F][obj]['shape']=='prism':
                     self.Data['layouts'][1000+F][obj]['shape'] = 'sphere'
-                
-        
+
+
         if c == 'brown':
             for obj in self.Data['layouts'][1000+I]:
-                if self.Data['layouts'][1000+I][obj]['color']=='red': 
+                if self.Data['layouts'][1000+I][obj]['color']=='red':
                     self.Data['layouts'][1000+I][obj]['color'] = c
-                
+
             for obj in self.Data['layouts'][1000+F]:
-                if self.Data['layouts'][1000+F][obj]['color']=='red': 
+                if self.Data['layouts'][1000+F][obj]['color']=='red':
                     self.Data['layouts'][1000+F][obj]['color'] = c
-            
+
         # change gripper
         self.Data['gripper'][1000+I] = self.Data['gripper'][I]
         self.Data['gripper'][1000+F] = self.Data['gripper'][F]
-        
+
     #-----------------------------------------------------------------------------------------------------#     print scentences
     def _print_scentenses(self):
         scene = self.scene
@@ -167,19 +167,19 @@ class Robot():
                 #for word in self.Data['commands'][scene][i].split(' '):
                 #    if word not in self.words:
                 #        self.words.append(word)
-            else: 
+            else:
                 print count,'-','SPAM'
                 self.sentences[count] = ['SPAM',self.Data['commands'][scene][i]]
         #print self.words
         #print len(self.words)
         print '--------------------------'
-        
+
     #-----------------------------------------------------------------------------------------------------#     initilize scene
     def _initialize_scene(self):
         self._add_objects_to_scene()
         self._initialize_robot()
         self._update_scene_number()
-        
+
     #-----------------------------------------------------------------------------------------------------#     add objects to scene
     def _add_objects_to_scene(self):
         self.frame_number = 0
@@ -196,10 +196,10 @@ class Robot():
             #if self.scene%2 == 0:
             if l1[obj]['shape'] == 'cube': self._cube(x,y,z*.9,c)
             if l1[obj]['shape'] == 'prism': self._prism(x,y,z*.9,c)
-            #if self.scene%2 == 1:        
+            #if self.scene%2 == 1:
             if l1[obj]['shape'] == 'cylinder': self._cylinder(x,y,z*.9,c)
             if l1[obj]['shape'] == 'sphere': self._sphere(x,y,z*.9,c)
-            
+
             # inilizing the position vector to be saved later
             self.positions[obj] = {}
             self.positions[obj]['x'] = [float(x)]
@@ -223,25 +223,25 @@ class Robot():
             elif a == 'brown': c = (0.55, 0.27, 0.07)
             else: print '********* error no color match',a
             return c
-            
+
     #-----------------------------------------------------------------------------------------------------#     find shape
     def _find_shape(self,a):
             if a == 'cube': c = 0.0
-            if a == 'sphere': c = 0.25
-            if a == 'cylinder': c = 0.5
+            if a == 'sphere': c = 0.33
+            if a == 'cylinder': c = 0.66
             if a == 'prism': c = 1.0
             return c
-            
+
     #-----------------------------------------------------------------------------------------------------#     initilize robot in the scene
     def _initialize_robot(self):
         initial_position = self.Data['gripper'][self.Data['scenes'][self.scene]['initial']]
-        a1,a2,a3 = self._inverse_kinematics(initial_position[0],initial_position[1],initial_position[2]) 
+        a1,a2,a3 = self._inverse_kinematics(initial_position[0],initial_position[1],initial_position[2])
         self.rotate_robot_init(-a1,-a2,-a3)
         self.positions['gripper'] = {}
         self.positions['gripper']['x'] = [float(initial_position[0])]
         self.positions['gripper']['y'] = [float(initial_position[1])]
         self.positions['gripper']['z'] = [float(initial_position[2])]
-            
+
     #-----------------------------------------------------------------------------------------------------#     update scene number
     def _update_scene_number(self):
         self.label.text = 'Scene number : '+str(self.scene)
@@ -259,13 +259,13 @@ class Robot():
             if final_position != initial_position:
                 a1,a2,a3 = self._inverse_kinematics(final_position[0],final_position[1],final_position[2])
                 self.rotate_robot(-a1,-a2,-a3,save)
-            if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'cube': 
+            if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'cube':
                 z_offset = +.22
-            if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'sphere': 
+            if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'sphere':
                 z_offset = +.22
-            if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'cylinder': 
+            if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'cylinder':
                 z_offset = -.18
-            if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'prism': 
+            if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'prism':
                 z_offset = -.18
             # move the robot and the object
             initial_position = final_position
@@ -273,16 +273,16 @@ class Robot():
             self.rotate_robot_with_object(initial_position, final_position, z_offset, save)
             # move the robot and the object down
             final_position = self.Data['gripper'][self.Data['scenes'][self.scene]['final']]
-            a1,a2,a3 = self._inverse_kinematics(final_position[0],final_position[1],final_position[2]) 
+            a1,a2,a3 = self._inverse_kinematics(final_position[0],final_position[1],final_position[2])
             self.rotate_robot(-a1,-a2,-a3,save)
-        
+
     #-----------------------------------------------------------------------------------------------------#     save motion
     def _save_motion(self):
         target = open('/home/omari/Datasets/robot_modified/motion/scene'+str(self.scene)+'.txt', 'w')
         for i in self.sentences:
             target.write('sentence:'+str(i)+'\n')
             target.write(self.sentences[i][0]+':'+self.sentences[i][1]+'\n')
-        
+
         for key in self.positions:
             target.write('object:'+str(key)+'\n')
             target.write('x:')
@@ -304,10 +304,10 @@ class Robot():
                 target.write("\n")
                 target.write('shape:'+str(s))
                 target.write("\n")
-                
-            
+
+
         target.close()
-        
+
     #-----------------------------------------------------------------------------------------------------#     clear scene
     def _clear_scene(self):
         keys = self.object.keys()
@@ -315,18 +315,18 @@ class Robot():
             self.object[i].visible = False
             self.object.pop(i)
             self.object_shape.pop(i)
-            
+
     #-----------------------------------------------------------------------------------------------------#     object functions
     def _cube(self,x,y,z,c):
 		self.object[(x,y,int(z/.9))] = box(pos=(4.5+x,2.5+y,.4+z),axis=(0,0,1),size=(.8,.8,.8),
 		    color=c,material=materials.plastic)
 		self.object_shape[(x,y,int(z/.9))] = 'cube'
-    
+
     def _cylinder(self,x,y,z,c):
         self.object[(x,y,int(z/.9))] = cylinder(pos=(4.5+x,2.5+y,z),axis=(0,0,.8),radius=.4,
             color=c,material=materials.plastic)
         self.object_shape[(x,y,int(z/.9))] = 'cylinder'
-    
+
     def _sphere(self,x,y,z,c):
         self.object[(x,y,int(z/.9))] = sphere(pos=(4.5+x,2.5+y,.4+z),radius=.4,
             color=c,material=materials.plastic)
@@ -335,7 +335,7 @@ class Robot():
     def _prism(self,x,y,z,c):
         self.object[(x,y,int(z/.9))] = pyramid(pos=(4.5+x,2.5+y,z),axis=(0,0,1),size=(.8,.8,.8),
             color=c,material=materials.plastic)
-        self.object_shape[(x,y,int(z/.9))] = 'prism'        
+        self.object_shape[(x,y,int(z/.9))] = 'prism'
 
     #-----------------------------------------------------------------------------------------------------#     rotate robot
     def rotate_robot(self,a0,a1,a2,save):
@@ -371,12 +371,12 @@ class Robot():
         x1 = final_position[0]
         y1 = final_position[1]
         z1 = final_position[2]
-        a1,a2,a3 = self._inverse_kinematics(final_position[0],final_position[1],final_position[2]) 
-        
+        a1,a2,a3 = self._inverse_kinematics(final_position[0],final_position[1],final_position[2])
+
         p0 = np.linspace(self.a0,-a1,self.step) # path 0
         p1 = np.linspace(self.a1,-a2,self.step)
         p2 = np.linspace(self.a2,-a3,self.step)
-        
+
         #print pos2
         for i in range(self.step):
             rate(10000)
@@ -419,7 +419,7 @@ class Robot():
                     self.positions[key]['x'].append(self.positions[key]['x'][self.frame_number])
                     self.positions[key]['y'].append(self.positions[key]['y'][self.frame_number])
                     self.positions[key]['z'].append(self.positions[key]['z'][self.frame_number])
-                    
+
     #-----------------------------------------------------------------------------------------------------#     rotate robot intial
     def rotate_robot_init(self,a0,a1,a2):
 		self.rotate_joint(self.base_faces,self.base_faces_origin,(0,self.chess_shift_y,0),a0,0,0)
@@ -439,16 +439,16 @@ class Robot():
 		for j,v in enumerate(faces):
 			v1 = v - shift
 			v2 = rotate(v1, angle=a2, axis=(0,1,0)) + (shift[0],0,0)
-			v2 = rotate(v2, angle=a1, axis=(0,1,0)) 
+			v2 = rotate(v2, angle=a1, axis=(0,1,0))
 			v2 = rotate(v2, angle=a0, axis=(0,0,1)) + (0,shift[1],shift[2])
 			obj.pos[j] = v2
-			
+
 	#----------------------------------------------------------------------------------#
 	# input: coordinates x,y,z of the target point, lengths l1,l2,l3 of the arms, were
 	# l1 is the base height
 	# l2 is the length of the first arm
 	# l3 is the length of the second arm
-	#			
+	#
 	#	     /\
 	#	l2  /  \  l3
 	#	   /	\
@@ -478,7 +478,7 @@ class Robot():
 		a2 = np.arctan2(v*z-w*r,v*r+w*z)
 		if a2<0 or a2>np.pi:    raise Exception(s)
 		return a1,a2,a3
-			
+
     #-----------------------------------------------------------------------------------------------------#     initial draw scene
     def draw_scene(self):
         self.display = display(title='simultaneous learning and grounding',
@@ -487,11 +487,11 @@ class Robot():
             forward=(self.chess_shift_x-10,self.chess_shift_y,-7),
             background=(1,1,1))
         self.label = label(pos=(10,10,10), text='Scene number : ',height=20,color=(0,0,0))
-        checkerboard = ( (.3,1,.3,1,.3,1,.3,1), 
+        checkerboard = ( (.3,1,.3,1,.3,1,.3,1),
 				 (1,.3,1,.3,1,.3,1,.3),
 				 (.3,1,.3,1,.3,1,.3,1),
 				 (1,.3,1,.3,1,.3,1,.3),
-		 		 (.3,1,.3,1,.3,1,.3,1), 
+		 		 (.3,1,.3,1,.3,1,.3,1),
 				 (1,.3,1,.3,1,.3,1,.3),
 				 (.3,1,.3,1,.3,1,.3,1),
 				 (1,.3,1,.3,1,.3,1,.3) )
@@ -505,10 +505,10 @@ class Robot():
         x = arrow(pos=(0,0,0),axis=(1,0,0),length=2,shaftwidth=.2,color=color.red)
         y = arrow(pos=(0,0,0),axis=(0,1,0),length=2,shaftwidth=.2,color=color.green)
         z = arrow(pos=(0,0,0),axis=(0,0,1),length=2,shaftwidth=.2,color=color.blue)
-        
+
     #-----------------------------------------------------------------------------------------------------#     initial draw robot
     def draw_robot(self):
-		base_1 = box(pos=(0,self.chess_shift_y,-.25),axis=(0,0,1), size=(.5,2,2),color=color.black, 
+		base_1 = box(pos=(0,self.chess_shift_y,-.25),axis=(0,0,1), size=(.5,2,2),color=color.black,
 		    material=materials.plastic)
 		base_2 = Polygon( [(-1,0), (-.75,self.len_base), (.75,self.len_base), (1,0)] )
 		base_3 = shapes.circle(pos=(0,self.len_base), radius=.75)
@@ -561,7 +561,7 @@ class Robot():
         if os.path.isfile(self.image_dir+scene+'/data.txt'):
             os.remove(self.image_dir+scene+'/data.txt')
         #print dir(self.display)
-        
+
     def saveSnapshot(self):
         scene = str(self.scene)
         if not os.path.isdir(self.image_dir+scene+'/'):
@@ -610,8 +610,8 @@ class Robot():
         #img.SaveFile(self.image_dir+self.scene+'_'+j+'.png', wx.BITMAP_TYPE_PNG)
         #img1 = cv2.imread(self.image_dir+self.scene+'_'+j+'.png')
         #cv2.imshow('test',img1)
-        
-        
+
+
         print self.frame_number,'image saved..'
         self.frame_number+=1
 

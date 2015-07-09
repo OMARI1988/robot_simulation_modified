@@ -7,45 +7,35 @@ import operator
 from GMM_functions import *
 from GMM_BIC import *
 from IGMM import *
+import copy
 
 class process_data():
     def __init__(self):
         self.dir1 = '/home/omari/Datasets/robot_modified/motion/scene'
         self.dir2 = '/home/omari/Datasets/robot_modified/scenes/'
         self.dir3 = '/home/omari/Datasets/robot_modified/graphs/scene'
-        self.hyp_final = {}
-        self.hyp_final['action'] = {}
-        self.hyp_final['color'] = {}
-        self.hyp_final['shape'] = {}
-        self.hyp_final['location'] = {}
-        self.hyp_final['direction'] = {}
-        self.hyp_final['?'] = {}
-        
-        self.hyp = {}
-        self.hyp['action'] = {}
-        self.hyp['color'] = {}
-        self.hyp['shape'] = {}
-        self.hyp['location'] = {}
-        self.hyp['direction'] = {}
-        self.hyp['?'] = {}
-        
+
         # initial language
         self.N = {}                                             # non-terminals
         self.N['e'] = {}                                        # non-terminals entity
         self.N['e']['sum'] = 0.0                                # non-terminals entity counter
-        
+
+        # connecting language to vision hypotheses
         self.hyp_language = {}
-        
-        self.n_word = 1
+        self.hyp_language_pass = {}
+        self.hyp_relation = {}
+        self.hyp_relation_pass = {}
+        self.feature_pass = {}
+
+        self.n_word = 3
         self.step = 3
         self.all_words = []
         #plt.ion()
-        
+
         #gmm
-        self.gmm_N = {}
+        self.gmm_obj = {}
         self.gmm_M = {}
-        self.M = {}
-        
+
     #--------------------------------------------------------------------------------------------------------#
     def _read(self,scene):
         self.scene = scene
@@ -81,31 +71,29 @@ class process_data():
             self.Data['G'][data[o].split(':')[0]] = np.asarray(map(float,data[o].split(':')[1].split(',')[:-1]))      #x
             self.Data['G'][data[o+1].split(':')[0]] = np.asarray(map(float,data[o+1].split(':')[1].split(',')[:-1]))  #y
             self.Data['G'][data[o+2].split(':')[0]] = np.asarray(map(float,data[o+2].split(':')[1].split(',')[:-1]))  #z
-    
 
-            
     #--------------------------------------------------------------------------------------------------------#
     def _fix_sentences(self):
         for i in self.S:
-            self.S[i] = self.S[i].replace("  ", " ")            
+            self.S[i] = self.S[i].replace("  ", " ")
             self.S[i] = self.S[i].replace(".", "")
-            
+
     #--------------------------------------------------------------------------------------------------------#
     def _more_fix_sentences(self):
         for i in self.S:
-            self.S[i] = self.S[i].replace("-", " ") 
-            self.S[i] = self.S[i].replace("/", " ") 
-            self.S[i] = self.S[i].replace("!", "")  
-            self.S[i] = self.S[i].replace("(", "")            
-            self.S[i] = self.S[i].replace(")", "")             
-            self.S[i] = self.S[i].replace("?", "")    
-            
+            self.S[i] = self.S[i].replace("-", " ")
+            self.S[i] = self.S[i].replace("/", " ")
+            self.S[i] = self.S[i].replace("!", "")
+            self.S[i] = self.S[i].replace("(", "")
+            self.S[i] = self.S[i].replace(")", "")
+            self.S[i] = self.S[i].replace("?", "")
+
     #--------------------------------------------------------------------------------------------------------#
     def _print_scentenses(self):
         for count,i in enumerate(self.S):
             print count,'-',self.S[i]
         print '--------------------------'
-        
+
     #--------------------------------------------------------------------------------------------------------#
     def _fix_data(self):
         # correction to Data removing 20 and 40
@@ -113,7 +101,7 @@ class process_data():
             self.Data[i]['x'] = np.delete(self.Data[i]['x'],[self.step,2*self.step])
             self.Data[i]['y'] = np.delete(self.Data[i]['y'],[self.step,2*self.step])
             self.Data[i]['z'] = np.delete(self.Data[i]['z'],[self.step,2*self.step])
-        
+
     #--------------------------------------------------------------------------------------------------------#
     def _find_unique_words(self):
         self.phrases = {}                       # hold the entire phrase up to a certain number of words
@@ -124,25 +112,28 @@ class process_data():
             self.words[s] = []
             sentence = self.S[s]
             w = sentence.split(' ')
+            phrases = []
             for i in range(len(w)):
                 if w[i]not in self.words[s]: self.words[s].append(w[i])
                 for j in range(i+1,np.min([i+1+self.n_word,len(w)+1])):
-                    self.phrases[s].append(' '.join(w[i:j]))
-  
-    #--------------------------------------------------------------------------------------------------------#        
-    def _compute_features_for_all(self): 
-        # this function comutes the following  
+                    phrases.append(' '.join(w[i:j]))
+            for i in phrases:
+                if i not in self.phrases[s]:    self.phrases[s].append(i)
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _compute_features_for_all(self):
+        # this function comutes the following
         # self.touch_all
-        # self.motion_all          
-        
+        # self.motion_all
+
         # initial parameter
         self.frames = len(self.Data['G']['x'])-1     # we remove the first one to compute speed
         self.keys = self.Data.keys()
-        self.n = np.sum(range(len(self.keys)))  
+        self.n = np.sum(range(len(self.keys)))
         # computing distance and touch   (between all objects including robot)
-        #self.dis_all = np.zeros((self.n,self.frames),dtype=np.float)           
-        self.touch_all = np.zeros((self.n,self.frames),dtype=np.int8) 
-        counter = 0 
+        #self.dis_all = np.zeros((self.n,self.frames),dtype=np.float)
+        self.touch_all = np.zeros((self.n,self.frames),dtype=np.int8)
+        counter = 0
         for i in range(len(self.keys)-1):
             for j in range(i+1,len(self.keys)):
                 k1 = self.keys[i]
@@ -156,7 +147,7 @@ class process_data():
                 A[A>1.0] = 0
                 self.touch_all[counter,:] = A
                 counter += 1
-                
+
         """
         # computing direction   (between all objects not robot)
         self.dirx_all_i = np.zeros((len(self.keys)-1,len(self.keys)-1),dtype=np.int8)
@@ -183,7 +174,7 @@ class process_data():
                     self.dirz_all_i[i,j] = np.sign(dzi)
                     self.dirz_all_f[i,j] = np.sign(dzf)
         """
-                    
+
         # computing motion      (for all objects)
         for i in self.Data:
             dx = (self.Data[i]['x'][:-1]-self.Data[i]['x'][1:])**2
@@ -191,7 +182,7 @@ class process_data():
             dz = (self.Data[i]['z'][:-1]-self.Data[i]['z'][1:])**2
             self.Data[i]['motion'] = (np.round(np.sqrt(dx+dy+dz)*10000)).astype(int)
             self.Data[i]['motion'][self.Data[i]['motion']!=0] = 1
-            
+
         # compute relative motion
         # similar motion == 1 different == 0
         self.motion_all = np.zeros((self.n,self.frames),dtype=np.int8)
@@ -207,7 +198,6 @@ class process_data():
                 self.motion_all[counter,:] = A
                 counter += 1
 
-                    
     #--------------------------------------------------------------------------------------------------------#
     def _compute_features_for_moving_object(self):
         # finding the moving object ! fix this
@@ -215,7 +205,7 @@ class process_data():
         # self.touch_m
         # self.touch_m_i        # initially touching the moving obj
         # self.touch_m_f        # finally touching the moving obj
-        
+
         self.m_obj = []
         for i in self.Data:
             if i != 'G':
@@ -224,7 +214,7 @@ class process_data():
                 z = np.abs(self.Data[i]['z'][-1]-self.Data[i]['z'][0])
                 if (x+y+z) > 0:
                     self.m_obj = i
-                    
+
         # computing distance BINARY Distance (touch or no touch all obj no robot)
         n = len(self.Data)-2
         #self.dis_m = np.zeros((n,self.frames),dtype=np.float)
@@ -239,21 +229,21 @@ class process_data():
                 dz = np.abs(self.Data[k1]['z'][1:]-self.Data[k2]['z'][1:])
                 A = dx+dy+dz
                 #self.dis_m[counter,:] = A
-                A[A<=1] = 1
+                A[A<=1.5] = 1
                 A[A>1] = 0
                 self.touch_m[counter,:] = A
                 counter += 1
-                
+
         counter = 0
         self.touch_m_i = []                 #which objects were in touch with the moving objects initially
         self.touch_m_f = []                 #which objects were in touch with the moving objects finally
         for i in range(len(self.keys)):
             k2 = self.keys[i]
-            if k2 != k1 and k2 != 'G':  
+            if k2 != k1 and k2 != 'G':
                 if self.touch_m[counter,0]: self.touch_m_i.append(i)
                 if self.touch_m[counter,-1]: self.touch_m_f.append(i)
                 counter += 1
-            
+
         # computing direction
         self.dirx_m = np.zeros((n,self.frames),dtype=np.int8)
         self.diry_m = np.zeros((n,self.frames),dtype=np.int8)
@@ -269,7 +259,7 @@ class process_data():
                 self.diry_m[counter,:] = np.sign((dy).astype(int))
                 self.dirz_m[counter,:] = np.sign(np.round(dz))
                 counter += 1
-             
+
         self.dir_touch_m_i = []
         self.dir_touch_m_f = []
         for i in self.touch_m_i:
@@ -288,7 +278,7 @@ class process_data():
             c = self.dirz_m[val,-1]
             d = (a,b,c)
             if d not in self.dir_touch_m_f:    self.dir_touch_m_f.append(d)
-         
+
         # finding locations of moving object
         self.locations_m_i = []
         self.locations_m_f = []
@@ -296,7 +286,7 @@ class process_data():
         self.locations_m_f.append((self.Data[self.m_obj]['x'][-1],self.Data[self.m_obj]['y'][-1]))
         #self.locations.append(di)
         #if df not in self.locations: self.locations.append(df)
-        
+
     #--------------------------------------------------------------------------------------------------------#
     def _transition(self):
         # comput the transition intervals for motion
@@ -320,12 +310,12 @@ class process_data():
                 self.transition['touch'].append(i)
                 if i not in self.transition['all']: self.transition['all'].append(i)
         self.transition['all'] = sorted(self.transition['all'])
-        
+
     #--------------------------------------------------------------------------------------------------------#
     def _grouping(self):
         self.G_motion = self._grouping_template(self.transition['motion'],self.motion_all)
         self.G_touch = self._grouping_template(self.transition['touch'],self.touch_all)
-            
+
     #-------------------------------------------------#
     def _grouping_template(self,transition,feature):
         G_all = {}
@@ -346,38 +336,54 @@ class process_data():
             for g in C:
                 G_all[T]['groups'].append(g.nodes())
         return G_all
-        
-        
+
     #--------------------------------------------------------------------------------------------------------#
-    def _convert_color_shape_to_gmm(self,plot):
+    def _convert_color_shape_location_to_gmm(self,plot):
         self.unique_colors = []
         self.unique_shapes = []
-        self.X = {}
+        self.unique_locationss = []
+        self.gmm_M = {}
         for i in self.Data:
             if i != 'G':
-                c = self.Data[i]['color']
-                r = np.random.rand(3)*.2-.1
-                c += r
-                #print r
-                for j,c1 in enumerate(c):
-                    if c1<=0:      c[j]+=2*np.abs(r[j])
-                    if c1>=1:      c[j]-=2*np.abs(r[j])
-                C = (c[0],c[1],c[2])
-                
-                s = self.Data[i]['shape']
-                r = np.random.rand(1)*.2-.1
-                s += r[0]
-                if s<=0:      s+=2*np.abs(r[0])
-                if s>=1:      s-=2*np.abs(r[0])
-                self.unique_colors.append(C)
-                self.unique_shapes.append(s)
-        self.gmm_M['color'],self.X['color'] = self._bic_gmm(self.unique_colors,plot)
-        self.gmm_M['shape'],self.X['shape'] = self._bic_gmm(self.unique_shapes,plot)
-        self.M['color'] = len(self.unique_colors)
-        self.M['shape'] = len(self.unique_shapes)
-        
+                for k in range(10):
+                    c = self.Data[i]['color']
+                    r = np.random.normal(0, .03, 3)
+                    c += r
+                    for j,c1 in enumerate(c):
+                        if c1<0:      c[j]+=2*np.abs(r[j])
+                        if c1>1:      c[j]-=2*np.abs(r[j])
+                    C = (c[0],c[1],c[2])
+
+                    s = self.Data[i]['shape']
+                    r = np.random.normal(0, .03, 1)
+                    s += r[0]
+                    if s<0:      s+=2*np.abs(r[0])
+                    if s>1:      s-=2*np.abs(r[0])
+                    self.unique_colors.append(C)
+                    self.unique_shapes.append(s)
+
+        # just a note to should reverce x and y in testing
+        for i,l in enumerate(self.unique_locations):
+                l = [l[0],l[1]]
+                for k in range(10):
+                    r = np.random.normal(0, .03, 2)
+                    l += r
+                    for j,l1 in enumerate(l):
+                        if l1<0:      l[j]+=2*np.abs(r[j])
+                        if l1>7:      l[j]-=2*np.abs(r[j])
+                    L = (l[0]/7.0,l[1]/7.0)
+                    self.unique_locationss.append(L)
+
+        gmm_c = self._bic_gmm(self.unique_colors,plot)
+        gmm_s = self._bic_gmm(self.unique_shapes,plot)
+        gmm_l = self._bic_gmm(self.unique_locationss,plot)
+        self.gmm_M['color'] = copy.deepcopy(gmm_c)
+        self.gmm_M['shape'] = copy.deepcopy(gmm_s)
+        self.gmm_M['location'] = copy.deepcopy(gmm_l)
+
     #--------------------------------------------------------------------------------------------------------#
     def _bic_gmm(self,points,plot):
+        gmm1 = {}
         lowest_bic = np.infty
         bic = []
         X = []
@@ -385,96 +391,173 @@ class process_data():
             if X == []:         X = [point]
             else:               X = np.vstack([X,point])
         k = np.minimum(len(X),7)
-        cv_types = ['spherical', 'tied', 'diag', 'full']
+        #cv_types = ['spherical', 'tied', 'diag', 'full']
+        cv_types = ['full']
         best_gmm, bic = gmm_bic(X, k, cv_types)
         if plot:
             plot_data(X, best_gmm, bic, k, cv_types,0, 1)
-            plt.show()
-        return best_gmm,X
-                
+            plt.savefig("/home/omari/Datasets/robot_modified/clusters/" + str(len(X[0])) + "-" + str(self.scene) +".png")
+
+        for i, (mean, covar) in enumerate(zip(best_gmm.means_, best_gmm._get_covars())):
+            gmm1[i] = {}
+            gmm1[i]['mean'] = mean
+            gmm1[i]['covar'] = covar
+            gmm1[i]['N'] = 1.0
+        return gmm1
+
     #--------------------------------------------------------------------------------------------------------#
     def _igmm(self):
-        for s in self.words:
-            for word in self.words[s]:
-                if word != 'green': continue
-                if word not in self.gmm_N:
-                    self.gmm_N[word] = {}
-                    for f in self.gmm_M:
-                        self.gmm_N[word][f] = {}
-                        self.gmm_N[word][f]['N']    = self.M[f]
-                        self.gmm_N[word][f]['gmm']  = self.gmm_M[f]
-                else:
-                    for f in self.gmm_M:
-                        if f != 'color':    continue
-                        X       = self.X[f]
-                        gmm_N   = self.gmm_N[word][f]['gmm']
-                        gmm_M   = self.gmm_M[f]
-                        N       = self.gmm_N[word][f]['N']
-                        M       = self.M[f]
-                        Y_ = gmm_M.predict(X)
-                        accepted_ind = []
-                        for i, (mean_i, covar_i) in enumerate(zip(gmm_N.means_, gmm_N._get_covars())):
-                            m_min = np.inf
-                            m_ind = []
-                            for j, (mean_j, covar_j) in enumerate(zip(gmm_M.means_, gmm_M._get_covars())):
-                                dis = np.sum((mean_i-mean_j)**2)
-                                if dis < m_min:
-                                    m_min = dis
-                                    m_ind = j
-                                    Dk = X[Y_==j]
-                            Mk = float(len(Dk))
-                            print gmm_N.means_[i]
-                            print gmm_M.means_[m_ind]
-                            print self.gmm_N[word][f]['N']
-                            print M
-                            print self.gmm_N[word][f]['gmm'].weights_[i]
-                            print Mk
-                            print '****'
-                            gmm_N = self._update_gmm(gmm_N, gmm_M, i, m_ind, N, M, Mk)
-                            accepted_ind.append(m_ind)
-                        #print 'new clusters',len(accepted_ind)-len(gmm_M.means_)
-                        self.gmm_N[word][f]['gmm'] = gmm_N
-                        self.gmm_N[word][f]['N'] += M
-                print '********************'
-                        
-        mean = self.gmm_N['green']['color']['gmm'].means_
-        cov = self.gmm_N['green']['color']['gmm']._get_covars()
-        w = self.gmm_N['green']['color']['gmm'].weights_
-        N = self.gmm_N['green']['color']['N']
-        for i in range(len(cov)):
-            print  mean[i]
-            print  cov[i]
-            print  w[i]
-            print N
-            print '---------'
-            
-                    
-                        
+        for s in self.phrases:
+            for word in self.phrases[s]:
+                #if word == 'the':
+                    if word not in self.gmm_obj:
+                        self.gmm_obj[word] = {}
+                        for f in self.gmm_M:
+                            self.gmm_obj[word][f] = {}
+                            self.gmm_obj[word][f]['N']    = 1.0
+                            self.gmm_obj[word][f]['gmm']  = copy.deepcopy(self.gmm_M[f])
+                    else:
+                        for f in self.gmm_M:
+                            gmm_N   = dict(self.gmm_obj[word][f]['gmm'])
+                            gmm_M   = dict(self.gmm_M[f])
+                            N       = self.gmm_obj[word][f]['N']
+                            M       = 1.0
+                            #============================#
+                            # with compition between gmms
+                            accepted_ind = []
+                            smallest_matrix = np.zeros((len(gmm_N),len(gmm_M)),dtype=np.float)
+                            for i in gmm_N:
+                                mean_i = gmm_N[i]['mean']
+                                m_min = np.inf
+                                m_ind = []
+                                for j in gmm_M:
+                                    mean_j = gmm_M[j]['mean']
+                                    dis = np.sqrt(np.sum((mean_i-mean_j)**2))/np.sqrt(len(mean_i))
+                                    smallest_matrix[i,j] = dis
+                            for k in range(np.min((len(gmm_N),len(gmm_M)))):
+                                #print smallest_matrix
+                                i,j = np.unravel_index(smallest_matrix.argmin(), smallest_matrix.shape)
+                                #print i,j
+                                m_min = smallest_matrix[i,j]
+                                if m_min < .5:               # == 88% matching in the t-test
+                                    gmm_N = self._update_gmm(gmm_N, gmm_M, i, j, N, M, 1)
+                                    if j not in accepted_ind:   accepted_ind.append(j)
+                                    gmm_N[i]['N'] += 1.0
+                                    smallest_matrix[i,:] = np.inf  # row
+                                    smallest_matrix[:,j] = np.inf  # col
+                            #print accepted_ind
+                            """
+                            #============================#
+                            # no competition between the different gmms
+                            accepted_ind = []
+                            for i in gmm_N:
+                                mean_i = gmm_N[i]['mean']
+                                m_min = np.inf
+                                m_ind = []
+                                for j in gmm_M:
+                                    mean_j = gmm_M[j]['mean']
+                                    dis = np.sqrt(np.sum((mean_i-mean_j)**2))
+                                    #print f,i,j,dis
+                                    if dis < m_min:
+                                        m_min = dis
+                                        m_ind = j
+                                if m_min < .12:               # == 88% matching in the t-test
+                                    gmm_N = self._update_gmm(gmm_N, gmm_M, i, m_ind, N, M, 1)
+                                    if m_ind not in accepted_ind:   accepted_ind.append(m_ind)
+                                    gmm_N[i]['N'] += 1.0
+
+                            """
+                            for key in gmm_M.keys():
+                                if key not in accepted_ind:
+                                    # we have to add this gmm to the hypotheses list with N = 1
+                                    gmm_N = self._add_gmm(gmm_N, gmm_M, key)
+                            #print 'new clusters',len(accepted_ind)-len(gmm_M.means_)
+                            self.gmm_obj[word][f]['gmm'] = copy.deepcopy(gmm_N)
+                            self.gmm_obj[word][f]['N'] += M
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _print_test(self):
+        tests = ['blue']
+        for test in tests:
+            print test
+            print '==------=='
+            if test in self.gmm_obj:
+                for f in self.gmm_obj[test]:
+                    N = self.gmm_obj[test][f]['N']
+                    print f
+                    print 'N =',N
+                    for i in self.gmm_obj[test][f]['gmm']:
+                        print self.gmm_obj[test][f]['gmm'][i]['mean']
+                        count = self.gmm_obj[test][f]['gmm'][i]['N']
+                        print count
+                        print self._probability(N,count)
+                        print '---'
+                    print '==------=='
+                print '--------------------------'
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _probability(self,count,value):
+        P = (value/count)*(1.0/np.exp(1.0/count))
+        return P
+    #--------------------------------------------------------------------------------------------------------#
+    def _print_results(self):
+        for test in self.gmm_obj:
+            min_value = np.inf
+            min_feature = 0
+            min_gmm = 0
+            for f in self.gmm_obj[test]:
+                    gmm1 = copy.deepcopy(self.gmm_obj[test][f]['gmm'])
+                    for i in gmm1:
+                        mean = gmm1[i]['mean']
+                        covar = gmm1[i]['covar']
+                        if covar.size == 9:
+                            dis = (np.abs(covar[0][0])+np.abs(covar[1][1])+np.abs(covar[2][2]))/3
+                        if covar.size == 4:
+                            dis = (np.abs(covar[0][0])+np.abs(covar[1][1]))/2
+                        if covar.size == 1:
+                            dis = np.abs(covar[0][0])
+                        if dis<min_value:
+                            min_value = dis
+                            min_feature = f
+                            min_gmm = i
+            if self.gmm_obj[test][min_feature]['N']>20:
+                if len(test)<7: print test,'\t\t\t:', min_feature, self.gmm_obj[test][min_feature]['N'],self.gmm_obj[test][min_feature]['gmm'][min_gmm]['mean']
+                elif len(test)<15: print test,'\t\t:', min_feature, self.gmm_obj[test][min_feature]['N'], self.gmm_obj[test][min_feature]['gmm'][min_gmm]['mean']
+
     #----------------------------------------------------------------------------------------------------------------#
     # 3.3.1 Merging Components
-    def _update_gmm(self,gmm_N_M, gmm_M, j, k, N, M, Mk):
-	    mu_j = gmm_N_M.means_[j]
-	    S_j = gmm_N_M._get_covars()[j]
-	    pi_j = gmm_N_M.weights_[j]
-	    mu_k = gmm_M.means_[k]
-	    S_k = gmm_M._get_covars()[k]
-	    pi_k = gmm_M.weights_[k]
-	    # update the mean
-	    mu = ( N*pi_j*mu_j + Mk*mu_k )/( N*pi_j + Mk )
-	    # update the covariance matrix
-	    S = ((N*pi_j*S_j + Mk*S_k)/(N*pi_j+Mk)) + ((N*pi_j*np.dot(mu_j,mu_j.T)+Mk*np.dot(mu_k,mu_k.T))/(N*pi_j+Mk)) - np.dot(mu,mu.T)
-	    # update the weight
-	    pi = ( N*pi_j + Mk )/( N + M )
+    def _update_gmm(self,gmm1, gmm2, j, k, N, M, Mk):
+        mu_j = gmm1[j]['mean']
+        S_j = gmm1[j]['covar']
+        #pi_j = gmm1.weights_[j]
+        pi_j = 1
+        mu_k = gmm2[k]['mean']
+        S_k = gmm2[k]['covar']
+        pi_k = 1
+        # update the mean
+        mu = ( N*pi_j*mu_j + Mk*mu_k )/( N*pi_j + Mk )
+        # update the covariance matrix
+        mu = np.array(mu)[np.newaxis]
+        mu_j = np.array(mu_j)[np.newaxis]
+        mu_k = np.array(mu_k)[np.newaxis]
+        S = ((N*pi_j*S_j + Mk*S_k)/(N*pi_j+Mk)) + ((N*pi_j*np.dot(mu_j.T,mu_j)+Mk*np.dot(mu_k.T,mu_k))/(N*pi_j+Mk)) - np.dot(mu.T,mu)
+        # update the weight
+        #pi = ( N*pi_j + Mk )/( N + M )
+        pi = 1
+        # update gmm1
+        #print mu
+        gmm1[j]['mean'] = mu[0]
+        gmm1[j]['covar'] = S
+        #print j,'and',k,'are now merged in gmm_N and gmm2'
+        return gmm1
 
-	    # update gmm_N_M
-	    gmm_N_M.means_[j] = mu
-	    gmm_N_M.covars_[j] = distribute_covar_matrix_to_match_covariance_type(S, gmm_N_M.covariance_type, 1)
-	    gmm_N_M.weights_[j] = pi
-	    #print j,'and',k,'are now merged in gmm_N and gmm_M'
-	    return gmm_N_M
-                        
-        
-    
+    #----------------------------------------------------------------------------------------------------------------#
+    # 3.3.1 Merging Components
+    def _add_gmm(self, gmm1, gmm2, i):
+            new_key = np.max(gmm1.keys())+1
+            gmm1[new_key] = gmm2[i]
+            return gmm1
+
     #--------------------------------------------------------------------------------------------------------#
     def _compute_unique_color_shape(self):
         self.unique_colors = []
@@ -486,7 +569,7 @@ class process_data():
                 s = self.Data[i]['shape']
                 if C not in self.unique_colors: self.unique_colors.append(C)
                 if s not in self.unique_shapes: self.unique_shapes.append(s)
-                
+
     #--------------------------------------------------------------------------------------------------------#
     def _compute_unique_motion(self):
         self.unique_motions = []
@@ -500,85 +583,155 @@ class process_data():
                 if i == 4:  C = (c[0],c[1],c[2],c[3])
                 if i == 5:  C = (c[0],c[1],c[2],c[3],c[4])
                 if i == 6:  C = (c[0],c[1],c[2],c[3],c[4],c[5])
-                
+
                 if C not in self.unique_motions:    self.unique_motions.append(C)
                 if C not in self.total_motion[i-1]:   self.total_motion[i-1][C] = 1
                 else:                               self.total_motion[i-1][C] += 1
-    
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _compute_unique_direction(self):
+        self.unique_direction = []
+        for i in self.dir_touch_m_i:
+            if i not in self.unique_direction:  self.unique_direction.append(i)
+        for i in self.dir_touch_m_f:
+            if i not in self.unique_direction:  self.unique_direction.append(i)
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _compute_unique_location(self):
+        self.unique_locations = []
+        for i in self.locations_m_i:
+            if i not in self.unique_locations:  self.unique_locations.append(i)
+        for i in self.locations_m_f:
+            if i not in self.unique_locations:  self.unique_locations.append(i)
+
     #--------------------------------------------------------------------------------------------------------#
     def _build_obj_hyp(self):
-    
-        for s in self.words:
-            for word in self.words[s]:
+
+        for s in self.phrases:
+            for word in self.phrases[s]:
                 if word not in self.hyp_language:
                     self.hyp_language[word] = {}
                     self.hyp_language[word]['count'] = 0
                     self.hyp_language[word]['action'] = {}
                     self.hyp_language[word]['color'] = {}
                     self.hyp_language[word]['shape'] = {}
-                    self.hyp_language[word]['direction'] = {}
                     self.hyp_language[word]['location'] = {}
                 self.hyp_language[word]['count'] += 1
-                
+
                 """
                 for action in self.unique_motions:
                     if action not in self.hyp_language[word]['action']:   self.hyp_language[word]['action'][action] = 1
                     else: self.hyp_language[word]['action'][action] += 1
-                """    
-                for color in self.unique_colors:
-                    if color not in self.hyp_language[word]['color']:   self.hyp_language[word]['color'][color] = 1
-                    else: self.hyp_language[word]['color'][color] += 1
-                    
-                for shape in self.unique_shapes:
-                    if shape not in self.hyp_language[word]['shape']:   self.hyp_language[word]['shape'][shape] = 1
-                    else: self.hyp_language[word]['shape'][shape] += 1
-                    
+                """
+                ok = 1
+                if 'color' in self.feature_pass:
+                    for i in word.split(' '):
+                        if len(word.split(' '))>1 and i in self.feature_pass['color']: ok=0
+                if ok:
+                    for color in self.unique_colors:
+                        if color not in self.hyp_language[word]['color']:   self.hyp_language[word]['color'][color] = 1
+                        else: self.hyp_language[word]['color'][color] += 1
+
+                ok = 1
+                if 'shape' in self.feature_pass:
+                    for i in word.split(' '):
+                        if len(word.split(' '))>1 and i in self.feature_pass['color']: ok=0
+                if ok:
+                    for shape in self.unique_shapes:
+                        if shape not in self.hyp_language[word]['shape']:   self.hyp_language[word]['shape'][shape] = 1
+                        else: self.hyp_language[word]['shape'][shape] += 1
+
                 #for direction in self.directions:
                 #    if direction not in self.hyp_language[word]['direction']:   self.hyp_language[word]['direction'][direction] = 1
                 #    else: self.hyp_language[word]['direction'][direction] += 1
-                '''
-                for location in self.locations_m_i:
+
+                for location in self.unique_locations:
                     if location not in self.hyp_language[word]['location']:   self.hyp_language[word]['location'][location] = 1
                     else: self.hyp_language[word]['location'][location] += 1
-                    
-                for location in self.locations_m_f:
-                    if location not in self.hyp_language[word]['location']:   self.hyp_language[word]['location'][location] = 1
-                    else: self.hyp_language[word]['location'][location] += 1
-                '''
-    #--------------------------------------------------------------------------------------------------------#             
+
+        #if 'bottom left corner' in self.hyp_language:
+        #    print self.hyp_language['bottom left corner']
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _build_relation_hyp(self):
+        for s in self.phrases:
+            for word in self.phrases[s]:
+                if word not in self.hyp_relation:
+                    self.hyp_relation[word] = {}
+                    self.hyp_relation[word]['count'] = 0
+                    self.hyp_relation[word]['direction'] = {}
+                if self.unique_direction != []:         self.hyp_relation[word]['count'] += 1
+                for direction in self.unique_direction:
+                    if direction not in self.hyp_relation[word]['direction']:   self.hyp_relation[word]['direction'][direction] = 1
+                    else: self.hyp_relation[word]['direction'][direction] += 1
+
+    #--------------------------------------------------------------------------------------------------------#
     def _test_language_hyp(self):
+        self.feature_pass = {}
         self.hyp_language_pass = {}
         for word in self.hyp_language:
             count = float(self.hyp_language[word]['count'])
             for j in self.hyp_language[word]:
-                if j != 'count': 
+                if j != 'count':
                     for k in self.hyp_language[word][j]:
-                        prob = self._probability(count,self.hyp_language[word][j][k])
-                        if prob>.98: 
-                            if word not in self.hyp_language_pass: 
+                        if j == 'location': prob = self._probability_loc(count,self.hyp_language[word][j][k])
+                        else:               prob = self._probability(count,self.hyp_language[word][j][k])
+                        if prob>.98:
+                            if word not in self.hyp_language_pass:
                                 self.hyp_language_pass[word] = {}
                                 self.hyp_language_pass[word]['possibilities'] = 0
                                 self.hyp_language_pass[word]['all'] = []
-                            if j not in self.hyp_language_pass[word]: 
+                            if j not in self.hyp_language_pass[word]:
                                 self.hyp_language_pass[word][j] = []
                             self.hyp_language_pass[word]['possibilities'] += 1
                             self.hyp_language_pass[word][j].append((k,prob))
                             self.hyp_language_pass[word]['all'].append((j,k))
+                            if j not in self.feature_pass:
+                                self.feature_pass[j] = []
+                            self.feature_pass[j].append(word)
                             #print word,count
                             #print j+':',k,prob
                             #print '==---------------------=='
-                        
+
     #--------------------------------------------------------------------------------------------------------#
-    def _probability(self,count,value):
+    def _test_relation_hyp(self):
+        self.hyp_relation_pass = {}
+        for word in self.hyp_relation:
+            count = float(self.hyp_relation[word]['count'])
+            for j in self.hyp_relation[word]:
+                if j != 'count':
+                    for k in self.hyp_relation[word][j]:
+                        prob = self._probability(count,self.hyp_relation[word][j][k])
+                        if prob>.98:
+                            if word not in self.hyp_relation_pass:
+                                self.hyp_relation_pass[word] = {}
+                                self.hyp_relation_pass[word]['possibilities'] = 0
+                                self.hyp_relation_pass[word]['all'] = []
+                            if j not in self.hyp_relation_pass[word]:
+                                self.hyp_relation_pass[word][j] = []
+                            self.hyp_relation_pass[word]['possibilities'] += 1
+                            self.hyp_relation_pass[word][j].append((k,prob))
+                            self.hyp_relation_pass[word]['all'].append((j,k))
+        for i in self.hyp_relation_pass:
+            ok = 1
+            for j in i.split(' '):
+                if j in self.hyp_language_pass: ok = 0
+            #if ok:
+            #    print i
+            #    print self.hyp_relation_pass[i]
+            #    print '---'
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _probability_loc(self,count,value):
         P = (value/count)*(1.0/np.exp(1/count))
         return P
-              
+
     #--------------------------------------------------------------------------------------------------------#
     def _build_parser(self):
         self._update_terminals()
         self._update_nonterminals()
         self._build_PCFG()
-        
+
     #--------------------------------------------------------------------------------------------------------#
     def _update_terminals(self):
         hypotheses = self.hyp_language_pass
@@ -595,21 +748,21 @@ class process_data():
                     for hyp in hypotheses[word][feature]:
                         self.T['features'][feature].append((word,hyp[1]))
                         self.T['sum'][feature] += hyp[1]
-                        
+
         for feature in self.T['features']:
             l = len(self.T['features'][feature])
             for hyp in self.T['features'][feature]:
                 self.grammar += feature+" -> '"+hyp[0]+"' ["+str(hyp[1]/self.T['sum'][feature])+"]"+'\n'
-                
+
     #--------------------------------------------------------------------------------------------------------#
     def _update_nonterminals(self,):
         # there is a threshold in NLTK to drop a hypotheses 9.99500249875e-05 I think it;s 1e-4
-    
+
         entity_features = ['color','shape','location']
-        
+
         def rotate(l,n):
             return l[n:] + l[:n]
-            
+
         def _find_entities(A):
             all_e = []
             e = []
@@ -627,7 +780,7 @@ class process_data():
                     k_1 = k
             all_e.append(e)
             return all_e
-            
+
         # loop through all sentences
         features = self.T['features'].keys()
         for s in self.S:
@@ -651,15 +804,15 @@ class process_data():
                         parsed_sentence[ind] = feature
                         if feature in entity_features:
                             entity_sentence[ind] = 1
-                            
+
             # find the number of entity based on connectivity of features in a sentence
             A = [i for i, x in enumerate(entity_sentence) if x == 1]
             all_entities = _find_entities(A)
-                        
+
             #print sentence
             #print self.scene,parsed_sentence
             #print self.scene,entity_sentence
-                
+
             # update the non-terminal counter
             for entity in all_entities:
                 if entity != []:
@@ -669,8 +822,8 @@ class process_data():
                     if h not in self.N['e']:        self.N['e'][h] =  1.0
                     else:        self.N['e'][h] += 1.0
                     self.N['e']['sum'] += 1.0
-                    
-        # add entities, ++ to grammer    
+
+        # add entities, ++ to grammer
         for feature in self.N:
             sorted_f = sorted(self.N[feature].items(), key=operator.itemgetter(1))
             for l in range(len(sorted_f),0,-1):
@@ -686,17 +839,14 @@ class process_data():
                                 small_msg += hyp[0][j]+' '
                             small_msg += hyp[0][j+1]
                         self.grammar += feature+" -> '"+small_msg+"' ["+str(val)+"]"+'\n'
-    
+
     #--------------------------------------------------------------------------------------------------------#
     def _build_PCFG(self):
         if self.grammar != '':
             self.pcfg1 = PCFG.fromstring(self.grammar)
             print self.pcfg1
-            
-            
-            
-            
-    #--------------------------------------------------------------------------------------------------------#            
+
+    #--------------------------------------------------------------------------------------------------------#
     def _test_sentence_hyp(self):
         # test the hypotheses sentence by sentence
         for scene in self.words:
@@ -711,7 +861,7 @@ class process_data():
             #print '==-------------== sentence'
             #print
 
-    #------------------------------------------------------------------#                     
+    #------------------------------------------------------------------#
     def _test(self,subset,scene):
         # this function tests one susbet of words at a time
         sentence = self.S[scene].split(' ')
@@ -726,15 +876,15 @@ class process_data():
             # build the indices
             for k,word in enumerate(subset):
                 indices[word] = [i for i, x in enumerate(sentence) if x == word]
-            
+
             # no 2 words are allowed to mean the same thing
             the_same = 0
             for i in element:
-                if element.count(i)>1:          
+                if element.count(i)>1:
                     the_same = 1
-            if the_same: 
+            if the_same:
                 continue
-               
+
             # 1) does actions match ?   it should match 100%
             for k,word in enumerate(subset):
                 if element[k][0] == 'action':
@@ -745,7 +895,7 @@ class process_data():
                 if self.total_motion[i] == hyp_motion:
                     motion_pass = 1
                 #else: print self.scene,'fail'
-                    
+
             # 2) parse the sentence
             if motion_pass:
                 parsed_sentence = []
@@ -755,17 +905,17 @@ class process_data():
                         k = subset.index(word)
                         parsed_sentence.append(element[k][0])
                         value_sentence.append(element[k][1])
-                    else:               
+                    else:
                         parsed_sentence.append('_')
                         value_sentence.append('_')
                 print sentence
                 print self.scene,parsed_sentence
                 print self.scene,value_sentence
-                    
+
                 #print indices,word,element[k]
                 #G_test = nx.Graph()
             #print '==--== hyp'
-        
+
     #--------------------------------------------------------------------------------------------------------#
     def _plot_graphs(self):
         self.f,self.ax = plt.subplots(len(self.transition['all']),4,figsize=(14,10)) # first col motion , second distance
@@ -775,13 +925,13 @@ class process_data():
             for sub,T in enumerate(self.transition['all']):
                 plt.sca(self.ax[sub,feature])
                 print 'plotting graph : '+str(sub+1)+' from '+str(len(self.transition['all']))
-                if feature == 0: 
+                if feature == 0:
                     if T not in self.transition['motion']:
                         for i in self.transition['motion']:
                             if i<T: t=i
                     else: t=T
                     G=self.G_motion[t]['graph']
-                elif feature == 2: 
+                elif feature == 2:
                     if T not in self.transition['touch']:
                         for i in self.transition['touch']:
                             if i<T: t=i
@@ -816,11 +966,11 @@ class process_data():
                     self.ax[sub,feature].set_ylabel('frame : '+str(T))
                     if sub == 0:
                         self.ax[sub,feature].set_title('connectivity')
-                        
+
         #plt.draw() # display
         #plt.pause(.00001)
         #plt.show()
-        
+
     #--------------------------------------------------------------------------------------------------------#
     def _create_moving_obj_graph(self,T):
             # Creating the graph structure
@@ -831,7 +981,7 @@ class process_data():
             obj_count = 3.0                 # 1 is reserved for the moving object
             G_count = 1.0
             for key in self.keys:
-                if key == self.m_obj:    
+                if key == self.m_obj:
                     G.add_node(str(key),type1='mo',position=(m_count,3))
                     G.add_node(str(key)+'_c',type1='of',position=(m_count-.25,1));         #color
                     G.add_node(str(key)+'_s',type1='of',position=(m_count,1));         #shape
@@ -839,9 +989,9 @@ class process_data():
                     G.add_edge(str(key),str(key)+'_c')
                     G.add_edge(str(key),str(key)+'_s')
                     G.add_edge(str(key),str(key)+'_l')
-                elif key == 'G':    
+                elif key == 'G':
                     G.add_node(str(key),type1='G',position=(G_count,3))
-                else:               
+                else:
                     G.add_node(str(key),type1='o',position=(obj_count,3))
                     G.add_node(str(key)+'_c',type1='of',position=(obj_count-.25,1));         #color
                     G.add_node(str(key)+'_s',type1='of',position=(obj_count,1));         #shape
@@ -850,9 +1000,9 @@ class process_data():
                     G.add_edge(str(key),str(key)+'_s')
                     G.add_edge(str(key),str(key)+'_l')
                     obj_count+=1
-                        
+
             # creating the relation layer
-            
+
             k1 = self.m_obj
             counter = 0
             for k2 in self.keys:
@@ -869,7 +1019,7 @@ class process_data():
                     G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_mot')
                     counter += 1
                     r_count += 1
-                    
+
                 if k2 != k1 and k2 == 'G':
                     G.add_node(str(k1)+'_'+str(k2),type1='r',position=(G_count+.5,7.0))     # it's a directed node from k1 to k2
                     G.add_edge(str(k1)+'_'+str(k2),str(k1))
@@ -882,28 +1032,28 @@ class process_data():
                     G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dir')
                     G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_mot')
             return G
-            
+
     #--------------------------------------------------------------------------------------------------------#
     def _plot_final_graph(self):
         for feature in [1,3]:
             for sub,T in enumerate(self.transition['all']):
                 plt.sca(self.ax[sub,feature])
-            
+
                 G = self._create_moving_obj_graph(T)
                 # Creating the group effect
-                if feature == 1: 
+                if feature == 1:
                     if T not in self.transition['motion']:
                         for i in self.transition['motion']:
                             if i<T: t=i
                     else: t=T
                     G_group = self.G_motion[t]['groups']
-                if feature == 3: 
+                if feature == 3:
                     if T not in self.transition['touch']:
                         for i in self.transition['touch']:
                             if i<T: t=i
                     else: t=T
                     G_group = self.G_touch[t]['groups']
-                    
+
                 N = len(G_group)
                 HSV = [(x*.9/N, 0.9, 0.9) for x in range(N)]
                 RGB = map(lambda x: colorsys.hsv_to_rgb(*x), HSV)
@@ -912,17 +1062,17 @@ class process_data():
                         p = G.node[node]['position']
                         rect1 = mat.patches.Rectangle((p[0]-.4,p[1]-3), .8, 4, color=RGB[c],alpha=.5)
                         self.ax[sub,feature].add_patch(rect1)
-                    
+
                 agents = list((n for n in G if G.node[n]['type1']=='G'))
                 m_objects = list((n for n in G if G.node[n]['type1']=='mo'))
                 objects = list((n for n in G if G.node[n]['type1']=='o'))
                 objects_f = list((n for n in G if G.node[n]['type1']=='of'))
                 relations = list((n for n in G if G.node[n]['type1']=='r'))
                 relations_f = list((n for n in G if G.node[n]['type1']=='rf'))
-                
+
                 #pos=nx.graphviz_layout(G,prog="neato")
                 pos = nx.get_node_attributes(G,'position')
-                
+
                 nx.draw_networkx_nodes(G,pos, nodelist=agents, node_color='r', node_size=100, alpha=1)
                 nx.draw_networkx_nodes(G,pos, nodelist=m_objects, node_color='c', node_size=100, alpha=1)
                 nx.draw_networkx_nodes(G,pos, nodelist=objects, node_color='b', node_size=100, alpha=1)
@@ -936,22 +1086,21 @@ class process_data():
                     self.ax[sub,feature].set_ylabel('frame : '+str(T))
                     if sub == 0:
                         self.ax[sub,feature].set_title('motion')
-                        
+
                 if feature == 3:
                     self.ax[sub,feature].set_ylabel('frame : '+str(T))
                     if sub == 0:
                         self.ax[sub,feature].set_title('connectivity')
-                        
+
                 self.ax[sub,2].axis('on')
                 plt.tick_params(axis='x',which='both',bottom='off',top='off',labelbottom='off')
                 plt.tick_params(axis='y',which='both',right='off',left='off',labelleft='off')
-                
+
 
 
         plt.savefig(self.dir3+'_'+str(self.scene)+'.png',dpi=200) # save as png
         plt.show() # display
 
-        
     #--------------------------------------------------------------------------------------------------------#
     def _plot_scene(self):
         import sys, select, os
@@ -961,5 +1110,3 @@ class process_data():
             cv2.imshow('scene',img)
             cv2.waitKey(50) & 0xff
         plt.close(self.f)
-        
-        

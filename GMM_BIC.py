@@ -1,8 +1,6 @@
 import itertools
 import numpy as np
 from scipy import linalg
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 
 from sklearn import mixture
 
@@ -27,4 +25,3 @@ def gmm_bic(X, k, cv_types):
 		    best_gmm = gmm
 
 	return best_gmm, bic
-

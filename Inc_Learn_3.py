@@ -7,34 +7,37 @@ from data_processing import *
 P = process_data()
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,1001):
-    #if scene in [891,892]: continue
+  for scene in range(1,250):
+    if scene in [891,892]: continue
     P._read(scene)                                  # Objects, Graph, Sentences
     P._print_scentenses()
     P._fix_data()                                   # correction to Data removing 20 and 40
     P._find_unique_words()                          # find the unique words in every valid sentence = P.words
-    #P._compute_features_for_all()                   # = self.touch_all, self.motion_all 
-    #P._compute_features_for_moving_object()         # = self.touch_m_i, self.touch_m_f, self.dir_touch_m_i, self.dir_touch_m_f, self.locations_m_i, self.locations_m_f
+    P._compute_features_for_all()                   # = self.touch_all, self.motion_all 
+    P._compute_features_for_moving_object()         # = self.touch_m_i, self.touch_m_f, self.dir_touch_m_i, self.dir_touch_m_f, self.locations_m_i, self.locations_m_f
     
     #########################################################################################################
     #   I will start with relations (only direction) between the moving object and other objects that are   #
     #   in contact with it.                                                                                 #
     #########################################################################################################
     
-    #P._transition()                                 # P.transition['motion'] P.transition['touch'] P.transition['all']     
-    #P._grouping()                                   # generate the edges between the nodes that are the same in motion or touching
+    P._transition()                                 # P.transition['motion'] P.transition['touch'] P.transition['all']     
+    P._grouping()                                   # generate the edges between the nodes that are the same in motion or touching
     P._compute_unique_color_shape()                 # = P.unique_colors
-    #P._compute_unique_motion()                      # = P.total_motion = {1: {(0, 1): 1, (1, 0): 1}, 2: {(0, 1, 0): 1}} self.unique_motion
+    P._compute_unique_direction()                   # = P.unique_direction
+    P._compute_unique_motion()                      # = P.total_motion = {1: {(0, 1): 1, (1, 0): 1}, 2: {(0, 1, 0): 1}} self.unique_motion
+    P._compute_unique_location()                    # = P.unique_locations
     
     P._build_obj_hyp()                              # P.hyp_language
+    P._build_relation_hyp()                         # P.hyp_language
     
     #########################################################################################################
     #   I will pass hypotheses that have probabilities above 98% this needs a formal definition             #
     #########################################################################################################
     
     P._test_language_hyp()                          # self.hyp_language_pass > .98
+    P._test_relation_hyp()                          # self.hyp_language_pass > .98
     P._build_parser()                               # 
-    
     #P._test_sentence_hyp()                          # test if the whole sentence make sense
     # it should match 100% of the motion, which means the user should describe every single motion.
     ## so if someone says pick the blue object, and the blue object was trapped under another object, this 
@@ -80,7 +83,9 @@ print P.pcfg1
 #                                 sub motion
 #   self.unique_motions         = a list contains all the unique motions
 #   self.hyp_language_pass      = a dictionery contains all the passed hypotheses from language
-#
+#   self.unique_direction       = a list of all unique directions between the moving obj and any other
+#                                obj that is in touch with it
+#   self.unique_locations       = a list of all the start and end locations of the moving obj
 ##############################################################################################################
 
     
