@@ -2,13 +2,13 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
-from data_processing import *
+from data_processing_igmm import *
 import time
 
 P = process_data()
 plot = 0
 
-for scan in range(1):
+for scan in range(2):
   print 'scan number :',scan
   #for scene in range(1,58):
   for scene in range(1,1000):
@@ -18,25 +18,36 @@ for scan in range(1):
     P._print_scentenses()
     P._fix_data()                                   # correction to Data removing 20 and 40
     P._find_unique_words()                          # find the unique words in every valid sentence = P.words
+
     P._compute_features_for_all()                   # = self.touch_all, self.motion_all
     P._compute_features_for_moving_object()         # = self.touch_m_i, self.touch_m_f, self.dir_touch_m_i, self.dir_touch_m_f, self.locations_m_i, self.locations_m_f
-
     P._transition()                                 # P.transition['motion'] P.transition['touch'] P.transition['all']
     P._grouping()                                   # generate the edges between the nodes that are the same in motion or touching
+
     P._compute_unique_color_shape()                 # = P.unique_colors
     P._compute_unique_direction()                   # = P.unique_direction
     P._compute_unique_motion()                      # = P.total_motion = {1: {(0, 1): 1, (1, 0): 1}, 2: {(0, 1, 0): 1}} self.unique_motion
     P._compute_unique_location()                    # = P.unique_locations
     P._convert_color_shape_location_to_gmm(plot)    # = P.gmm_M, P.M
-    #P._convert_direction_to_gmm(plot)               # = P.gmm_M, P.M
+    #P._convert_direction_to_gmm(plot)              # to do
+    #P._convert_motion_to_gmm(plot)                 # to do
 
-    #P._build_obj_hyp()                              # P.hyp_language
-    P._igmm()                                       # build the language hypotheses with gmms
     #########################################################################################################
-    #   I will pass hypotheses that have probabilities above 80% this needs a formal definition             #
+    #   Learning starts here, first we update the histograms of objects, relations and motions              #
     #########################################################################################################
 
-    P._test_language_gmm()                          # self.hyp_language_pass > .8
+    P._build_obj_hyp_igmm()                                       # build the object hypotheses with gmms
+    P._build_relation_hyp()                         # keeps track of relations and words    P.hyp_relation
+    P._build_motion_hyp()                           # keepps track of motion and words      P.hyp_motion
+
+    #########################################################################################################
+    #   Testing hypotheses                                                                                  #
+    #########################################################################################################
+
+    P._test_relation_hyp()                          # self.hyp_relation_pass
+    P._test_motion_hyp()                            # self.hyp_motion_pass
+    P._test_obj_hyp()                               # self.hyp_language_pass > .8
+    P._combine_language_hyp()                          # combine object, relations and motion hypotheses in one place.
     P._filter_phrases()                             # remove larger phrases
 
     #P._test_language_hyp()                          # self.hyp_language_pass > .98
@@ -52,8 +63,10 @@ for scan in range(1):
     # how to udintify it's target location?! if any ?
     # should I keep the assumption that verbs don't span in a sentence !?
 
-    P._print_results()
+    #P._print_results()
     print '**================= end of scene ===================**'
+    if scan == 1:
+        break
 
 #print P.pcfg1
 #for word in P.hyp_language_pass:

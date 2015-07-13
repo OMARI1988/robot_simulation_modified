@@ -43,8 +43,10 @@ class process_data():
         self.pass_distance          = .25                       # distance test for how much igmms match
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
         self.p_obj_pass             = .7                        # for object
-        self.p_relation_pass        = .92                       # for both relation and motion
+        self.p_relation_pass        = .96                       # for both relation and motion
+
     #--------------------------------------------------------------------------------------------------------#
+    # read the sentences and data from file
     def _read(self,scene):
         self.scene = scene
         print 'reading scene number:',self.scene
@@ -81,36 +83,23 @@ class process_data():
             self.Data['G'][data[o+2].split(':')[0]] = np.asarray(map(float,data[o+2].split(':')[1].split(',')[:-1]))  #z
 
     #--------------------------------------------------------------------------------------------------------#
-    def _fix_sentences(self):
-        for i in self.S:
-            self.S[i] = self.S[i].replace("  ", " ")
-            self.S[i] = self.S[i].replace(".", "")
-
-    #--------------------------------------------------------------------------------------------------------#
-    def _more_fix_sentences(self):
-        for i in self.S:
-            self.S[i] = self.S[i].replace("-", " ")
-            self.S[i] = self.S[i].replace("/", " ")
-            self.S[i] = self.S[i].replace("!", "")
-            self.S[i] = self.S[i].replace("(", "")
-            self.S[i] = self.S[i].replace(")", "")
-            self.S[i] = self.S[i].replace("?", "")
-
-    #--------------------------------------------------------------------------------------------------------#
+    # print sentences on terminal
     def _print_scentenses(self):
         for count,i in enumerate(self.S):
             print count,'-',self.S[i]
         print '--------------------------'
 
     #--------------------------------------------------------------------------------------------------------#
+    # correcting motion planning simulation
     def _fix_data(self):
-        # correction to Data removing 20 and 40
+        # correction to Data removing the step
         for i in self.Data:
             self.Data[i]['x'] = np.delete(self.Data[i]['x'],[self.step,2*self.step])
             self.Data[i]['y'] = np.delete(self.Data[i]['y'],[self.step,2*self.step])
             self.Data[i]['z'] = np.delete(self.Data[i]['z'],[self.step,2*self.step])
 
     #--------------------------------------------------------------------------------------------------------#
+    # find phrases and words for each sentence
     def _find_unique_words(self):
         self.phrases = {}                       # hold the entire phrase up to a certain number of words
         self.words = {}                         # hold the list of independent words in a sentence
@@ -296,6 +285,7 @@ class process_data():
         #if df not in self.locations: self.locations.append(df)
 
     #--------------------------------------------------------------------------------------------------------#
+    # find the transitions for touch and motion
     def _transition(self):
         # comput the transition intervals for motion
         self.motion = [self.Data[self.m_obj]['motion'][0]]
@@ -320,11 +310,13 @@ class process_data():
         self.transition['all'] = sorted(self.transition['all'])
 
     #--------------------------------------------------------------------------------------------------------#
+    # group touch and motion objects
     def _grouping(self):
         self.G_motion = self._grouping_template(self.transition['motion'],self.motion_all)
         self.G_touch = self._grouping_template(self.transition['touch'],self.touch_all)
 
     #-------------------------------------------------#
+    # sub funtion
     def _grouping_template(self,transition,feature):
         G_all = {}
         for T in transition:
@@ -346,6 +338,7 @@ class process_data():
         return G_all
 
     #--------------------------------------------------------------------------------------------------------#
+    # compute unique color and shape for every scene
     def _compute_unique_color_shape(self):
         self.unique_colors = []
         self.unique_shapes = []
@@ -358,6 +351,7 @@ class process_data():
                 if s not in self.unique_shapes: self.unique_shapes.append(s)
 
     #--------------------------------------------------------------------------------------------------------#
+    # compute unique motion for every scene
     def _compute_unique_motion(self):
         self.unique_motions = []
         self.total_motion = {}
@@ -376,6 +370,7 @@ class process_data():
                 else:                               self.total_motion[i-1][C] += 1
 
     #--------------------------------------------------------------------------------------------------------#
+    # compute uniqe direction for every scene
     def _compute_unique_direction(self):
         self.unique_direction = []
         for i in self.dir_touch_m_i:
@@ -384,6 +379,7 @@ class process_data():
             if i not in self.unique_direction:  self.unique_direction.append(i)
 
     #--------------------------------------------------------------------------------------------------------#
+    # compute unique location for the moving object
     def _compute_unique_location(self):
         self.unique_locations = []
         for i in self.locations_m_i:
@@ -392,6 +388,7 @@ class process_data():
             if i not in self.unique_locations:  self.unique_locations.append(i)
 
     #--------------------------------------------------------------------------------------------------------#
+    # making simulation as real world
     def _convert_color_shape_location_to_gmm(self,plot):
         #self.unique_colors = []
         #self.unique_shapes = []
@@ -458,10 +455,12 @@ class process_data():
         self.gmm_M['location'] = copy.deepcopy(gmm_l)
 
     #--------------------------------------------------------------------------------------------------------#
+    # To Do !
     def _convert_direction_to_gmm(self,plot):
         print self.unique_direction
 
     #--------------------------------------------------------------------------------------------------------#
+    # sub function for _convert_color_shape_location_to_gmm
     def _bic_gmm(self,points,plot):
         gmm1 = {}
         lowest_bic = np.infty
@@ -560,8 +559,9 @@ class process_data():
                             self.gmm_obj[word][f]['gmm'] = copy.deepcopy(gmm_N)
                             self.gmm_obj[word][f]['N'] += M
 
-    #----------------------------------------------------------------------------------------------------------------#
+    #--------------------------------------------------------------------------------------------------------#
     # 3.2 Testing for equality to a mean vector
+    # To Do sub function for _build_obj_hyp_igmm
     def Mean_Test(self, x_mean, mean, S):
         # compute sample mean
         d = len(x_mean)
@@ -580,11 +580,12 @@ class process_data():
     	return p_value
 
     #--------------------------------------------------------------------------------------------------------#
+    # sub funtion to compute counting probability
     def _probability(self,count,value):
         P = (value/count)*(1.0/np.exp(self.p_parameter/count))
         return P
 
-    #----------------------------------------------------------------------------------------------------------------#
+    #--------------------------------------------------------------------------------------------------------#
     # 3.3.1 Merging Components
     def _update_gmm(self,gmm1, gmm2, j, k, N, M, Mk):
         mu_j = gmm1[j]['mean']
@@ -607,7 +608,7 @@ class process_data():
         gmm1[j]['covar'] = S
         return gmm1
 
-    #----------------------------------------------------------------------------------------------------------------#
+    #--------------------------------------------------------------------------------------------------------#
     # 3.3.1 Adding Components
     def _add_gmm(self, gmm1, gmm2, i):
             new_key = np.max(gmm1.keys())+1
