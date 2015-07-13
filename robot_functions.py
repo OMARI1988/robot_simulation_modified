@@ -7,7 +7,7 @@ from xml_functions import *
 import cv2
 import pyscreenshot as ImageGrab
 # http://www.anninaruest.com/pie/2014/07/inverse-kinematics-and-the-m100rak/
-
+from random import randint
 
 class Robot():
     #-----------------------------------------------------------------------------------------------------#     initial
@@ -88,12 +88,16 @@ class Robot():
         change_boxes = ['cubes','boxes','blocks','slabs']
         change_boxes_to = ['cylinders','cans','drums','drums']
 
-        if      self.scene % 4 < 2: c = 'nothing'
-        else:                       c = 'brown'
-        if      self.scene % 8 < 4: d = 'nothing'
-        else:                       d = 'sphere'    # orb, ball
-        if      self.scene % 2 < 1: e = 'nothing'
-        else:                       e = 'cylinder' # can,
+        a1 = randint(0,1)
+        a2 = randint(0,1)
+        a3 = randint(0,1)
+        c='nothing'
+        d='nothing'
+        e='nothing'
+        print a1,a2,a3
+        if a1:            c = 'black'
+        if a2:            d = 'sphere'    # orb, ball
+        if a3:            e = 'cylinder' # can,
 
 
         #if self.scene % 2 == 1:
@@ -106,8 +110,8 @@ class Robot():
             if e == 'cylinder':
                 _change(change_box,change_box_to)
                 _change(change_boxes,change_boxes_to)
-            if c == 'brown':
-                _change(['red','maroon'],['brown','brown'])
+            if c != 'nothing':
+                _change(['red','maroon'],['black','black'])
 
         # change scenes
         I = self.Data['scenes'][self.scene]['initial']
@@ -142,7 +146,7 @@ class Robot():
                     self.Data['layouts'][1000+F][obj]['shape'] = 'sphere'
 
 
-        if c == 'brown':
+        if c != 'nothing':
             for obj in self.Data['layouts'][1000+I]:
                 if self.Data['layouts'][1000+I][obj]['color']=='red':
                     self.Data['layouts'][1000+I][obj]['color'] = c
@@ -210,19 +214,20 @@ class Robot():
 
     #-----------------------------------------------------------------------------------------------------#     find color
     def _find_color(self,a):
-            c = (0,0,0)
-            if a == 'red': c = color.red
-            elif a == 'blue': c = color.blue
-            elif a == 'green': c = color.green
-            elif a == 'gray': c = (.6,.6,.6)
-            elif a == 'cyan': c = color.cyan
-            elif a == 'yellow': c = color.yellow
-            elif a == 'white': c = color.white
-            elif a == 'magenta': c = color.magenta
-            elif a == 'black': c = (.1,.1,.1)
-            elif a == 'brown': c = (0.55, 0.27, 0.07)
-            else: print '********* error no color match',a
-            return c
+        c = (0,0,0)
+        if a == 'red': c = color.red                #(1,0,0)
+        elif a == 'blue': c = color.blue            #(0,0,1)
+        elif a == 'green': c = color.green          #(0,1,0)
+        elif a == 'gray': c = (.5,.5,.5)            #(.6,.6,.6)
+        elif a == 'cyan': c = color.cyan
+        elif a == 'yellow': c = color.yellow
+        elif a == 'white': c = color.white
+        elif a == 'magenta': c = color.magenta
+        elif a == 'black': c = (0,0,0)
+        elif a == 'brown': c = (0.55, 0.27, 0.07)
+        else:
+            print '********* error no color match',a
+        return c
 
     #-----------------------------------------------------------------------------------------------------#     find shape
     def _find_shape(self,a):

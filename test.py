@@ -14,10 +14,6 @@ from GMM_functions import *
 from GMM_BIC import *
 from IGMM import *
 
-A = {}
-A[0] = 0
-B = A.copy()
-print B[0]
-B[0] = 1
-print B[0]
-print A[0]
+t = .1
+p = .1
+print np.sqrt((np.cos(t)*np.cos(p))**2 + (-np.sin(t)*np.cos(p))**2 + (np.sin(p))**2)

@@ -6,7 +6,7 @@ from robot_functions import *
 R = Robot()
 
 save = 0
-save = 'save'		#saving image
+#save = 'save'		#saving image
 
 #scenes = [1,2,3,4,10,11,12,205,206,901,902]
 for scene in range(1,1001):
@@ -22,4 +22,3 @@ for scene in range(1,1001):
     R._save_motion()                       # save the motion into a text file
     #R.__saveSnapshot2()
     R._clear_scene()                            # remove the objects from the scene once it's done
-

@@ -36,6 +36,11 @@ class process_data():
         self.gmm_obj = {}
         self.gmm_M = {}
 
+        # habituation parameter
+        self.p_parameter = 3.0
+        self.pass_distance = .25
+        self.pass_distance_phrases = .25
+        self.pass_threshold = .7
     #--------------------------------------------------------------------------------------------------------#
     def _read(self,scene):
         self.scene = scene
@@ -339,10 +344,12 @@ class process_data():
 
     #--------------------------------------------------------------------------------------------------------#
     def _convert_color_shape_location_to_gmm(self,plot):
-        self.unique_colors = []
-        self.unique_shapes = []
-        self.unique_locationss = []
+        #self.unique_colors = []
+        #self.unique_shapes = []
+        unique_locations = []
         self.gmm_M = {}
+        # more real simulation but more time !
+        """
         for i in self.Data:
             if i != 'G':
                 for k in range(10):
@@ -361,25 +368,49 @@ class process_data():
                     if s>1:      s-=2*np.abs(r[0])
                     self.unique_colors.append(C)
                     self.unique_shapes.append(s)
+        """
+        # less real simulation but more quick
+        unique_colors = []
+        for color in self.unique_colors:
+            for k in range(10):
+                r = np.random.normal(0, .005, 3)
+                c = r+color
+                for j,c1 in enumerate(c):
+                    if c1<0:      c[j]+=2*np.abs(r[j])
+                    if c1>1:      c[j]-=2*np.abs(r[j])
+                C = (c[0],c[1],c[2])
+                unique_colors.append(C)
+        unique_shapes = []
+        for shape in self.unique_shapes:
+            for k in range(10):
+                r = np.random.normal(0, .005, 1)
+                s = r[0]+shape
+                if s<0:      s+=2*np.abs(r[0])
+                if s>1:      s-=2*np.abs(r[0])
+                unique_shapes.append(s)
 
         # just a note to should reverce x and y in testing
         for i,l in enumerate(self.unique_locations):
                 l = [l[0],l[1]]
                 for k in range(10):
-                    r = np.random.normal(0, .03, 2)
+                    r = np.random.normal(0, .005, 2)
                     l += r
                     for j,l1 in enumerate(l):
                         if l1<0:      l[j]+=2*np.abs(r[j])
                         if l1>7:      l[j]-=2*np.abs(r[j])
                     L = (l[0]/7.0,l[1]/7.0)
-                    self.unique_locationss.append(L)
+                    unique_locations.append(L)
 
-        gmm_c = self._bic_gmm(self.unique_colors,plot)
-        gmm_s = self._bic_gmm(self.unique_shapes,plot)
-        gmm_l = self._bic_gmm(self.unique_locationss,plot)
+        gmm_c = self._bic_gmm(unique_colors,plot)
+        gmm_s = self._bic_gmm(unique_shapes,plot)
+        gmm_l = self._bic_gmm(unique_locations,plot)
         self.gmm_M['color'] = copy.deepcopy(gmm_c)
         self.gmm_M['shape'] = copy.deepcopy(gmm_s)
         self.gmm_M['location'] = copy.deepcopy(gmm_l)
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _convert_direction_to_gmm(self,plot):
+        print self.unique_direction
 
     #--------------------------------------------------------------------------------------------------------#
     def _bic_gmm(self,points,plot):
@@ -396,6 +427,7 @@ class process_data():
         best_gmm, bic = gmm_bic(X, k, cv_types)
         if plot:
             plot_data(X, best_gmm, bic, k, cv_types,0, 1)
+            #plt.show()
             plt.savefig("/home/omari/Datasets/robot_modified/clusters/" + str(len(X[0])) + "-" + str(self.scene) +".png")
 
         for i, (mean, covar) in enumerate(zip(best_gmm.means_, best_gmm._get_covars())):
@@ -409,7 +441,7 @@ class process_data():
     def _igmm(self):
         for s in self.phrases:
             for word in self.phrases[s]:
-                #if word == 'the':
+                #if word == 'green':
                     if word not in self.gmm_obj:
                         self.gmm_obj[word] = {}
                         for f in self.gmm_M:
@@ -428,23 +460,27 @@ class process_data():
                             smallest_matrix = np.zeros((len(gmm_N),len(gmm_M)),dtype=np.float)
                             for i in gmm_N:
                                 mean_i = gmm_N[i]['mean']
+                                covar_i = gmm_N[i]['covar']
                                 m_min = np.inf
                                 m_ind = []
                                 for j in gmm_M:
                                     mean_j = gmm_M[j]['mean']
-                                    dis = np.sqrt(np.sum((mean_i-mean_j)**2))/np.sqrt(len(mean_i))
+                                    dis = self._distance_test(mean_i, mean_j)
                                     smallest_matrix[i,j] = dis
+                                    #dis1 = self.Mean_Test(mean_j,mean_i,covar_i)
+                                    #smallest_matrix[i,j] = dis1
                             for k in range(np.min((len(gmm_N),len(gmm_M)))):
                                 #print smallest_matrix
                                 i,j = np.unravel_index(smallest_matrix.argmin(), smallest_matrix.shape)
-                                #print i,j
-                                m_min = smallest_matrix[i,j]
-                                if m_min < .5:               # == 88% matching in the t-test
+                                m_max = smallest_matrix[i,j]
+                                #print m_max
+                                if m_max < self.pass_distance:               # == 75% matching in the t-test
+                                    # - .04*(1-(1.0/np.exp(15.0/N)))
                                     gmm_N = self._update_gmm(gmm_N, gmm_M, i, j, N, M, 1)
                                     if j not in accepted_ind:   accepted_ind.append(j)
                                     gmm_N[i]['N'] += 1.0
-                                    smallest_matrix[i,:] = np.inf  # row
-                                    smallest_matrix[:,j] = np.inf  # col
+                                    smallest_matrix[i,:] = +np.inf  # row
+                                    smallest_matrix[:,j] = +np.inf  # col
                             #print accepted_ind
                             """
                             #============================#
@@ -475,9 +511,28 @@ class process_data():
                             self.gmm_obj[word][f]['gmm'] = copy.deepcopy(gmm_N)
                             self.gmm_obj[word][f]['N'] += M
 
+    #----------------------------------------------------------------------------------------------------------------#
+    # 3.2 Testing for equality to a mean vector
+    def Mean_Test(self, x_mean, mean, S):
+        # compute sample mean
+        d = len(x_mean)
+        n = 10
+        # compute the sample covariance
+        S_inv = np.linalg.inv(S)
+        # computing the T squared test
+        c1 = np.transpose([mean - x_mean])
+        T = n*np.dot(np.dot(np.transpose(c1),S_inv),c1)
+        F = T[0][0]*float(n-d)/float(d*(n-1))
+        #alpha = .005 #Or whatever you want your alpha to be.
+        p_value = scipy.stats.f.pdf(F, d, n-d)
+        #result = 0
+        #if p_value>alpha:
+            #result = 1.0
+    	return p_value
+
     #--------------------------------------------------------------------------------------------------------#
     def _print_test(self):
-        tests = ['blue']
+        tests = ['red','black']
         for test in tests:
             print test
             print '==------=='
@@ -497,39 +552,23 @@ class process_data():
 
     #--------------------------------------------------------------------------------------------------------#
     def _probability(self,count,value):
-        P = (value/count)*(1.0/np.exp(1.0/count))
+        P = (value/count)*(1.0/np.exp(self.p_parameter/count))
         return P
+
     #--------------------------------------------------------------------------------------------------------#
     def _print_results(self):
-        for test in self.gmm_obj:
-            min_value = np.inf
-            min_feature = 0
-            min_gmm = 0
-            for f in self.gmm_obj[test]:
-                    gmm1 = copy.deepcopy(self.gmm_obj[test][f]['gmm'])
-                    for i in gmm1:
-                        mean = gmm1[i]['mean']
-                        covar = gmm1[i]['covar']
-                        if covar.size == 9:
-                            dis = (np.abs(covar[0][0])+np.abs(covar[1][1])+np.abs(covar[2][2]))/3
-                        if covar.size == 4:
-                            dis = (np.abs(covar[0][0])+np.abs(covar[1][1]))/2
-                        if covar.size == 1:
-                            dis = np.abs(covar[0][0])
-                        if dis<min_value:
-                            min_value = dis
-                            min_feature = f
-                            min_gmm = i
-            if self.gmm_obj[test][min_feature]['N']>20:
-                if len(test)<7: print test,'\t\t\t:', min_feature, self.gmm_obj[test][min_feature]['N'],self.gmm_obj[test][min_feature]['gmm'][min_gmm]['mean']
-                elif len(test)<15: print test,'\t\t:', min_feature, self.gmm_obj[test][min_feature]['N'], self.gmm_obj[test][min_feature]['gmm'][min_gmm]['mean']
+        print '====-----------------------------------------------------------------===='
+        for word in self.hyp_language_pass:
+            for f in self.hyp_language_pass[word]:
+                if f != 'possibilities':
+                    for value in self.hyp_language_pass[word][f]:
+                        print f,'>>>',word,value,self.hyp_language_pass[word][f][value]
 
     #----------------------------------------------------------------------------------------------------------------#
     # 3.3.1 Merging Components
     def _update_gmm(self,gmm1, gmm2, j, k, N, M, Mk):
         mu_j = gmm1[j]['mean']
         S_j = gmm1[j]['covar']
-        #pi_j = gmm1.weights_[j]
         pi_j = 1
         mu_k = gmm2[k]['mean']
         S_k = gmm2[k]['covar']
@@ -542,21 +581,133 @@ class process_data():
         mu_k = np.array(mu_k)[np.newaxis]
         S = ((N*pi_j*S_j + Mk*S_k)/(N*pi_j+Mk)) + ((N*pi_j*np.dot(mu_j.T,mu_j)+Mk*np.dot(mu_k.T,mu_k))/(N*pi_j+Mk)) - np.dot(mu.T,mu)
         # update the weight
-        #pi = ( N*pi_j + Mk )/( N + M )
         pi = 1
         # update gmm1
-        #print mu
         gmm1[j]['mean'] = mu[0]
         gmm1[j]['covar'] = S
-        #print j,'and',k,'are now merged in gmm_N and gmm2'
         return gmm1
 
     #----------------------------------------------------------------------------------------------------------------#
-    # 3.3.1 Merging Components
+    # 3.3.1 Adding Components
     def _add_gmm(self, gmm1, gmm2, i):
             new_key = np.max(gmm1.keys())+1
             gmm1[new_key] = gmm2[i]
             return gmm1
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _test_language_gmm(self):
+        self.feature_pass = {}
+        hyp_language_pass = {}
+        checked = []
+        for n in range(1,self.n_word+1):
+            for s in self.phrases:
+                for word in self.phrases[s]:
+                    if word not in checked:
+                        checked.append(word)
+                        if len(word.split(' ')) == n:
+                            for f in self.gmm_obj[word]:
+                                N = self.gmm_obj[word][f]['N']
+                                for i in self.gmm_obj[word][f]['gmm']:
+                                    value = self.gmm_obj[word][f]['gmm'][i]['mean']
+                                    count = self.gmm_obj[word][f]['gmm'][i]['N']
+                                    p = self._probability(N,count)
+                                    if p >self.pass_threshold:
+                                        #print f,'>>>',word,value,p
+                                        if word not in hyp_language_pass:
+                                            hyp_language_pass[word] = {}
+                                            hyp_language_pass[word]['possibilities'] = 1
+                                        else:
+                                            hyp_language_pass[word]['possibilities'] += 1
+                                        if f not in hyp_language_pass[word]:
+                                            hyp_language_pass[word][f] = {}
+                                        hyp_language_pass[word][f][tuple(value)] = p
+        for word in hyp_language_pass:
+            self.hyp_language_pass[word] = copy.deepcopy(hyp_language_pass[word])
+
+        ### this is just a test
+        self.hyp_language_pass = copy.deepcopy(hyp_language_pass)
+    #--------------------------------------------------------------------------------------------------------#
+    def _filter_phrases(self):
+        phrases_to_remove = {}                                                     # this contains the list of phrases that are already described in smaller phrases
+        hyp = self.hyp_language_pass
+        checked = []
+        for s in self.phrases:
+            for word in self.phrases[s]:
+                if word not in checked:
+                    checked.append(word)
+                    if word in hyp:
+                        words = self._get_phrases(word)
+                        for i in words:
+                            for feature in hyp[word]:
+                                if feature == 'possibilities': continue
+                                for p1 in hyp[word][feature]:
+                                    score = []
+                                    matching = {}
+                                    for sub_phrase in words[i]:
+                                        score.append(0)
+                                        if sub_phrase in hyp:
+                                            if feature in hyp[sub_phrase]:
+                                                for p2 in hyp[sub_phrase][feature]:
+                                                    m1 = np.asarray(list(p1))
+                                                    m2 = np.asarray(list(p2))
+                                                    if self._distance_test(m1,m2)<self.pass_distance_phrases:
+                                                        score[-1] = 1
+                                                        matching[sub_phrase] = p2
+                                    N = float(np.sum(score))/float(len(words[i]))
+                                    print N
+                                    # case 1 if N == 1 it means I should remove sub phrases
+                                    # case 2 if N == 0 I should keep everything
+                                    # case 3 if N < 1  I should remove phrase
+                                    if N == 1:
+                                        for key in matching:
+                                            if key not in phrases_to_remove:            phrases_to_remove[key] = {}
+                                            if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
+                                            if matching[key] not in phrases_to_remove[key][feature]:
+                                                phrases_to_remove[key][feature].append(matching[key])
+                                    elif N == 0:
+                                        pass
+                                    else:
+                                        print '##########################################################################',word,p1
+                                        if word not in phrases_to_remove:               phrases_to_remove[word] = {}
+                                        if feature not in phrases_to_remove[word]:      phrases_to_remove[word][feature] = []
+                                        if p1 not in phrases_to_remove[word][feature]:
+                                            phrases_to_remove[word][feature].append(p1)
+        print phrases_to_remove.keys()
+        for word in phrases_to_remove:
+            for feature in phrases_to_remove[word]:
+                for key in phrases_to_remove[word][feature]:
+                    self._remove_phrase(word, feature, key)
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _remove_phrase(self, p, f, p_remove):
+        # p is the word
+        # f is the feature
+        # p_remove is the key in the feature in the word
+        # remove a phrase from self.language_hyp_pass
+        self.hyp_language_pass[p][f].pop(p_remove, None)
+        if len(self.hyp_language_pass[p][f].keys()) == 0:
+            self.hyp_language_pass[p].pop(f,None)
+        self.hyp_language_pass[p]['possibilities'] -= 1
+        if self.hyp_language_pass[p]['possibilities'] == 0:
+            self.hyp_language_pass.pop(p,None)
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _distance_test(self,m1,m2):
+        return np.sqrt(np.sum((m1-m2)**2))/np.sqrt(len(m1))
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _get_phrases(self,word):
+        # get all possible combination of sub phrases for a phrase
+        words = {}
+        w = word.split(' ')
+        n = len(w)
+        if n == 2:
+            words[0] = [w[0],w[1]]
+        elif n == 3:
+            words[0] = [w[0],w[1],w[2]]
+            words[1] = [' '.join(w[0:2]),w[2]]
+            words[2] = [w[0],' '.join(w[1:3])]
+        return words
 
     #--------------------------------------------------------------------------------------------------------#
     def _compute_unique_color_shape(self):
