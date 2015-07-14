@@ -8,10 +8,10 @@ import time
 P = process_data()
 plot = 0
 
-for scan in range(2):
+for scan in range(1):
   print 'scan number :',scan
   #for scene in range(1,58):
-  for scene in range(1,1000):
+  for scene in range(1,14):
     if scene in [891,892]: continue
     #ts = time.time()
     P._read(scene)                                  # Objects, Graph, Sentences
@@ -46,11 +46,21 @@ for scan in range(2):
 
     P._test_relation_hyp()                          # self.hyp_relation_pass
     P._test_motion_hyp()                            # self.hyp_motion_pass
-    P._test_obj_hyp()                               # self.hyp_language_pass > .8
-    P._combine_language_hyp()                          # combine object, relations and motion hypotheses in one place.
-    P._filter_phrases()                             # remove larger phrases
+    P._test_obj_hyp()                               # self.hyp_language_pass > .7
+    P._combine_language_hyp()                       # combine object, relations and motion hypotheses in one place.
+    P._filter_phrases()                             # remove larger phrases (and small phrases commented) = self.hyp_language_pass
 
-    #P._test_language_hyp()                          # self.hyp_language_pass > .98
+    #########################################################################################################
+    #   Comparing language hypotheses to scene                                                              #
+    #########################################################################################################
+
+    P._get_all_valid_combinations()
+
+
+    #########################################################################################################
+    #   Build the grammar                                                                                   #
+    #########################################################################################################
+
     #P._build_parser()                               #
 
     #P._test_sentence_hyp()                          # test if the whole sentence make sense
@@ -63,8 +73,9 @@ for scan in range(2):
     # how to udintify it's target location?! if any ?
     # should I keep the assumption that verbs don't span in a sentence !?
 
-    #P._print_results()
+    P._print_results()
     print '**================= end of scene ===================**'
+    print '\n\n\n'
     if scan == 1:
         break
 
@@ -102,5 +113,6 @@ for scan in range(2):
 #   self.hyp_language_pass      = a dictionery contains all the passed hypotheses from language
 #   P.gmm_M                     = a dictionery of all bic gmms for all features
 #   P.M                         = a dictionery for all M values of each gmm of each feature
+#   self.hyp_language_pass      = a dictionery of all valid hypotheses in language
 #
 ##############################################################################################################

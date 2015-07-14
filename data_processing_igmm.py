@@ -87,7 +87,7 @@ class process_data():
     def _print_scentenses(self):
         for count,i in enumerate(self.S):
             print count,'-',self.S[i]
-        print '--------------------------'
+        print '====-----------------------------------------------------------------===='
 
     #--------------------------------------------------------------------------------------------------------#
     # correcting motion planning simulation
@@ -218,6 +218,7 @@ class process_data():
         self.touch_m = np.zeros((n,self.frames),dtype=np.uint8)
         counter = 0
         k1 = self.m_obj
+
         for i in range(len(self.keys)):
             k2 = self.keys[i]
             if k2 != k1 and k2 != 'G':
@@ -717,6 +718,7 @@ class process_data():
     def _combine_language_hyp(self):
         ### this is just a test
         self.hyp_language_pass = {}
+        self.hyp_all_features = []
         self._combine_hyp(self.hyp_language_pass,self.hyp_obj_pass)
         self._combine_hyp(self.hyp_language_pass,self.hyp_relation_pass)
         self._combine_hyp(self.hyp_language_pass,self.hyp_motion_pass)
@@ -732,6 +734,7 @@ class process_data():
                 A[word]['possibilities'] += B[word]['possibilities']
                 for f in B[word]:
                     if f != 'possibilities':
+                        if f not in self.hyp_all_features:      self.hyp_all_features.append(f)
                         if len(B[word][f]) > 1:
                             C = copy.deepcopy(B[word][f])
                             maxval = max(C.iteritems(), key=operator.itemgetter(1))[1]
@@ -739,9 +742,12 @@ class process_data():
                             A[word][f] = {}
                             for key in keys:
                                 A[word][f][key] = C[key]
-                        A[word][f] = copy.deepcopy(B[word][f])
+                        else:
+                            A[word][f] = copy.deepcopy(B[word][f])
 
     #--------------------------------------------------------------------------------------------------------#
+    # remove sub phrases and bigger phrases based on their meanings
+    # NOTE: this won't remove sub phrases now it has been commented
     def _filter_phrases(self):
         phrases_to_remove = {}                                                     # this contains the list of phrases that are already described in smaller phrases
         hyp = self.hyp_language_pass
@@ -776,10 +782,11 @@ class process_data():
                                     # case 3 if N < 1  I should remove phrase
                                     if N == 1:
                                         for key in matching:
-                                            if key not in phrases_to_remove:            phrases_to_remove[key] = {}
-                                            if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
-                                            if matching[key] not in phrases_to_remove[key][feature]:
-                                                phrases_to_remove[key][feature].append(matching[key])
+                                            pass
+                                            # if key not in phrases_to_remove:            phrases_to_remove[key] = {}
+                                            # if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
+                                            # if matching[key] not in phrases_to_remove[key][feature]:
+                                            #    phrases_to_remove[key][feature].append(matching[key])
                                     elif N > 0:
                                         #print '##########################################################################',word,p1
                                         if word not in phrases_to_remove:               phrases_to_remove[word] = {}
@@ -793,11 +800,12 @@ class process_data():
                     self._remove_phrase(word, feature, key)
 
     #--------------------------------------------------------------------------------------------------------#
+    # sub function
     def _remove_phrase(self, p, f, p_remove):
         # p is the word
         # f is the feature
         # p_remove is the key in the feature in the word
-        # remove a phrase from self.language_hyp_pass
+        # remove a phrase from self.hyp_language_pass
         self.hyp_language_pass[p][f].pop(p_remove, None)
         if len(self.hyp_language_pass[p][f].keys()) == 0:
             self.hyp_language_pass[p].pop(f,None)
@@ -806,19 +814,11 @@ class process_data():
             self.hyp_language_pass.pop(p,None)
 
     #--------------------------------------------------------------------------------------------------------#
-    def _print_results(self):
-        print '====-----------------------------------------------------------------===='
-        for word in self.hyp_language_pass:
-            for f in self.hyp_language_pass[word]:
-                if f != 'possibilities':
-                    for value in self.hyp_language_pass[word][f]:
-                        print f,'>>>',word,value,self.hyp_language_pass[word][f][value]
-
-    #--------------------------------------------------------------------------------------------------------#
     def _distance_test(self,m1,m2):
         return np.sqrt(np.sum((m1-m2)**2))/np.sqrt(len(m1))
 
     #--------------------------------------------------------------------------------------------------------#
+    # sub function to get all possible phrases that can make a certain phrase
     def _get_phrases(self,word):
         # get all possible combination of sub phrases for a phrase
         words = {}
@@ -833,85 +833,132 @@ class process_data():
         return words
 
     #--------------------------------------------------------------------------------------------------------#
-    def _build_obj_hyp(self):
-
+    # generate all possible sentences that have hypotheses in language hypotheses pass
+    def _get_all_valid_combinations(self):
+        # get the hypotheses sentence by sentence
+        self.valid_combinations = {}
         for s in self.phrases:
-            for word in self.phrases[s]:
-                if word not in self.hyp_language:
-                    self.hyp_language[word] = {}
-                    self.hyp_language[word]['count'] = 0
-                    self.hyp_language[word]['action'] = {}
-                    self.hyp_language[word]['color'] = {}
-                    self.hyp_language[word]['shape'] = {}
-                    self.hyp_language[word]['location'] = {}
-                self.hyp_language[word]['count'] += 1
-
-                """
-                for action in self.unique_motions:
-                    if action not in self.hyp_language[word]['action']:   self.hyp_language[word]['action'][action] = 1
-                    else: self.hyp_language[word]['action'][action] += 1
-                """
-                ok = 1
-                if 'color' in self.feature_pass:
-                    for i in word.split(' '):
-                        if len(word.split(' '))>1 and i in self.feature_pass['color']: ok=0
-                if ok:
-                    for color in self.unique_colors:
-                        if color not in self.hyp_language[word]['color']:   self.hyp_language[word]['color'][color] = 1
-                        else: self.hyp_language[word]['color'][color] += 1
-
-                ok = 1
-                if 'shape' in self.feature_pass:
-                    for i in word.split(' '):
-                        if len(word.split(' '))>1 and i in self.feature_pass['color']: ok=0
-                if ok:
-                    for shape in self.unique_shapes:
-                        if shape not in self.hyp_language[word]['shape']:   self.hyp_language[word]['shape'][shape] = 1
-                        else: self.hyp_language[word]['shape'][shape] += 1
-
-                #for direction in self.directions:
-                #    if direction not in self.hyp_language[word]['direction']:   self.hyp_language[word]['direction'][direction] = 1
-                #    else: self.hyp_language[word]['direction'][direction] += 1
-
-                for location in self.unique_locations:
-                    if location not in self.hyp_language[word]['location']:   self.hyp_language[word]['location'][location] = 1
-                    else: self.hyp_language[word]['location'][location] += 1
-
-        #if 'bottom left corner' in self.hyp_language:
-        #    print self.hyp_language['bottom left corner']
+            self.valid_combinations[s] = {}
+            # get the words that have hypotheses and are in the sentence
+            phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[s]))
+            print phrases_with_hyp
 
     #--------------------------------------------------------------------------------------------------------#
-    def _test_language_hyp(self):
-        self.feature_pass = {}
-        self.hyp_language_pass = {}
-        for word in self.hyp_language:
-            count = float(self.hyp_language[word]['count'])
-            for j in self.hyp_language[word]:
-                if j != 'count':
-                    for k in self.hyp_language[word][j]:
-                        if j == 'location': prob = self._probability_loc(count,self.hyp_language[word][j][k])
-                        else:               prob = self._probability(count,self.hyp_language[word][j][k])
-                        if prob>.98:
-                            if word not in self.hyp_language_pass:
-                                self.hyp_language_pass[word] = {}
-                                self.hyp_language_pass[word]['possibilities'] = 0
-                                self.hyp_language_pass[word]['all'] = []
-                            if j not in self.hyp_language_pass[word]:
-                                self.hyp_language_pass[word][j] = []
-                            self.hyp_language_pass[word]['possibilities'] += 1
-                            self.hyp_language_pass[word][j].append((k,prob))
-                            self.hyp_language_pass[word]['all'].append((j,k))
-                            if j not in self.feature_pass:
-                                self.feature_pass[j] = []
-                            self.feature_pass[j].append(word)
-                            #print word,count
-                            #print j+':',k,prob
-                            #print '==---------------------=='
+    # generate all possible sentences that have hypotheses in language hypotheses pass
+    def _test_all_valid_combinations(self):
+        # test the hypotheses sentence by sentence
+        if 'motion' in self.hyp_all_features:
+            for s in self.phrases:
+                # get the words that have hypotheses and are in the sentence
+                phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[s]))
+                # generate all subsets (pick from 1 word to n words) with no repatetion in phrases
+                print self.S[s]
+                counter = 1
+                for L in range(1, len(phrases_with_hyp)+1):
+                    for subset in itertools.combinations(phrases_with_hyp, L):
+                        subset_words = []
+                        no_go = 0
+                        print counter," processed\r",
+                        counter+=1
+                        for sub in subset:
+                            for sub2 in sub.split(' '):
+                                if sub2 in subset_words:    no_go = 1
+                                else:                       subset_words.append(sub2)
+                                if no_go:                   continue
+                            if no_go:                   continue
+                        if no_go:                   continue
+                        #print subset
+
+
 
     #--------------------------------------------------------------------------------------------------------#
-    def _probability_loc(self,count,value):
-        P = (value/count)*(1.0/np.exp(1/count))
-        return P
+    # sub function to get all possible phrases that can make a certain phrase
+    def _get_phrases2(self,sentence):
+        # get all possible combination of sub phrases for a phrase
+        phrases = {}
+        w = sentence.split(' ')
+        n = len(w)
+        if n == 2:
+            phrases[0] = [w[0],w[1]]
+        elif n == 3:
+            phrases[0] = [w[0],w[1],w[2]]
+            phrases[1] = [' '.join(w[0:2]),w[2]]
+            phrases[2] = [w[0],' '.join(w[1:3])]
+        return phrases
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _test_sentence_hyp(self):
+        # test the hypotheses sentence by sentence
+        for scene in self.words:
+            # get the words that have hypotheses and are in the sentence
+            words_with_hyp =  list(set(self.hyp_language_pass.keys()).intersection(self.words[scene]))
+            # generate all subsets (pick from 1 word to n words)
+            for L in range(1, len(words_with_hyp)+1):
+                for subset in itertools.combinations(words_with_hyp, L):
+                    self._test(subset,scene)
+                    #print '==------== subset'
+                    #print
+            #print '==-------------== sentence'
+            #print
+
+    #------------------------------------------------------------------#
+    def _test(self,subset,scene):
+        # this function tests one susbet of words at a time
+        sentence = self.S[scene].split(' ')
+        all_possibilities = []      # all the possibilities gathered in one list
+        for word in subset:
+            all_possibilities.append(self.hyp_language_pass[word]['all'])
+        # find the actual possibilities for every word in the subset
+        for element in itertools.product(*all_possibilities):
+            indices = {}
+            hyp_motion = {}
+            motion_pass = 0
+            # build the indices
+            for k,word in enumerate(subset):
+                indices[word] = [i for i, x in enumerate(sentence) if x == word]
+
+            # no 2 words are allowed to mean the same thing
+            the_same = 0
+            for i in element:
+                if element.count(i)>1:
+                    the_same = 1
+            if the_same:
+                continue
+
+            # 1) does actions match ?   it should match 100%
+            for k,word in enumerate(subset):
+                if element[k][0] == 'action':
+                    a = element[k][1]
+                    if a not in hyp_motion:     hyp_motion[a] = len(indices[word])
+                    else:                       hyp_motion[a] += len(indices[word])
+            for i in self.total_motion:
+                if self.total_motion[i] == hyp_motion:
+                    motion_pass = 1
+                #else: print self.scene,'fail'
+
+            # 2) parse the sentence
+            if motion_pass:
+                parsed_sentence = []
+                value_sentence = []
+                for word in sentence:
+                    if word in subset:
+                        k = subset.index(word)
+                        parsed_sentence.append(element[k][0])
+                        value_sentence.append(element[k][1])
+                    else:
+                        parsed_sentence.append('_')
+                        value_sentence.append('_')
+                print sentence
+                print self.scene,parsed_sentence
+                print self.scene,value_sentence
+
+                #print indices,word,element[k]
+                #G_test = nx.Graph()
+            #print '==--== hyp'
+
+
+
+
 
     #--------------------------------------------------------------------------------------------------------#
     def _build_parser(self):
@@ -1033,75 +1080,46 @@ class process_data():
             self.pcfg1 = PCFG.fromstring(self.grammar)
             print self.pcfg1
 
+
+
     #--------------------------------------------------------------------------------------------------------#
-    def _test_sentence_hyp(self):
-        # test the hypotheses sentence by sentence
-        for scene in self.words:
-            # get the words that have hypotheses and are in the sentence
-            words_with_hyp =  list(set(self.hyp_language_pass.keys()).intersection(self.words[scene]))
-            # generate all subsets (pick from 1 word to n words)
-            for L in range(1, len(words_with_hyp)+1):
-                for subset in itertools.combinations(words_with_hyp, L):
-                    self._test(subset,scene)
-                    #print '==------== subset'
-                    #print
-            #print '==-------------== sentence'
-            #print
+    def _print_results(self):
+        print '====-----------------------------------------------------------------===='
+        for word in self.hyp_language_pass:
+            for f in self.hyp_language_pass[word]:
+                if f != 'possibilities':
+                    for value in self.hyp_language_pass[word][f]:
+                        if len(f) < 7:
+                            print f,'\t\t>>>\t',
+                        elif len(f) < 15:
+                            print f,'\t>>>\t',
+                        if len(word) < 7:
+                            print word,'\t\t\t>>>\t',
+                        elif len(word) < 15:
+                            print word,'\t\t>>>\t',
+                        elif len(word) < 23:
+                            print word,'\t>>>\t',
+                        print '(',
+                        if len(value) == 1:
+                            print("{0:.3f}".format(value[0])),
+                        if len(value) == 2:
+                            print("{0:.3f}".format(value[0])),',',
+                            print("{0:.3f}".format(value[1])),
+                        if len(value) == 3:
+                            print("{0:.3f}".format(value[0])),',',
+                            print("{0:.3f}".format(value[1])),',',
+                            print("{0:.3f}".format(value[2])),
+                        print ')',
+                        print("{0:.3f}".format( self.hyp_language_pass[word][f][value]))
 
-    #------------------------------------------------------------------#
-    def _test(self,subset,scene):
-        # this function tests one susbet of words at a time
-        sentence = self.S[scene].split(' ')
-        all_possibilities = []      # all the possibilities gathered in one list
-        for word in subset:
-            all_possibilities.append(self.hyp_language_pass[word]['all'])
-        # find the actual possibilities for every word in the subset
-        for element in itertools.product(*all_possibilities):
-            indices = {}
-            hyp_motion = {}
-            motion_pass = 0
-            # build the indices
-            for k,word in enumerate(subset):
-                indices[word] = [i for i, x in enumerate(sentence) if x == word]
 
-            # no 2 words are allowed to mean the same thing
-            the_same = 0
-            for i in element:
-                if element.count(i)>1:
-                    the_same = 1
-            if the_same:
-                continue
 
-            # 1) does actions match ?   it should match 100%
-            for k,word in enumerate(subset):
-                if element[k][0] == 'action':
-                    a = element[k][1]
-                    if a not in hyp_motion:     hyp_motion[a] = len(indices[word])
-                    else:                       hyp_motion[a] += len(indices[word])
-            for i in self.total_motion:
-                if self.total_motion[i] == hyp_motion:
-                    motion_pass = 1
-                #else: print self.scene,'fail'
 
-            # 2) parse the sentence
-            if motion_pass:
-                parsed_sentence = []
-                value_sentence = []
-                for word in sentence:
-                    if word in subset:
-                        k = subset.index(word)
-                        parsed_sentence.append(element[k][0])
-                        value_sentence.append(element[k][1])
-                    else:
-                        parsed_sentence.append('_')
-                        value_sentence.append('_')
-                print sentence
-                print self.scene,parsed_sentence
-                print self.scene,value_sentence
 
-                #print indices,word,element[k]
-                #G_test = nx.Graph()
-            #print '==--== hyp'
+
+
+
+
 
     #--------------------------------------------------------------------------------------------------------#
     def _plot_graphs(self):
