@@ -8,6 +8,7 @@ from GMM_functions import *
 from GMM_BIC import *
 from IGMM import *
 import copy
+import colorsys
 
 class process_data():
     def __init__(self):
@@ -37,6 +38,8 @@ class process_data():
         #gmm
         self.gmm_obj                = {}
         self.gmm_M                  = {}
+        self.cv_types = ['spherical', 'tied', 'diag', 'full']
+        # self.cv_types = ['full']
 
         # habituation parameter
         self.p_parameter            = 3.0                       # probability parameter for exp function in habituation
@@ -391,30 +394,39 @@ class process_data():
     #--------------------------------------------------------------------------------------------------------#
     # making simulation as real world
     def _convert_color_shape_location_to_gmm(self,plot):
-        #self.unique_colors = []
-        #self.unique_shapes = []
+        unique_colors = []
+        unique_shapes = []
         unique_locations = []
         self.gmm_M = {}
+
         # more real simulation but more time !
-        """
         for i in self.Data:
             if i != 'G':
-                for k in range(10):
+                for k in range(50):
                     c = self.Data[i]['color']
-                    r = np.random.normal(0, .03, 3)
+                    r = np.random.normal(0, .005, 3)
                     c += r
-                    for j,c1 in enumerate(c):
-                        if c1<0:      c[j]+=2*np.abs(r[j])
-                        if c1>1:      c[j]-=2*np.abs(r[j])
-                    C = (c[0],c[1],c[2])
-
+                    hsv = colorsys.rgb_to_hsv(c[0], c[1], c[2])
+                    r1 = np.random.normal(0, .06, 1)
+                    r2 = np.random.normal(0, .05, 1)
+                    r3 = np.random.normal(0, .04, 1)
+                    h = hsv[0]*2*np.pi  + r1[0]
+                    s = hsv[1]          + r2[0]
+                    v = hsv[2]          + r3[0]
+                    if s<0:      s+=2*np.abs(r2[0])
+                    if s>1:      s-=2*np.abs(r2[0])
+                    if v<0:      v+=2*np.abs(r3[0])
+                    if v>1:      v-=2*np.abs(r3[0])
+                    x,y,z = self.hsv2xyz(h,s,v)
+                    C = (x[0],y[0],z[0])
+                    #print c,[h,s,v],C
                     s = self.Data[i]['shape']
                     r = np.random.normal(0, .03, 1)
                     s += r[0]
                     if s<0:      s+=2*np.abs(r[0])
                     if s>1:      s-=2*np.abs(r[0])
-                    self.unique_colors.append(C)
-                    self.unique_shapes.append(s)
+                    unique_colors.append(C)
+                    unique_shapes.append(s)
         """
         # less real simulation but more quick
         unique_colors = []
@@ -422,10 +434,19 @@ class process_data():
             for k in range(10):
                 r = np.random.normal(0, .005, 3)
                 c = r+color
-                for j,c1 in enumerate(c):
-                    if c1<0:      c[j]+=2*np.abs(r[j])
-                    if c1>1:      c[j]-=2*np.abs(r[j])
-                C = (c[0],c[1],c[2])
+                hsv = colorsys.rgb_to_hsv(c[0], c[1], c[2])
+                r1 = np.random.normal(0, .06, 1)
+                r2 = np.random.normal(0, .05, 1)
+                r3 = np.random.normal(0, .04, 1)
+                h = hsv[0]*2*np.pi  + r1[0]
+                s = hsv[1]          + r2[0]
+                v = hsv[2]          + r3[0]
+                if s<0:      s+=2*np.abs(r2[0])
+                if s>1:      s-=2*np.abs(r2[0])
+                if v<0:      v+=2*np.abs(r3[0])
+                if v>1:      v-=2*np.abs(r3[0])
+                x,y,z = self.hsv2xyz(h,s,v)
+                C = (x[0],y[0],z[0])
                 unique_colors.append(C)
         unique_shapes = []
         for shape in self.unique_shapes:
@@ -435,6 +456,7 @@ class process_data():
                 if s<0:      s+=2*np.abs(r[0])
                 if s>1:      s-=2*np.abs(r[0])
                 unique_shapes.append(s)
+        """
 
         # just a note to should reverce x and y in testing
         for i,l in enumerate(self.unique_locations):
@@ -455,6 +477,13 @@ class process_data():
         self.gmm_M['shape'] = copy.deepcopy(gmm_s)
         self.gmm_M['location'] = copy.deepcopy(gmm_l)
 
+    #-------------------------------------------------------------------------------------#
+    def hsv2xyz(self,H, S, V):
+    	x = [S*np.cos(H)]
+    	y = [S*np.sin(H)]
+    	z = [V]
+    	return x,y,z
+
     #--------------------------------------------------------------------------------------------------------#
     # To Do !
     def _convert_direction_to_gmm(self,plot):
@@ -471,12 +500,10 @@ class process_data():
             if X == []:         X = [point]
             else:               X = np.vstack([X,point])
         k = np.minimum(len(X),7)
-        #cv_types = ['spherical', 'tied', 'diag', 'full']
-        cv_types = ['full']
-        best_gmm, bic = gmm_bic(X, k, cv_types)
+        best_gmm, bic = gmm_bic(X, k, self.cv_types)
         if plot:
-            plot_data(X, best_gmm, bic, k, cv_types,0, 1)
-            #plt.show()
+            plot_data(X, best_gmm, bic, k, self.cv_types,0, 1)
+            plt.show()
             plt.savefig("/home/omari/Datasets/robot_modified/clusters/" + str(len(X[0])) + "-" + str(self.scene) +".png")
 
         for i, (mean, covar) in enumerate(zip(best_gmm.means_, best_gmm._get_covars())):

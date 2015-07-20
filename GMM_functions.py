@@ -60,6 +60,7 @@ def plot_data(X, best_gmm, bic, k, cv_types, GT, fig):
 	spl.legend([b[0] for b in bars], cv_types)
 
 	color_iter = find_RGB_map(clf.n_components)
+	color_iter = ['r','g','y','gray','purple']
 	# Plot the winner
 	spl = plt.subplot(2, 1, 2, projection='3d')
 	spl.cla()
@@ -77,8 +78,8 @@ def plot_data(X, best_gmm, bic, k, cv_types, GT, fig):
 		if np.size(X[0]) == 3:
 			spl.scatter([r for r in X[Y_ == i, 0]], [r for r in X[Y_ == i, 1]], [r for r in X[Y_ == i, 2]], c=color_iter[i], marker='o')
 
-	plt.xlim(-.2, 1.2)
-	plt.ylim(-.2, 1.2)
+	plt.xlim(-1.2, 1.2)
+	plt.ylim(-1.2, 1.2)
 	#plt.xticks(())
 	#plt.yticks(())
 	plt.title('Selected GMM: full model, '+str(clf.n_components)+' components')
@@ -296,7 +297,7 @@ def _getPu(A, W=None):
 
 def nearPD(A, nit=10):
     n = A.shape[0]
-    W = np.identity(n) 
+    W = np.identity(n)
 # W is the matrix used for the norm (assumed to be Identity matrix here)
 # the algorithm should work for any diagonal W
     deltaS = 0
@@ -307,5 +308,3 @@ def nearPD(A, nit=10):
         deltaS = Xk - Rk
         Yk = _getPu(Xk, W=W)
     return Yk
-
-

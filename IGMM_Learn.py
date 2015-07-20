@@ -6,12 +6,12 @@ from data_processing_igmm import *
 import time
 
 P = process_data()
-plot = 0
+plot = 1
 
 for scan in range(1):
   print 'scan number :',scan
   #for scene in range(1,58):
-  for scene in range(1,14):
+  for scene in range(23,24):
     if scene in [891,892]: continue
     #ts = time.time()
     P._read(scene)                                  # Objects, Graph, Sentences
@@ -54,7 +54,7 @@ for scan in range(1):
     #   Comparing language hypotheses to scene                                                              #
     #########################################################################################################
 
-    P._get_all_valid_combinations()
+    #P._get_all_valid_combinations()
 
 
     #########################################################################################################

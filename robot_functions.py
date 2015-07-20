@@ -492,14 +492,14 @@ class Robot():
             forward=(self.chess_shift_x-10,self.chess_shift_y,-7),
             background=(1,1,1))
         self.label = label(pos=(10,10,10), text='Scene number : ',height=20,color=(0,0,0))
-        checkerboard = ( (.3,1,.3,1,.3,1,.3,1),
-				 (1,.3,1,.3,1,.3,1,.3),
-				 (.3,1,.3,1,.3,1,.3,1),
-				 (1,.3,1,.3,1,.3,1,.3),
-		 		 (.3,1,.3,1,.3,1,.3,1),
-				 (1,.3,1,.3,1,.3,1,.3),
-				 (.3,1,.3,1,.3,1,.3,1),
-				 (1,.3,1,.3,1,.3,1,.3) )
+        checkerboard = ( (0,1,0,1,0,1,0,1),
+				 (1,0,1,0,1,0,1,0),
+				 (0,1,0,1,0,1,0,1),
+				 (1,0,1,0,1,0,1,0),
+		 		 (0,1,0,1,0,1,0,1),
+				 (1,0,1,0,1,0,1,0),
+				 (0,1,0,1,0,1,0,1),
+				 (1,0,1,0,1,0,1,0) )
         tex = materials.texture(data=checkerboard,
             mapping="sign",
             interpolate=False)
