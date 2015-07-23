@@ -44,6 +44,7 @@ class process_data():
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
         self.p_obj_pass             = .7                        # for object
         self.p_relation_pass        = .92                       # for both relation and motion
+        self.all_words = []
     #--------------------------------------------------------------------------------------------------------#
     def _read(self,scene):
         self.scene = scene
@@ -123,6 +124,7 @@ class process_data():
             phrases = []
             for i in range(len(w)):
                 if w[i]not in self.words[s]: self.words[s].append(w[i])
+                if w[i]not in self.all_words: self.all_words.append(w[i])
                 for j in range(i+1,np.min([i+1+self.n_word,len(w)+1])):
                     phrases.append(' '.join(w[i:j]))
             for i in phrases:

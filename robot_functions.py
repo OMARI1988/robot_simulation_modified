@@ -79,14 +79,14 @@ class Robot():
                     s[m] = key[i]
             self.Data['commands'][self.scene][sentence] = ' '.join(s)
 
-        change_prism = ['pyramid','prism','tetrahedron']
-        change_prism_to = ['ball','sphere','orb']
-        change_prisms = ['pyramids','prisms','tetrahedrons']
-        change_prisms_to = ['balls','spheres','orbs']
-        change_box = ['block','cube','box','slab','parallelipiped']
-        change_box_to = ['cylinder','can','drum','drum','can']
-        change_boxes = ['cubes','boxes','blocks','slabs']
-        change_boxes_to = ['cylinders','cans','drums','drums']
+        change_prism = ['pyramid','prism','tetrahedron','triangle']
+        change_prism_to = ['ball','sphere','orb','orb']
+        change_prisms = ['pyramids','prisms','tetrahedrons','triangles']
+        change_prisms_to = ['balls','spheres','orbs','orbs']
+        change_box = ['block','cube','box','slab','parallelipiped','parallelepiped']
+        change_box_to = ['cylinder','can','drum','drum','can','can']
+        change_boxes = ['cubes','boxes','blocks','slabs','parallelipipeds']
+        change_boxes_to = ['cylinders','cans','drums','drums','cans']
 
         a1 = randint(0,1)
         a2 = randint(0,1)

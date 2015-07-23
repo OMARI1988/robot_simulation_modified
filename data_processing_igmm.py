@@ -9,6 +9,12 @@ from GMM_BIC import *
 from IGMM import *
 import copy
 import colorsys
+"""
+Focus 7bibi
+el pcfg, the words that you don't know yet, keep them as a terminal. and build relations between all the word in the sentence. Once you figure out a word that belong to a feature.
+Convert all the probabilities of that terminal the feature terminal .. ! this should work !
+"""
+
 
 class process_data():
     def __init__(self):
@@ -46,7 +52,7 @@ class process_data():
         self.pass_distance          = .25                       # distance test for how much igmms match
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
         self.p_obj_pass             = .7                        # for object
-        self.p_relation_pass        = .96                       # for both relation and motion
+        self.p_relation_pass        = .8                        # for both relation and motion
 
     #--------------------------------------------------------------------------------------------------------#
     # read the sentences and data from file
@@ -394,18 +400,47 @@ class process_data():
     #--------------------------------------------------------------------------------------------------------#
     # making simulation as real world
     def _convert_color_shape_location_to_gmm(self,plot):
+        self.real = 0
         unique_colors = []
         unique_shapes = []
         unique_locations = []
         self.gmm_M = {}
 
         # more real simulation but more time !
-        for i in self.Data:
-            if i != 'G':
-                for k in range(50):
-                    c = self.Data[i]['color']
+        if self.real:
+            for i in self.Data:
+                if i != 'G':
+                    for k in range(50):
+                        c = self.Data[i]['color']
+                        r = np.random.normal(0, .005, 3)
+                        c += r
+                        hsv = colorsys.rgb_to_hsv(c[0], c[1], c[2])
+                        r1 = np.random.normal(0, .06, 1)
+                        r2 = np.random.normal(0, .05, 1)
+                        r3 = np.random.normal(0, .04, 1)
+                        h = hsv[0]*2*np.pi  + r1[0]
+                        s = hsv[1]          + r2[0]
+                        v = hsv[2]          + r3[0]
+                        if s<0:      s+=2*np.abs(r2[0])
+                        if s>1:      s-=2*np.abs(r2[0])
+                        if v<0:      v+=2*np.abs(r3[0])
+                        if v>1:      v-=2*np.abs(r3[0])
+                        x,y,z = self.hsv2xyz(h,s,v)
+                        C = (x[0],y[0],z[0])
+                        #print c,[h,s,v],C
+                        s = self.Data[i]['shape']
+                        r = np.random.normal(0, .03, 1)
+                        s += r[0]
+                        if s<0:      s+=2*np.abs(r[0])
+                        if s>1:      s-=2*np.abs(r[0])
+                        unique_colors.append(C)
+                        unique_shapes.append(s)
+        else:
+            # less real simulation but more quick
+            for color in self.unique_colors:
+                for k in range(10):
                     r = np.random.normal(0, .005, 3)
-                    c += r
+                    c = r+color
                     hsv = colorsys.rgb_to_hsv(c[0], c[1], c[2])
                     r1 = np.random.normal(0, .06, 1)
                     r2 = np.random.normal(0, .05, 1)
@@ -419,56 +454,25 @@ class process_data():
                     if v>1:      v-=2*np.abs(r3[0])
                     x,y,z = self.hsv2xyz(h,s,v)
                     C = (x[0],y[0],z[0])
-                    #print c,[h,s,v],C
-                    s = self.Data[i]['shape']
-                    r = np.random.normal(0, .03, 1)
-                    s += r[0]
+                    unique_colors.append(C)
+            for shape in self.unique_shapes:
+                for k in range(10):
+                    r = np.random.normal(0, .005, 1)
+                    s = r[0]+shape
                     if s<0:      s+=2*np.abs(r[0])
                     if s>1:      s-=2*np.abs(r[0])
-                    unique_colors.append(C)
                     unique_shapes.append(s)
-        """
-        # less real simulation but more quick
-        unique_colors = []
-        for color in self.unique_colors:
-            for k in range(10):
-                r = np.random.normal(0, .005, 3)
-                c = r+color
-                hsv = colorsys.rgb_to_hsv(c[0], c[1], c[2])
-                r1 = np.random.normal(0, .06, 1)
-                r2 = np.random.normal(0, .05, 1)
-                r3 = np.random.normal(0, .04, 1)
-                h = hsv[0]*2*np.pi  + r1[0]
-                s = hsv[1]          + r2[0]
-                v = hsv[2]          + r3[0]
-                if s<0:      s+=2*np.abs(r2[0])
-                if s>1:      s-=2*np.abs(r2[0])
-                if v<0:      v+=2*np.abs(r3[0])
-                if v>1:      v-=2*np.abs(r3[0])
-                x,y,z = self.hsv2xyz(h,s,v)
-                C = (x[0],y[0],z[0])
-                unique_colors.append(C)
-        unique_shapes = []
-        for shape in self.unique_shapes:
-            for k in range(10):
-                r = np.random.normal(0, .005, 1)
-                s = r[0]+shape
-                if s<0:      s+=2*np.abs(r[0])
-                if s>1:      s-=2*np.abs(r[0])
-                unique_shapes.append(s)
-        """
-
-        # just a note to should reverce x and y in testing
-        for i,l in enumerate(self.unique_locations):
-                l = [l[0],l[1]]
-                for k in range(10):
-                    r = np.random.normal(0, .005, 2)
-                    l += r
-                    for j,l1 in enumerate(l):
-                        if l1<0:      l[j]+=2*np.abs(r[j])
-                        if l1>7:      l[j]-=2*np.abs(r[j])
-                    L = (l[0]/7.0,l[1]/7.0)
-                    unique_locations.append(L)
+            # just a note to should reverce x and y in testing
+            for i,l in enumerate(self.unique_locations):
+                    l = [l[0],l[1]]
+                    for k in range(10):
+                        r = np.random.normal(0, .005, 2)
+                        l += r
+                        for j,l1 in enumerate(l):
+                            if l1<0:      l[j]+=2*np.abs(r[j])
+                            if l1>7:      l[j]-=2*np.abs(r[j])
+                        L = (l[0]/7.0,l[1]/7.0)
+                        unique_locations.append(L)
 
         gmm_c = self._bic_gmm(unique_colors,plot)
         gmm_s = self._bic_gmm(unique_shapes,plot)
@@ -657,13 +661,19 @@ class process_data():
                     else: self.hyp_relation[word]['direction'][direction] += 1
 
     #--------------------------------------------------------------------------------------------------------#
+    # NOTE: this one has a hack, please make sure to clear it.
     def _build_motion_hyp(self):
         for s in self.phrases:
             for word in self.phrases[s]:
+                not_ok = 1
+                for w in word.split(' '):
+                    if w in ['pick','place','put','up','down','move','put','shift','drop','take','remove']:
+                        not_ok = 0
                 if word not in self.hyp_motion:
                     self.hyp_motion[word] = {}
                     self.hyp_motion[word]['count'] = 0
                     self.hyp_motion[word]['motion'] = {}
+                if not_ok:              continue
                 if self.unique_motions != []:         self.hyp_motion[word]['count'] += 1
                 for motion in self.unique_motions:
                     if motion not in self.hyp_motion[word]['motion']:
@@ -868,65 +878,32 @@ class process_data():
             self.valid_combinations[s] = {}
             # get the words that have hypotheses and are in the sentence
             phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[s]))
-            print phrases_with_hyp
+            self.valid_combinations[s][0] = phrases_with_hyp
+            valid_com = phrases_with_hyp
+            # check in any phrase has a word repeated!
+            # for i in range(len(self.valid_combinations[s][0])-1):
+            #     for j in range(i+1,len(self.valid_combinations[s][0])):
+            #         # needs working here !
+            #         if self.valid_combinations[s][0][i] in self.valid_combinations[s][0][j]:
+            # print self.valid_combinations[s]
+            # print '---'
 
     #--------------------------------------------------------------------------------------------------------#
     # generate all possible sentences that have hypotheses in language hypotheses pass
     def _test_all_valid_combinations(self):
         # test the hypotheses sentence by sentence
         if 'motion' in self.hyp_all_features:
-            for s in self.phrases:
+            for scene in self.phrases:
                 # get the words that have hypotheses and are in the sentence
-                phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[s]))
+                phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
                 # generate all subsets (pick from 1 word to n words) with no repatetion in phrases
-                print self.S[s]
+                print self.S[scene]
                 counter = 1
-                for L in range(1, len(phrases_with_hyp)+1):
+                for L in range(2, len(phrases_with_hyp)+1):
                     for subset in itertools.combinations(phrases_with_hyp, L):
-                        subset_words = []
-                        no_go = 0
+                        self._test(subset,scene)
                         print counter," processed\r",
                         counter+=1
-                        for sub in subset:
-                            for sub2 in sub.split(' '):
-                                if sub2 in subset_words:    no_go = 1
-                                else:                       subset_words.append(sub2)
-                                if no_go:                   continue
-                            if no_go:                   continue
-                        if no_go:                   continue
-                        #print subset
-
-
-
-    #--------------------------------------------------------------------------------------------------------#
-    # sub function to get all possible phrases that can make a certain phrase
-    def _get_phrases2(self,sentence):
-        # get all possible combination of sub phrases for a phrase
-        phrases = {}
-        w = sentence.split(' ')
-        n = len(w)
-        if n == 2:
-            phrases[0] = [w[0],w[1]]
-        elif n == 3:
-            phrases[0] = [w[0],w[1],w[2]]
-            phrases[1] = [' '.join(w[0:2]),w[2]]
-            phrases[2] = [w[0],' '.join(w[1:3])]
-        return phrases
-
-    #--------------------------------------------------------------------------------------------------------#
-    def _test_sentence_hyp(self):
-        # test the hypotheses sentence by sentence
-        for scene in self.words:
-            # get the words that have hypotheses and are in the sentence
-            words_with_hyp =  list(set(self.hyp_language_pass.keys()).intersection(self.words[scene]))
-            # generate all subsets (pick from 1 word to n words)
-            for L in range(1, len(words_with_hyp)+1):
-                for subset in itertools.combinations(words_with_hyp, L):
-                    self._test(subset,scene)
-                    #print '==------== subset'
-                    #print
-            #print '==-------------== sentence'
-            #print
 
     #------------------------------------------------------------------#
     def _test(self,subset,scene):
@@ -934,6 +911,9 @@ class process_data():
         sentence = self.S[scene].split(' ')
         all_possibilities = []      # all the possibilities gathered in one list
         for word in subset:
+            for f in self.hyp_language_pass[word]:
+                print f
+
             all_possibilities.append(self.hyp_language_pass[word]['all'])
         # find the actual possibilities for every word in the subset
         for element in itertools.product(*all_possibilities):
@@ -949,6 +929,7 @@ class process_data():
             for i in element:
                 if element.count(i)>1:
                     the_same = 1
+                    continue
             if the_same:
                 continue
 
