@@ -8,13 +8,14 @@ import time
 P = process_data()
 plot = 0
 
-for scan in range(1):
+for scan in range(2):
   print 'scan number :',scan
   #for scene in range(1,58):
-  for scene in range(1,20):
+  for scene in range(1,1002):
     if scene in [891,892]: continue
     #ts = time.time()
     P._read(scene)                                  # Objects, Graph, Sentences
+    #if len(P.G.nodes()) > 10:       continue
     P._print_scentenses()
     P._fix_data()                                   # correction to Data removing 20 and 40
     P._find_unique_words()                          # find the unique words in every valid sentence = P.words
@@ -53,7 +54,7 @@ for scan in range(1):
     #########################################################################################################
     #   Comparing language hypotheses to scene                                                              #
     #########################################################################################################
-
+    P._get_all_valid_combinations()
     P._test_all_valid_combinations()
 
 

@@ -51,8 +51,8 @@ class process_data():
         self.p_parameter            = 3.0                       # probability parameter for exp function in habituation
         self.pass_distance          = .25                       # distance test for how much igmms match
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
-        self.p_obj_pass             = .7                        # for object
-        self.p_relation_pass        = .8                        # for both relation and motion
+        self.p_obj_pass             = .9                        # for object
+        self.p_relation_pass        = .9                        # for both relation and motion
 
     #--------------------------------------------------------------------------------------------------------#
     # read the sentences and data from file
@@ -760,6 +760,7 @@ class process_data():
         self._combine_hyp(self.hyp_language_pass,self.hyp_relation_pass)
         self._combine_hyp(self.hyp_language_pass,self.hyp_motion_pass)
 
+
     #--------------------------------------------------------------------------------------------------------#
     def _combine_hyp(self,A,B):
         ### adding two hypotheses A = A+B
@@ -819,11 +820,11 @@ class process_data():
                                     # case 3 if N < 1  I should remove phrase
                                     if N == 1:
                                         for key in matching:
-                                            pass
-                                            # if key not in phrases_to_remove:            phrases_to_remove[key] = {}
-                                            # if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
-                                            # if matching[key] not in phrases_to_remove[key][feature]:
-                                            #    phrases_to_remove[key][feature].append(matching[key])
+                                            #pass
+                                             if key not in phrases_to_remove:            phrases_to_remove[key] = {}
+                                             if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
+                                             if matching[key] not in phrases_to_remove[key][feature]:
+                                                phrases_to_remove[key][feature].append(matching[key])
                                     elif N > 0:
                                         #print '##########################################################################',word,p1
                                         if word not in phrases_to_remove:               phrases_to_remove[word] = {}
@@ -870,103 +871,160 @@ class process_data():
         return words
 
     #--------------------------------------------------------------------------------------------------------#
-    # generate all possible sentences that have hypotheses in language hypotheses pass
+    # generate all possible combinitaiton for each phrase in a single list
     def _get_all_valid_combinations(self):
-        # get the hypotheses sentence by sentence
-        self.valid_combinations = {}
-        for s in self.phrases:
-            self.valid_combinations[s] = {}
-            # get the words that have hypotheses and are in the sentence
-            phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[s]))
-            self.valid_combinations[s][0] = phrases_with_hyp
-            valid_com = phrases_with_hyp
-            # check in any phrase has a word repeated!
-            # for i in range(len(self.valid_combinations[s][0])-1):
-            #     for j in range(i+1,len(self.valid_combinations[s][0])):
-            #         # needs working here !
-            #         if self.valid_combinations[s][0][i] in self.valid_combinations[s][0][j]:
-            # print self.valid_combinations[s]
-            # print '---'
+        for word in self.hyp_language_pass:
+            self.hyp_language_pass[word]['all'] = []
+            for f in self.hyp_language_pass[word]:
+                if f != 'all' and f != 'possibilities':
+                    for k in self.hyp_language_pass[word][f]:
+                        self.hyp_language_pass[word]['all'].append((f,k))
 
     #--------------------------------------------------------------------------------------------------------#
     # generate all possible sentences that have hypotheses in language hypotheses pass
     def _test_all_valid_combinations(self):
         # test the hypotheses sentence by sentence
         if 'motion' in self.hyp_all_features:
+            self._get_indices()
             for scene in self.phrases:
+                print scene
                 # get the words that have hypotheses and are in the sentence
                 phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
+                #print phrases_with_hyp
+                #print self.indices[scene].keys()
+
                 # generate all subsets (pick from 1 word to n words) with no repatetion in phrases
-                print self.S[scene]
                 counter = 1
                 for L in range(2, len(phrases_with_hyp)+1):
                     for subset in itertools.combinations(phrases_with_hyp, L):
                         self._test(subset,scene)
-                        print counter," processed\r",
+                        #print counter,"\r",
                         counter+=1
+                print
+
+    #------------------------------------------------------------------#
+    # get the index of every phrase in every sentence
+    def _get_indices(self):
+        self.indices = {}
+        for scene in self.phrases:
+            self.indices[scene] = {}
+            sentence = self.S[scene].split(' ')
+            # build the indices
+            phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
+            for word in phrases_with_hyp:
+                w = word.split(' ')
+                if len(w) == 1:
+                    A = [[i] for i, x in enumerate(sentence) if x == word]
+                    self.indices[scene][word] = A
+                if len(w) == 2:
+                    ind = {}
+                    for wc,w1 in enumerate(w):
+                        ind[wc] = []
+                        [ind[wc].append(i) for i, x in enumerate(sentence) if x == w1]
+                    for i1 in ind[0]:
+                        for i2 in ind[1]:
+                            if i2-i1 == 1:
+                                if word not in self.indices[scene]:
+                                    self.indices[scene][word] = []
+                                self.indices[scene][word].append([i1,i2])
+                if len(w) == 3:
+                    ind = {}
+                    for wc,w1 in enumerate(w):
+                        ind[wc] = []
+                        [ind[wc].append(i) for i, x in enumerate(sentence) if x == w1]
+                    for i1 in ind[0]:
+                        for i2 in ind[1]:
+                            for i3 in ind[2]:
+                                if i2-i1 == 1 and i3-i2 == 1:
+                                    if word not in self.indices[scene]:
+                                        self.indices[scene][word] = []
+                                    self.indices[scene][word].append([i1,i2,i3])
+        #for s in self.indices:
+        #    print s,self.indices[s]
 
     #------------------------------------------------------------------#
     def _test(self,subset,scene):
-        # this function tests one susbet of words at a time
-        sentence = self.S[scene].split(' ')
-        all_possibilities = []      # all the possibilities gathered in one list
-        for word in subset:
-            for f in self.hyp_language_pass[word]:
-                print f
 
-            all_possibilities.append(self.hyp_language_pass[word]['all'])
-        # find the actual possibilities for every word in the subset
-        for element in itertools.product(*all_possibilities):
-            indices = {}
-            hyp_motion = {}
-            motion_pass = 0
-            # build the indices
-            for k,word in enumerate(subset):
-                indices[word] = [i for i, x in enumerate(sentence) if x == word]
-
-            # no 2 words are allowed to mean the same thing
-            the_same = 0
-            for i in element:
-                if element.count(i)>1:
-                    the_same = 1
-                    continue
-            if the_same:
-                continue
-
-            # 1) does actions match ?   it should match 100%
-            for k,word in enumerate(subset):
-                if element[k][0] == 'action':
-                    a = element[k][1]
-                    if a not in hyp_motion:     hyp_motion[a] = len(indices[word])
-                    else:                       hyp_motion[a] += len(indices[word])
-            for i in self.total_motion:
-                if self.total_motion[i] == hyp_motion:
-                    motion_pass = 1
-                #else: print self.scene,'fail'
-
-            # 2) parse the sentence
-            if motion_pass:
-                parsed_sentence = []
-                value_sentence = []
-                for word in sentence:
-                    if word in subset:
-                        k = subset.index(word)
-                        parsed_sentence.append(element[k][0])
-                        value_sentence.append(element[k][1])
+        # no 2 phrases are allowed to intersect in the same sentence
+        no_intersection = 1
+        all_indeces = []
+        for w in subset:
+            #print w
+            for w1 in self.indices[scene][w]:
+                for w2 in w1:
+                    if w2 not in all_indeces:
+                        all_indeces.append(w2)
                     else:
-                        parsed_sentence.append('_')
-                        value_sentence.append('_')
-                print sentence
-                print self.scene,parsed_sentence
-                print self.scene,value_sentence
+                        no_intersection = 0
+        #print no_intersection
+        #print '------'
 
-                #print indices,word,element[k]
-                #G_test = nx.Graph()
-            #print '==--== hyp'
+        if no_intersection:
+            # this function tests one susbet of words at a time
+            all_possibilities = []      # all the possibilities gathered in one list
+            for word in subset:
+                all_possibilities.append(self.hyp_language_pass[word]['all'])
 
+            #print all_possibilities
+            #print '---------------',len(all_possibilities)
+            # find the actual possibilities for every word in the subset
+            #c = 1
+            for element in itertools.product(*all_possibilities):
+                #print c
+                #c+=1
+                hyp_motion = {}
+                motion_pass = 0
 
+                # no 2 words are allowed to mean the same thing
+                not_same = 1
+                features = {}
+                for i in element:
+                    if i[0] not in features: features[i[0]] = []
+                    features[i[0]].append(i[1])
 
+                for f in features:
+                    if len(features[f])>1:
+                        for f1 in range(len(features[f])-1):
+                            for f2 in range(f1+1,len(features[f])):
+                                m1 = np.asarray(list(features[f][f1]))
+                                m2 = np.asarray(list(features[f][f2]))
+                                if len(m1) != len(m2):          continue        # motions !
+                                if self._distance_test(m1,m2)<self.pass_distance:
+                                    not_same = 0
+                                    continue
+                if not_same:
+                    # 1) does actions match ?   it should match 100%
+                    for k,word in enumerate(subset):
+                        if element[k][0] == 'motion':
+                            a = element[k][1]
+                            if a not in hyp_motion:     hyp_motion[a] = len(self.indices[scene][word])
+                            else:                       hyp_motion[a] += len(self.indices[scene][word])
+                    for i in self.total_motion:
+                        if self.total_motion[i] == hyp_motion:
+                            motion_pass = 1
+                        #else: print self.scene,'fail'
 
+                    # 2) parse the sentence
+                    if motion_pass:
+                        #print self.indices[scene]
+                        #print subset
+                        #print element
+                        parsed_sentence = []
+                        value_sentence = []
+                        for i in self.S[scene].split(' '):
+                            parsed_sentence.append('_')
+                            value_sentence.append('_')
+                        for word1 in subset:
+                            for i1 in self.indices[scene][word1]:
+                                for j1 in i1:
+                                    print word1,j1
+                                    k = subset.index(word1)
+                                    parsed_sentence[j1] = element[k][0]
+                                    #value_sentence.append(element[k][1])
+                        #print subset
+                        print self.S[scene].split(' ')
+                        print parsed_sentence
+                        #print self.scene,value_sentence
 
     #--------------------------------------------------------------------------------------------------------#
     def _build_parser(self):
@@ -1088,14 +1146,12 @@ class process_data():
             self.pcfg1 = PCFG.fromstring(self.grammar)
             print self.pcfg1
 
-
-
     #--------------------------------------------------------------------------------------------------------#
     def _print_results(self):
         print '====-----------------------------------------------------------------===='
         for word in self.hyp_language_pass:
             for f in self.hyp_language_pass[word]:
-                if f != 'possibilities':
+                if f != 'possibilities' and f != 'all':
                     for value in self.hyp_language_pass[word][f]:
                         if len(f) < 7:
                             print f,'\t\t>>>\t',
@@ -1119,12 +1175,6 @@ class process_data():
                             print("{0:.3f}".format(value[2])),
                         print ')',
                         print("{0:.3f}".format( self.hyp_language_pass[word][f][value]))
-
-
-
-
-
-
 
 
 
