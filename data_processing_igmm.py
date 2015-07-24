@@ -9,12 +9,115 @@ from GMM_BIC import *
 from IGMM import *
 import copy
 import colorsys
+
+import multiprocessing
+
 """
 Focus 7bibi
 el pcfg, the words that you don't know yet, keep them as a terminal. and build relations between all the word in the sentence. Once you figure out a word that belong to a feature.
 Convert all the probabilities of that terminal the feature terminal .. ! this should work !
 """
 
+
+#--------------------------------------------------------------------------------------------------------#
+def _distance_test(m1,m2):
+    return np.sqrt(np.sum((m1-m2)**2))/np.sqrt(len(m1))
+
+#--------------------------------------------------------------------------------------------------------#
+def calc(data):
+    subset = data[0]
+    scene = data[1]
+    indices = data[2]
+    hyp_language_pass = data[3]
+    total_motion = data[4]
+    S = data[5]
+    parsed_sentence = ''
+    value_sentence = ''
+    # no 2 phrases are allowed to intersect in the same sentence
+    no_intersection = 1
+    all_indeces = []
+    for w in subset:
+        #print w
+        for w1 in indices[scene][w]:
+            for w2 in w1:
+                if w2 not in all_indeces:
+                    all_indeces.append(w2)
+                else:
+                    no_intersection = 0
+    #print no_intersection
+    #print '------'
+
+    if no_intersection:
+        # this function tests one susbet of words at a time
+        all_possibilities = []      # all the possibilities gathered in one list
+        for word in subset:
+            all_possibilities.append(hyp_language_pass[word]['all'])
+
+        #print all_possibilities
+        #print '---------------',len(all_possibilities)
+        # find the actual possibilities for every word in the subset
+        #c = 1
+        for element in itertools.product(*all_possibilities):
+            #print c
+            #c+=1
+            hyp_motion = {}
+            motion_pass = 0
+
+            # no 2 words are allowed to mean the same thing
+            not_same = 1
+            features = {}
+            for i in element:
+                if i[0] not in features: features[i[0]] = []
+                features[i[0]].append(i[1])
+
+            for f in features:
+                if len(features[f])>1:
+                    for f1 in range(len(features[f])-1):
+                        for f2 in range(f1+1,len(features[f])):
+                            m1 = np.asarray(list(features[f][f1]))
+                            m2 = np.asarray(list(features[f][f2]))
+                            if len(m1) != len(m2):          continue        # motions !
+                            if _distance_test(m1,m2)<.25:
+                                not_same = 0
+                                continue
+            if not_same:
+                # 1) does actions match ?   it should match 100%
+                for k,word in enumerate(subset):
+                    if element[k][0] == 'motion':
+                        a = element[k][1]
+                        if a not in hyp_motion:     hyp_motion[a] = len(indices[scene][word])
+                        else:                       hyp_motion[a] += len(indices[scene][word])
+
+                for i in total_motion:
+                    if total_motion[i] == hyp_motion:
+                        motion_pass = 1
+                    #else: print self.scene,'fail'
+
+                # 2) parse the sentence
+                if motion_pass:
+                    parsed_sentence = []
+                    value_sentence = []
+                    for i in S[scene].split(' '):
+                        parsed_sentence.append('_')
+                        value_sentence.append('_')
+                    for word1 in subset:
+                        for i1 in indices[scene][word1]:
+                            for j1 in i1:
+                                #print word1,j1
+                                k = subset.index(word1)
+                                parsed_sentence[j1] = element[k][0]
+                                value_sentence[j1] = map(prettyfloat, element[k][1])
+                    #print subset
+                    #print S[scene].split(' ')
+                    #print parsed_sentence
+                    #print value_sentence
+                    #print '----'
+    return ([S[scene],parsed_sentence,value_sentence],)
+
+
+class prettyfloat(float):
+    def __repr__(self):
+        return "%0.2f" % self
 
 class process_data():
     def __init__(self):
@@ -53,6 +156,7 @@ class process_data():
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
         self.p_obj_pass             = .9                        # for object
         self.p_relation_pass        = .9                        # for both relation and motion
+        self.pool = multiprocessing.Pool(8)
 
     #--------------------------------------------------------------------------------------------------------#
     # read the sentences and data from file
@@ -887,20 +991,17 @@ class process_data():
         if 'motion' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
-                print scene
+                #print scene
                 # get the words that have hypotheses and are in the sentence
                 phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
-                #print phrases_with_hyp
-                #print self.indices[scene].keys()
 
                 # generate all subsets (pick from 1 word to n words) with no repatetion in phrases
-                counter = 1
                 for L in range(2, len(phrases_with_hyp)+1):
-                    for subset in itertools.combinations(phrases_with_hyp, L):
-                        self._test(subset,scene)
-                        #print counter,"\r",
-                        counter+=1
-                print
+                    print scene,L
+                    out1 = zip(*self.pool.map(calc, [[subset,scene,self.indices,self.hyp_language_pass,self.total_motion,self.S] for subset in itertools.combinations(phrases_with_hyp, L)]))
+                    #print out1
+                        #self._test(subset,scene)
+                print '------'
 
     #------------------------------------------------------------------#
     # get the index of every phrase in every sentence
@@ -1006,9 +1107,6 @@ class process_data():
 
                     # 2) parse the sentence
                     if motion_pass:
-                        #print self.indices[scene]
-                        #print subset
-                        #print element
                         parsed_sentence = []
                         value_sentence = []
                         for i in self.S[scene].split(' '):
@@ -1017,14 +1115,15 @@ class process_data():
                         for word1 in subset:
                             for i1 in self.indices[scene][word1]:
                                 for j1 in i1:
-                                    print word1,j1
+                                    #print word1,j1
                                     k = subset.index(word1)
                                     parsed_sentence[j1] = element[k][0]
-                                    #value_sentence.append(element[k][1])
-                        #print subset
+                                    value_sentence[j1] = map(prettyfloat, element[k][1])
+                        print subset
                         print self.S[scene].split(' ')
                         print parsed_sentence
-                        #print self.scene,value_sentence
+                        print value_sentence
+                        print '----'
 
     #--------------------------------------------------------------------------------------------------------#
     def _build_parser(self):
@@ -1163,17 +1262,7 @@ class process_data():
                             print word,'\t\t>>>\t',
                         elif len(word) < 23:
                             print word,'\t>>>\t',
-                        print '(',
-                        if len(value) == 1:
-                            print("{0:.3f}".format(value[0])),
-                        if len(value) == 2:
-                            print("{0:.3f}".format(value[0])),',',
-                            print("{0:.3f}".format(value[1])),
-                        if len(value) == 3:
-                            print("{0:.3f}".format(value[0])),',',
-                            print("{0:.3f}".format(value[1])),',',
-                            print("{0:.3f}".format(value[2])),
-                        print ')',
+                        print map(prettyfloat, value),
                         print("{0:.3f}".format( self.hyp_language_pass[word][f][value]))
 
 
