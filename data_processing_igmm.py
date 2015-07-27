@@ -60,8 +60,6 @@ def calc(data):
         for element in itertools.product(*all_possibilities):
             #print c
             #c+=1
-            hyp_motion = {}
-            motion_pass = 0
 
             # no 2 words are allowed to mean the same thing
             not_same = 1
@@ -82,6 +80,9 @@ def calc(data):
                                 continue
             if not_same:
                 # 1) does actions match ?   it should match 100%
+                hyp_motion = {}
+                motion_pass = 0
+
                 for k,word in enumerate(subset):
                     if element[k][0] == 'motion':
                         a = element[k][1]
@@ -90,8 +91,8 @@ def calc(data):
 
                 for i in total_motion:
                     if total_motion[i] == hyp_motion:
+                        #print '+++',total_motion[i],hyp_motion
                         motion_pass = 1
-                    #else: print self.scene,'fail'
 
                 # 2) parse the sentence
                 if motion_pass:
@@ -107,11 +108,15 @@ def calc(data):
                                 k = subset.index(word1)
                                 parsed_sentence[j1] = element[k][0]
                                 value_sentence[j1] = map(prettyfloat, element[k][1])
-                    #print subset
-                    #print S[scene].split(' ')
-                    #print parsed_sentence
-                    #print value_sentence
-                    #print '----'
+
+                    for k,word in enumerate(subset):
+                        pass
+                        print word,map(prettyfloat, element[k][1])
+                        #print subset
+                        #print S[scene].split(' ')
+                        #print parsed_sentence
+                        #print value_sentence
+                    print '----'
     return ([S[scene],parsed_sentence,value_sentence],)
 
 
@@ -154,9 +159,9 @@ class process_data():
         self.p_parameter            = 3.0                       # probability parameter for exp function in habituation
         self.pass_distance          = .25                       # distance test for how much igmms match
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
-        self.p_obj_pass             = .9                        # for object
-        self.p_relation_pass        = .9                        # for both relation and motion
-        self.pool = multiprocessing.Pool(8)
+        self.p_obj_pass             = .8                        # for object
+        self.p_relation_pass        = .8                        # for both relation and motion
+        self.pool = multiprocessing.Pool(32)
 
     #--------------------------------------------------------------------------------------------------------#
     # read the sentences and data from file
@@ -997,11 +1002,8 @@ class process_data():
 
                 # generate all subsets (pick from 1 word to n words) with no repatetion in phrases
                 for L in range(2, len(phrases_with_hyp)+1):
-                    print scene,L
                     out1 = zip(*self.pool.map(calc, [[subset,scene,self.indices,self.hyp_language_pass,self.total_motion,self.S] for subset in itertools.combinations(phrases_with_hyp, L)]))
-                    #print out1
-                        #self._test(subset,scene)
-                print '------'
+
 
     #------------------------------------------------------------------#
     # get the index of every phrase in every sentence

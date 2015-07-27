@@ -8,10 +8,10 @@ import time
 P = process_data()
 plot = 0
 
-for scan in range(2):
+for scan in range(1):
   print 'scan number :',scan
   #for scene in range(1,58):
-  for scene in range(1,1002):
+  for scene in range(1,20):
     if scene in [891,892]: continue
     #ts = time.time()
     P._read(scene)                                  # Objects, Graph, Sentences
@@ -37,14 +37,14 @@ for scan in range(2):
     #   Learning starts here, first we update the histograms of objects, relations and motions              #
     #########################################################################################################
 
-    P._build_obj_hyp_igmm()                                       # build the object hypotheses with gmms
+    P._build_obj_hyp_igmm()                         # build the object hypotheses with gmms
     P._build_relation_hyp()                         # keeps track of relations and words    P.hyp_relation
     P._build_motion_hyp()                           # keepps track of motion and words      P.hyp_motion
 
     #########################################################################################################
     #   Testing hypotheses                                                                                  #
     #########################################################################################################
-
+    """
     P._test_relation_hyp()                          # self.hyp_relation_pass
     P._test_motion_hyp()                            # self.hyp_motion_pass
     P._test_obj_hyp()                               # self.hyp_language_pass > .7
@@ -77,9 +77,7 @@ for scan in range(2):
     P._print_results()
     print '**================= end of scene ===================**'
     print '\n\n\n'
-    if scan == 1:
-        break
-
+    """
 #print P.pcfg1
 #for word in P.hyp_language_pass:
 #    print word,P.hyp_language_pass[word]['all']
