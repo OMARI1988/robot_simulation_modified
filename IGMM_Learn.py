@@ -10,18 +10,18 @@ P = process_data()
 plot = 0
 
 print           'reading object hypotheses'
-#P.gmm_obj       = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "rb" ) )
+P.gmm_obj       = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "rb" ) )
 print           'reading motion hypotheses'
-#P.hyp_motion    = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/hyp_motion_1000.p", "rb" ) )
+P.hyp_motion    = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/hyp_motion_1000.p", "rb" ) )
 print           'reading relation hypotheses'
-#P.hyp_relation  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/hyp_relation_1000.p", "rb" ) )
+P.hyp_relation  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/hyp_relation_1000.p", "rb" ) )
 print           'reading total motion'
-#P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "rb" ) )
+P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "rb" ) )
 
 for scan in range(1):
   print 'scan number :',scan
   #for scene in range(1,58):
-  for scene in range(1,1001):
+  for scene in range(1,5):
     if scene in [891,892]: continue
     #ts = time.time()
     #########################################################################################################
@@ -57,7 +57,7 @@ for scan in range(1):
     P._build_relation_hyp()                         # keeps track of relations and words    P.hyp_relation
     P._build_motion_hyp()                           # keepps track of motion and words      P.hyp_motion
     #P._save_all_features()
-    """
+
     #########################################################################################################
     #   Testing hypotheses                                                                                  #
     #########################################################################################################
@@ -83,12 +83,12 @@ for scan in range(1):
     P._print_results()
     print '**================= end of scene ===================**'
     print '\n\n\n'
-    """
 
-pickle.dump( P.gmm_obj, open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "wb" ) )
-pickle.dump( P.hyp_motion, open( "/home/omari/Datasets/robot_modified/pickle/hyp_motion_1000.p", "wb" ) )
-pickle.dump( P.hyp_relation, open( "/home/omari/Datasets/robot_modified/pickle/hyp_relation_1000.p", "wb" ) )
-pickle.dump( P.all_total_motion, open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "wb" ) )
+
+# pickle.dump( P.gmm_obj, open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "wb" ) )
+# pickle.dump( P.hyp_motion, open( "/home/omari/Datasets/robot_modified/pickle/hyp_motion_1000.p", "wb" ) )
+# pickle.dump( P.hyp_relation, open( "/home/omari/Datasets/robot_modified/pickle/hyp_relation_1000.p", "wb" ) )
+# pickle.dump( P.all_total_motion, open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "wb" ) )
 
 
 

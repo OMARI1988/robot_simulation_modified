@@ -770,15 +770,16 @@ class process_data():
     def _build_relation_hyp(self):
         for s in self.phrases:
             for word in self.phrases[s]:
-                not_ok = 1
-                for w in word.split(' '):
-                    if w in ['top','over','on','above','placed','front','sitting','onto','underneath','infront','besides','resting','sit','sits','topmost','ontop','sat','stood','higher','downwords']:
-                        not_ok = 0
+                # not_ok = 1
+                # for w in word.split(' '):
+                #     if w in ['top','over','on','above','placed','front','sitting','onto','underneath','infront','besides','resting','sit','sits','topmost','ontop','sat','stood','higher','downwords']:
+                #         not_ok = 0
                 if word not in self.hyp_relation:
                     self.hyp_relation[word] = {}
                     self.hyp_relation[word]['count'] = 0
                     self.hyp_relation[word]['direction'] = {}
-                if self.unique_direction != []:         self.hyp_relation[word]['count'] += 1
+                # if self.unique_direction != []:
+                self.hyp_relation[word]['count'] += 1
                 for direction in self.unique_direction:
                     if direction not in self.hyp_relation[word]['direction']:   self.hyp_relation[word]['direction'][direction] = 1
                     else: self.hyp_relation[word]['direction'][direction] += 1
