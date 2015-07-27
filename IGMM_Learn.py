@@ -4,22 +4,39 @@ import matplotlib.pyplot as plt
 import random
 from data_processing_igmm import *
 import time
+import pickle
 
 P = process_data()
 plot = 0
 
+print           'reading object hypotheses'
+#P.gmm_obj       = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "rb" ) )
+print           'reading motion hypotheses'
+#P.hyp_motion    = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/hyp_motion_1000.p", "rb" ) )
+print           'reading relation hypotheses'
+#P.hyp_relation  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/hyp_relation_1000.p", "rb" ) )
+print           'reading total motion'
+#P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "rb" ) )
+
 for scan in range(1):
   print 'scan number :',scan
   #for scene in range(1,58):
-  for scene in range(1,20):
+  for scene in range(1,1001):
     if scene in [891,892]: continue
     #ts = time.time()
+    #########################################################################################################
+    #   Read sentences and scenes                                                                           #
+    #########################################################################################################
     P._read(scene)                                  # Objects, Graph, Sentences
+    #P._print_scentenses()
     #if len(P.G.nodes()) > 10:       continue
-    P._print_scentenses()
+
+    #########################################################################################################
+    #  Process scenes                                                                                       #
+    #########################################################################################################
+
     P._fix_data()                                   # correction to Data removing 20 and 40
     P._find_unique_words()                          # find the unique words in every valid sentence = P.words
-
     P._compute_features_for_all()                   # = self.touch_all, self.motion_all
     P._compute_features_for_moving_object()         # = self.touch_m_i, self.touch_m_f, self.dir_touch_m_i, self.dir_touch_m_f, self.locations_m_i, self.locations_m_f
     P._transition()                                 # P.transition['motion'] P.transition['touch'] P.transition['all']
@@ -36,48 +53,45 @@ for scan in range(1):
     #########################################################################################################
     #   Learning starts here, first we update the histograms of objects, relations and motions              #
     #########################################################################################################
-
     P._build_obj_hyp_igmm()                         # build the object hypotheses with gmms
     P._build_relation_hyp()                         # keeps track of relations and words    P.hyp_relation
     P._build_motion_hyp()                           # keepps track of motion and words      P.hyp_motion
-
+    #P._save_all_features()
+    """
     #########################################################################################################
     #   Testing hypotheses                                                                                  #
     #########################################################################################################
-    """
     P._test_relation_hyp()                          # self.hyp_relation_pass
     P._test_motion_hyp()                            # self.hyp_motion_pass
     P._test_obj_hyp()                               # self.hyp_language_pass > .7
     P._combine_language_hyp()                       # combine object, relations and motion hypotheses in one place.
+    P._filter_hyp()                                 # filter hypotheses to include only .9 of the best hypothesis
     P._filter_phrases()                             # remove larger phrases (and small phrases commented) = self.hyp_language_pass
 
     #########################################################################################################
     #   Comparing language hypotheses to scene                                                              #
     #########################################################################################################
-    P._get_all_valid_combinations()
-    P._test_all_valid_combinations()
-
+    #P._get_all_valid_combinations()
+    #P._test_all_valid_combinations()
 
     #########################################################################################################
     #   Build the grammar                                                                                   #
     #########################################################################################################
-
     #P._build_parser()                               #
-
     #P._test_sentence_hyp()                          # test if the whole sentence make sense
-    # it should match 100% of the motion, which means the user should describe every single motion.
-    ## so if someone says pick the blue object, and the blue object was trapped under another object, this
-    ## won't work
-    # no 2 words are allowed to mean the same thing
-    # look for entities
-    # how to idintify the moving object ?! if any ?
-    # how to udintify it's target location?! if any ?
-    # should I keep the assumption that verbs don't span in a sentence !?
 
     P._print_results()
     print '**================= end of scene ===================**'
     print '\n\n\n'
     """
+
+pickle.dump( P.gmm_obj, open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "wb" ) )
+pickle.dump( P.hyp_motion, open( "/home/omari/Datasets/robot_modified/pickle/hyp_motion_1000.p", "wb" ) )
+pickle.dump( P.hyp_relation, open( "/home/omari/Datasets/robot_modified/pickle/hyp_relation_1000.p", "wb" ) )
+pickle.dump( P.all_total_motion, open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "wb" ) )
+
+
+
 #print P.pcfg1
 #for word in P.hyp_language_pass:
 #    print word,P.hyp_language_pass[word]['all']
@@ -114,4 +128,12 @@ for scan in range(1):
 #   P.M                         = a dictionery for all M values of each gmm of each feature
 #   self.hyp_language_pass      = a dictionery of all valid hypotheses in language
 #
+##############################################################################################################
+
+##############################################################################################################
+# To Do
+# 1- finish the matching
+# 2- finish the grammar
+# 3- translate into other languages and show it works
+# 4-
 ##############################################################################################################

@@ -110,7 +110,6 @@ def calc(data):
                                 value_sentence[j1] = map(prettyfloat, element[k][1])
 
                     for k,word in enumerate(subset):
-                        pass
                         print word,map(prettyfloat, element[k][1])
                         #print subset
                         #print S[scene].split(' ')
@@ -144,6 +143,8 @@ class process_data():
         self.hyp_relation_pass      = {}
         self.hyp_motion_pass        = {}
         self.feature_pass           = {}
+        self.all_total_motion       = {}
+        self.all_scene_features     = {}
 
         self.n_word                 = 3
         self.step                   = 3
@@ -159,7 +160,7 @@ class process_data():
         self.p_parameter            = 3.0                       # probability parameter for exp function in habituation
         self.pass_distance          = .25                       # distance test for how much igmms match
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
-        self.p_obj_pass             = .8                        # for object
+        self.p_obj_pass             = .75                        # for object
         self.p_relation_pass        = .8                        # for both relation and motion
         self.pool = multiprocessing.Pool(32)
 
@@ -487,6 +488,7 @@ class process_data():
                 if C not in self.unique_motions:    self.unique_motions.append(C)
                 if C not in self.total_motion[i-1]:   self.total_motion[i-1][C] = 1
                 else:                               self.total_motion[i-1][C] += 1
+        self.all_total_motion[self.scene] = self.total_motion
 
     #--------------------------------------------------------------------------------------------------------#
     # compute uniqe direction for every scene
@@ -522,7 +524,7 @@ class process_data():
                     for k in range(50):
                         c = self.Data[i]['color']
                         r = np.random.normal(0, .005, 3)
-                        c += r
+                        #c += r
                         hsv = colorsys.rgb_to_hsv(c[0], c[1], c[2])
                         r1 = np.random.normal(0, .06, 1)
                         r2 = np.random.normal(0, .05, 1)
@@ -549,7 +551,15 @@ class process_data():
             for color in self.unique_colors:
                 for k in range(10):
                     r = np.random.normal(0, .005, 3)
-                    c = r+color
+                    c = color+r
+                    if c[0]<0:      c[0]=0
+                    if c[1]<0:      c[1]=0
+                    if c[2]<0:      c[2]=0
+                    if c[0]>1:      c[0]=1
+                    if c[1]>1:      c[1]=1
+                    if c[2]>1:      c[2]=1
+                    C = (c[0],c[1],c[2])
+                    """
                     hsv = colorsys.rgb_to_hsv(c[0], c[1], c[2])
                     r1 = np.random.normal(0, .06, 1)
                     r2 = np.random.normal(0, .05, 1)
@@ -563,6 +573,7 @@ class process_data():
                     if v>1:      v-=2*np.abs(r3[0])
                     x,y,z = self.hsv2xyz(h,s,v)
                     C = (x[0],y[0],z[0])
+                    """
                     unique_colors.append(C)
             for shape in self.unique_shapes:
                 for k in range(10):
@@ -690,7 +701,6 @@ class process_data():
                                     gmm_N = self._update_gmm(gmm_N, gmm_M, i, m_ind, N, M, 1)
                                     if m_ind not in accepted_ind:   accepted_ind.append(m_ind)
                                     gmm_N[i]['N'] += 1.0
-
                             """
                             for key in gmm_M.keys():
                                 if key not in accepted_ind:
@@ -760,6 +770,10 @@ class process_data():
     def _build_relation_hyp(self):
         for s in self.phrases:
             for word in self.phrases[s]:
+                not_ok = 1
+                for w in word.split(' '):
+                    if w in ['top','over','on','above','placed','front','sitting','onto','underneath','infront','besides','resting','sit','sits','topmost','ontop','sat','stood','higher','downwords']:
+                        not_ok = 0
                 if word not in self.hyp_relation:
                     self.hyp_relation[word] = {}
                     self.hyp_relation[word]['count'] = 0
@@ -788,6 +802,13 @@ class process_data():
                     if motion not in self.hyp_motion[word]['motion']:
                         self.hyp_motion[word]['motion'][motion] = 1
                     else: self.hyp_motion[word]['motion'][motion] += 1
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _save_all_features(self):
+        self.all_scene_features[self.scene] = {}
+        self.all_scene_features[self.scene]['color'] = self.unique_colors
+        self.all_scene_features[self.scene]['shapes'] = self.unique_shapes
+        self.all_scene_features[self.scene]['direction'] = self.unique_direction
 
     #--------------------------------------------------------------------------------------------------------#
     def _test_relation_hyp(self):
@@ -871,30 +892,56 @@ class process_data():
 
 
     #--------------------------------------------------------------------------------------------------------#
+    # NOTE: this will pass all hypotheses that are .9 of maximum value
     def _combine_hyp(self,A,B):
         ### adding two hypotheses A = A+B
+
         for word in B:
             if word not in A:
                 A[word] = {}
                 A[word]['possibilities'] = 0
             if word in A:
-                A[word]['possibilities'] += B[word]['possibilities']
                 for f in B[word]:
                     if f != 'possibilities':
                         if f not in self.hyp_all_features:      self.hyp_all_features.append(f)
                         if len(B[word][f]) > 1:
                             C = copy.deepcopy(B[word][f])
                             maxval = max(C.iteritems(), key=operator.itemgetter(1))[1]
-                            keys = [k for k,v in C.items() if v==maxval]
+                            keys = [k for k,v in C.items() if v>.9*maxval]
                             A[word][f] = {}
                             for key in keys:
+                                A[word]['possibilities'] += 1
                                 A[word][f][key] = C[key]
                         else:
                             A[word][f] = copy.deepcopy(B[word][f])
+                            A[word]['possibilities'] += 1
+
+    #--------------------------------------------------------------------------------------------------------#
+    # NOTE: this will pass all hypotheses that are .9 of maximum value expect location
+    def _filter_hyp(self):
+        for word in self.hyp_language_pass:
+            max_hyp = 0
+            keys_remove = []
+            for f in self.hyp_language_pass[word]:
+                if f != 'possibilities':
+                    # find the max hypotheses
+                    for key in self.hyp_language_pass[word][f].keys():
+                        if self.hyp_language_pass[word][f][key]>max_hyp:            max_hyp = self.hyp_language_pass[word][f][key]
+
+            # find all hypotheses that are within .9 of maximum hyp
+            for f in self.hyp_language_pass[word]:
+                if f != 'possibilities' and f!= 'location':
+                    for key in self.hyp_language_pass[word][f].keys():
+                        if self.hyp_language_pass[word][f][key]<.9*max_hyp:         keys_remove.append([f,key])
+            for A in keys_remove:
+                f=A[0]
+                key=A[1]
+                self._remove_phrase(word, f, key)
+
 
     #--------------------------------------------------------------------------------------------------------#
     # remove sub phrases and bigger phrases based on their meanings
-    # NOTE: this won't remove sub phrases now it has been commented
+    # NOTE: this will remove sub phrases
     def _filter_phrases(self):
         phrases_to_remove = {}                                                     # this contains the list of phrases that are already described in smaller phrases
         hyp = self.hyp_language_pass
@@ -929,11 +976,11 @@ class process_data():
                                     # case 3 if N < 1  I should remove phrase
                                     if N == 1:
                                         for key in matching:
-                                            #pass
-                                             if key not in phrases_to_remove:            phrases_to_remove[key] = {}
-                                             if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
-                                             if matching[key] not in phrases_to_remove[key][feature]:
-                                                phrases_to_remove[key][feature].append(matching[key])
+                                            pass
+                                             #if key not in phrases_to_remove:            phrases_to_remove[key] = {}
+                                             #if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
+                                             #if matching[key] not in phrases_to_remove[key][feature]:
+                                            #    phrases_to_remove[key][feature].append(matching[key])
                                     elif N > 0:
                                         #print '##########################################################################',word,p1
                                         if word not in phrases_to_remove:               phrases_to_remove[word] = {}
@@ -1002,7 +1049,7 @@ class process_data():
 
                 # generate all subsets (pick from 1 word to n words) with no repatetion in phrases
                 for L in range(2, len(phrases_with_hyp)+1):
-                    out1 = zip(*self.pool.map(calc, [[subset,scene,self.indices,self.hyp_language_pass,self.total_motion,self.S] for subset in itertools.combinations(phrases_with_hyp, L)]))
+                    out1 = zip(*self.pool.map(calc, [[subset,scene,self.indices,self.hyp_language_pass,self.all_total_motion[self.scene],self.S] for subset in itertools.combinations(phrases_with_hyp, L)]))
 
 
     #------------------------------------------------------------------#
