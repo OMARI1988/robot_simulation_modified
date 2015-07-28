@@ -24,99 +24,217 @@ def _distance_test(m1,m2):
     return np.sqrt(np.sum((m1-m2)**2))/np.sqrt(len(m1))
 
 #--------------------------------------------------------------------------------------------------------#
-def calc(data):
-    subset = data[0]
-    scene = data[1]
-    indices = data[2]
-    hyp_language_pass = data[3]
-    total_motion = data[4]
-    S = data[5]
-    parsed_sentence = ''
-    value_sentence = ''
-    # no 2 phrases are allowed to intersect in the same sentence
+# no 2 phrases are allowed to intersect in the same sentence
+def _intersection(subset, indices):
     no_intersection = 1
     all_indeces = []
     for w in subset:
-        #print w
-        for w1 in indices[scene][w]:
+        for w1 in indices[w]:
             for w2 in w1:
                 if w2 not in all_indeces:
                     all_indeces.append(w2)
                 else:
                     no_intersection = 0
-    #print no_intersection
-    #print '------'
+    return no_intersection
 
+#--------------------------------------------------------------------------------------------------------#
+# this function tests one susbet of words at a time
+def _all_possibilities_func(subset, hyp_language_pass):
+    all_possibilities = []      # all the possibilities gathered in one list
+    for word in subset:
+        all_possibilities.append(hyp_language_pass[word]['all'])
+    return all_possibilities
+
+#--------------------------------------------------------------------------------------------------------#
+# no 2 words are allowed to mean the same thing
+def _not_same_func(element):
+    not_same = 1
+    features = {}
+    for i in element:
+        if i[0] not in features: features[i[0]] = []
+        features[i[0]].append(i[1])
+    for f in features:
+        if len(features[f])>1:
+            for f1 in range(len(features[f])-1):
+                for f2 in range(f1+1,len(features[f])):
+                    m1 = np.asarray(list(features[f][f1]))
+                    m2 = np.asarray(list(features[f][f2]))
+                    if len(m1) != len(m2):          continue        # motions !
+                    if _distance_test(m1,m2)<.25:
+                        not_same = 0
+                        continue
+    return not_same, features
+
+#--------------------------------------------------------------------------------------------------------#
+# does actions match ?   it should match 100%
+def _motion_match(subset,element,indices,total_motion):
+    hyp_motion = {}
+    motion_pass = 0
+    for k,word in enumerate(subset):
+        if element[k][0] == 'motion':
+            a = element[k][1]
+            if a not in hyp_motion:     hyp_motion[a] = len(indices[word])
+            else:                       hyp_motion[a] += len(indices[word])
+    for i in total_motion:
+        if total_motion[i] == hyp_motion:
+            motion_pass = 1
+    return motion_pass
+
+#--------------------------------------------------------------------------------------------------------#
+# all features should be in the scene
+# NOTE: the location feature needs to be multiplied by 7
+def _all_features_match(features,all_scene_features):
+    # all features should be in the scene
+    feature_match = 1
+    matched_features = {}
+    for f1 in features:
+        if f1 == 'motion':
+            for k1 in range(len(features[f1])):
+                matched_features[features[f1][k1]] = features[f1][k1]
+        for f2 in all_scene_features:
+            if f1==f2:
+                for k1 in range(len(features[f1])):
+                    passed = 0
+                    for k2 in range(len(all_scene_features[f2])):
+                        m1 = np.asarray(features[f1][k1])
+                        m2 = np.asarray(all_scene_features[f2][k2])
+                        if f2=='location':  m2 /= 7.0
+                        if _distance_test(m1,m2)<.25:
+                            passed = 1
+                            matched_features[features[f1][k1]] = all_scene_features[f2][k2]
+                    if not passed:                                  feature_match = 0
+    return feature_match, matched_features
+
+#--------------------------------------------------------------------------------------------------------#
+# parse the sentence according to hypotheses
+def _parse_sentence(S,indices,subset,element,matched_features):
+    parsed_sentence = []
+    value_sentence = []
+    for i in S.split(' '):
+        parsed_sentence.append('_')
+        value_sentence.append('_')
+    for word1 in subset:
+        for i1 in indices[word1]:
+            for k1,j1 in enumerate(i1):
+                if k1 == 0:
+                    k = subset.index(word1)
+                    parsed_sentence[j1] =   element[k][0]
+                    value_sentence[j1]  =   matched_features[element[k][1]]
+                else:
+                    parsed_sentence[j1] =   'delete'
+                    value_sentence[j1]  =   'delete'
+    # remove the multipple word phrase and combine it into one
+    while 1:
+        if 'delete' in parsed_sentence:
+            parsed_sentence.remove('delete')
+            value_sentence.remove('delete')
+        else:       break
+    for k,word in enumerate(subset):
+       print word,'-',element[k][0],matched_features[element[k][1]]
+    return parsed_sentence, value_sentence
+
+#--------------------------------------------------------------------------------------------------------#
+# divide sentence with verbs
+def _divide_verb(parsed_sentence):
+    print parsed_sentence
+    motion_ind = [i for i, x in enumerate(parsed_sentence) if x == 'motion']
+    sentence = ' '.join(parsed_sentence)
+    sentence = sentence.split('motion')
+    verb_sent = {}
+    for k,ind in enumerate(motion_ind):
+        verb_sent[ind] = {}
+        # Before the verb
+        verb_sent[ind]['before'] = []
+        c = sentence[k]
+        if c != '':
+            A = c.split(' ')
+            while 1:
+                if '' in A:     A.remove('')
+                else:           break
+            verb_sent[ind]['before'] = A
+        # After the verb
+        verb_sent[ind]['after'] = []
+        c = sentence[k+1]
+        if c != '':
+            A = c.split(' ')
+            while 1:
+                if '' in A:     A.remove('')
+                else:           break
+            verb_sent[ind]['after'] = A
+    return verb_sent
+
+#--------------------------------------------------------------------------------------------------------#
+# check verb sentences with for relations and entities
+# each verb sentence should have 1(e) or 2n(e) n(r)
+def _check_graph_structure(verb_sentence):
+    possibilities = ['before','after']
+    entity = ['color','shape','location']
+    direction = ['direction']
+    for p in possibilities:
+        for v in verb_sentence:
+            sentence = verb_sentence[v][p]
+            while 1:
+                if '_' in sentence:     sentence.remove('_')
+                else:                   break
+            # based on the number of allowed features to be in each entity or relation divide the sentence to get all posiible options :)
+            # then check the 2n(O) and 1n(R)
+            ######## THIS IS WHERE I LEFT THE CODE
+            for word in sentence:
+                print word
+            direction_ind   = [i for i, x in enumerate(sentence) if x == 'direction']
+            color_ind       = [i for i, x in enumerate(sentence) if x == 'color']
+            shape_ind       = [i for i, x in enumerate(sentence) if x == 'shape']
+            loc_ind         = [i for i, x in enumerate(sentence) if x == 'location']
+            print sentence
+            print direction_ind
+            print color_ind
+            print shape_ind
+            print loc_ind
+            print '---------------------'
+
+#--------------------------------------------------------------------------------------------------------#
+def calc(data):
+    #---------------------------------------------------------------#
+    # initial
+    subset = data[0]
+    indices = data[1]
+    hyp_language_pass = data[2]
+    total_motion = data[3]
+    S = data[4]
+    all_scene_features = data[5]
+    parsed_sentence = ''
+    value_sentence = ''
+    #---------------------------------------------------------------#
+    # no 2 phrases are allowed to intersect in the same sentence
+    no_intersection = _intersection(subset,indices)
     if no_intersection:
-        # this function tests one susbet of words at a time
-        all_possibilities = []      # all the possibilities gathered in one list
-        for word in subset:
-            all_possibilities.append(hyp_language_pass[word]['all'])
-
-        #print all_possibilities
-        #print '---------------',len(all_possibilities)
+        all_possibilities = _all_possibilities_func(subset, hyp_language_pass)
+        #---------------------------------------------------------------#
         # find the actual possibilities for every word in the subset
-        #c = 1
         for element in itertools.product(*all_possibilities):
-            #print c
-            #c+=1
-
+            #---------------------------------------------------------------#
             # no 2 words are allowed to mean the same thing
-            not_same = 1
-            features = {}
-            for i in element:
-                if i[0] not in features: features[i[0]] = []
-                features[i[0]].append(i[1])
-
-            for f in features:
-                if len(features[f])>1:
-                    for f1 in range(len(features[f])-1):
-                        for f2 in range(f1+1,len(features[f])):
-                            m1 = np.asarray(list(features[f][f1]))
-                            m2 = np.asarray(list(features[f][f2]))
-                            if len(m1) != len(m2):          continue        # motions !
-                            if _distance_test(m1,m2)<.25:
-                                not_same = 0
-                                continue
+            not_same, features = _not_same_func(element)
             if not_same:
-                # 1) does actions match ?   it should match 100%
-                hyp_motion = {}
-                motion_pass = 0
+                #---------------------------------------------------------------#
+                # all features should be in the scene
+                feature_match, matched_features = _all_features_match(features,all_scene_features)
+                if feature_match:
+                    #---------------------------------------------------------------#
+                    # does actions match ?   it should match 100%
+                    motion_pass = _motion_match(subset,element,indices,total_motion)
+                    if motion_pass:
+                        #---------------------------------------------------------------#
+                        # parse the sentence
+                        parsed_sentence, value_sentence = _parse_sentence(S,indices,subset,element,matched_features)
+                        #---------------------------------------------------------------#
+                        # divide sentence with verbs
+                        verb_sent = _divide_verb(parsed_sentence)
+                        # check verb sentences with for relations and entities
+                        # each verb sentence should have 1(e) or 2n(e) n(r)
+                        verb_sent = _check_graph_structure(verb_sent)
 
-                for k,word in enumerate(subset):
-                    if element[k][0] == 'motion':
-                        a = element[k][1]
-                        if a not in hyp_motion:     hyp_motion[a] = len(indices[scene][word])
-                        else:                       hyp_motion[a] += len(indices[scene][word])
-
-                for i in total_motion:
-                    if total_motion[i] == hyp_motion:
-                        #print '+++',total_motion[i],hyp_motion
-                        motion_pass = 1
-
-                # 2) parse the sentence
-                if motion_pass:
-                    parsed_sentence = []
-                    value_sentence = []
-                    for i in S[scene].split(' '):
-                        parsed_sentence.append('_')
-                        value_sentence.append('_')
-                    for word1 in subset:
-                        for i1 in indices[scene][word1]:
-                            for j1 in i1:
-                                #print word1,j1
-                                k = subset.index(word1)
-                                parsed_sentence[j1] = element[k][0]
-                                value_sentence[j1] = map(prettyfloat, element[k][1])
-
-                    for k,word in enumerate(subset):
-                        print word,map(prettyfloat, element[k][1])
-                        #print subset
-                        #print S[scene].split(' ')
-                        #print parsed_sentence
-                        #print value_sentence
-                    print '----'
-    return ([S[scene],parsed_sentence,value_sentence],)
+    return ([parsed_sentence,value_sentence],)
 
 
 class prettyfloat(float):
@@ -162,7 +280,7 @@ class process_data():
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
         self.p_obj_pass             = .75                        # for object
         self.p_relation_pass        = .8                        # for both relation and motion
-        self.pool = multiprocessing.Pool(32)
+        self.pool = multiprocessing.Pool(8)
 
     #--------------------------------------------------------------------------------------------------------#
     # read the sentences and data from file
@@ -808,8 +926,9 @@ class process_data():
     def _save_all_features(self):
         self.all_scene_features[self.scene] = {}
         self.all_scene_features[self.scene]['color'] = self.unique_colors
-        self.all_scene_features[self.scene]['shapes'] = self.unique_shapes
+        self.all_scene_features[self.scene]['shape'] = self.unique_shapes
         self.all_scene_features[self.scene]['direction'] = self.unique_direction
+        self.all_scene_features[self.scene]['location'] = self.unique_locations
 
     #--------------------------------------------------------------------------------------------------------#
     def _test_relation_hyp(self):
@@ -1050,7 +1169,9 @@ class process_data():
 
                 # generate all subsets (pick from 1 word to n words) with no repatetion in phrases
                 for L in range(2, len(phrases_with_hyp)+1):
-                    out1 = zip(*self.pool.map(calc, [[subset,scene,self.indices,self.hyp_language_pass,self.all_total_motion[self.scene],self.S] for subset in itertools.combinations(phrases_with_hyp, L)]))
+                    #out1 = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene]] for subset in itertools.combinations(phrases_with_hyp, L)]))
+                    for subset in itertools.combinations(phrases_with_hyp, L):
+                        out1 = calc([subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene]])
 
 
     #------------------------------------------------------------------#

@@ -21,7 +21,7 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pi
 for scan in range(1):
   print 'scan number :',scan
   #for scene in range(1,58):
-  for scene in range(1,5):
+  for scene in range(1,2):
     if scene in [891,892]: continue
     #ts = time.time()
     #########################################################################################################
@@ -56,7 +56,7 @@ for scan in range(1):
     P._build_obj_hyp_igmm()                         # build the object hypotheses with gmms
     P._build_relation_hyp()                         # keeps track of relations and words    P.hyp_relation
     P._build_motion_hyp()                           # keepps track of motion and words      P.hyp_motion
-    #P._save_all_features()
+    P._save_all_features()                          # put all scene features in a single dict self.all_scene_features
 
     #########################################################################################################
     #   Testing hypotheses                                                                                  #
@@ -71,8 +71,8 @@ for scan in range(1):
     #########################################################################################################
     #   Comparing language hypotheses to scene                                                              #
     #########################################################################################################
-    #P._get_all_valid_combinations()
-    #P._test_all_valid_combinations()
+    P._get_all_valid_combinations()
+    P._test_all_valid_combinations()
 
     #########################################################################################################
     #   Build the grammar                                                                                   #
@@ -89,7 +89,7 @@ for scan in range(1):
 # pickle.dump( P.hyp_motion, open( "/home/omari/Datasets/robot_modified/pickle/hyp_motion_1000.p", "wb" ) )
 # pickle.dump( P.hyp_relation, open( "/home/omari/Datasets/robot_modified/pickle/hyp_relation_1000.p", "wb" ) )
 # pickle.dump( P.all_total_motion, open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "wb" ) )
-
+# print 'finished saving'
 
 
 #print P.pcfg1
@@ -127,7 +127,8 @@ for scan in range(1):
 #   P.gmm_M                     = a dictionery of all bic gmms for all features
 #   P.M                         = a dictionery for all M values of each gmm of each feature
 #   self.hyp_language_pass      = a dictionery of all valid hypotheses in language
-#
+#   self.all_scene_features     = a dictionary that has all the scene features
+#   
 ##############################################################################################################
 
 ##############################################################################################################
