@@ -129,78 +129,184 @@ def _parse_sentence(S,indices,subset,element,matched_features):
             parsed_sentence.remove('delete')
             value_sentence.remove('delete')
         else:       break
-    for k,word in enumerate(subset):
-       print word,'-',element[k][0],matched_features[element[k][1]]
+    #for k,word in enumerate(subset):
+    #   print word,'-',element[k][0],matched_features[element[k][1]]
     return parsed_sentence, value_sentence
 
 #--------------------------------------------------------------------------------------------------------#
 # divide sentence with verbs
-def _divide_verb(parsed_sentence):
-    print parsed_sentence
+def _divide_verb(parsed_sentence, value_sentence):
     motion_ind = [i for i, x in enumerate(parsed_sentence) if x == 'motion']
     sentence = ' '.join(parsed_sentence)
     sentence = sentence.split('motion')
     verb_sent = {}
     for k,ind in enumerate(motion_ind):
-        verb_sent[ind] = {}
+        verb_sent[value_sentence[ind]] = {}
         # Before the verb
-        verb_sent[ind]['before'] = []
+        verb_sent[value_sentence[ind]]['before'] = []
         c = sentence[k]
         if c != '':
             A = c.split(' ')
             while 1:
                 if '' in A:     A.remove('')
                 else:           break
-            verb_sent[ind]['before'] = A
+            verb_sent[value_sentence[ind]]['before'] = A
         # After the verb
-        verb_sent[ind]['after'] = []
+        verb_sent[value_sentence[ind]]['after'] = []
         c = sentence[k+1]
         if c != '':
             A = c.split(' ')
             while 1:
                 if '' in A:     A.remove('')
                 else:           break
-            verb_sent[ind]['after'] = A
+            verb_sent[value_sentence[ind]]['after'] = A
     return verb_sent
 
 #--------------------------------------------------------------------------------------------------------#
 # check verb sentences with for relations and entities
-# each verb sentence should have 1(e) or 2n(e) n(r)
-def _check_graph_structure(verb_sentence):
+def _check_relation_entity_numbers(verb_sentence):
     possibilities = ['before','after']
     entity = ['color','shape','location']
-    direction = ['direction']
+    relation = ['direction']
+    structure = {}
     for p in possibilities:
         for v in verb_sentence:
+            if v not in structure:  structure[v] = {}
+            structure[v][p] = {}
+            structure[v][p]['s'] = []
+            structure[v][p]['e'] = []
+            structure[v][p]['r'] = []
+            structure[v][p]['RE_count_result'] = 0
+            #print 'the verb is',v,'the sentence is',p
             sentence = verb_sentence[v][p]
-            while 1:
-                if '_' in sentence:     sentence.remove('_')
-                else:                   break
-            # based on the number of allowed features to be in each entity or relation divide the sentence to get all posiible options :)
-            # then check the 2n(O) and 1n(R)
-            ######## THIS IS WHERE I LEFT THE CODE
-            for word in sentence:
-                print word
-            direction_ind   = [i for i, x in enumerate(sentence) if x == 'direction']
-            color_ind       = [i for i, x in enumerate(sentence) if x == 'color']
-            shape_ind       = [i for i, x in enumerate(sentence) if x == 'shape']
-            loc_ind         = [i for i, x in enumerate(sentence) if x == 'location']
-            print sentence
-            print direction_ind
-            print color_ind
-            print shape_ind
-            print loc_ind
-            print '---------------------'
+            if sentence != []:
+                while 1:
+                    if '_' in sentence:     sentence.remove('_')
+                    else:                   break
+                e = []
+                r = []
+                s = [[]]
+                # keeping in mind that relations dont span, and objects dont span
+                # finding the minimum entities in a sentence
+                for word in sentence:
+                    if s[-1] == []:                     s[-1] = [word]
+                    else:
+                        if s[-1][-1] in entity:         #previous is entity
+                            if word in entity       :   # new is entity
+                                if word not in s[-1]:   s[-1].append(word)
+                                else                :   s.append([word])
+                            if word in relation     :   #new is relation
+                                s.append([word])
+
+                        elif s[-1][-1] in relation:       #previous is relation
+                            if word in entity       :   #new is entity
+                                s.append([word])
+                            if word in relation     :   #new is relation
+                                if word not in s[-1]:   s[-1].append(word)
+                                else                :   s.append([word])
+                for sub in s:
+                    if sub[0] in entity:
+                        e.append(sub)
+                    if sub[0] in relation:
+                        r.append(sub)
+                # based on the number of allowed features to be in each entity or relation divide the sentence to get all posiible options :)
+                # then check the 2n(O) and 1n(R)
+                a = len(e)
+                b = len(r)
+                test_result = 'VERY BAD'
+                if a-b == 1:                    # perfect case were entities are 1 more than relation
+                    test_result = 1
+                elif a-b > 2:                   # Wrong with no special cases
+                    test_result = 0
+                elif a-b == 2:                  # there might be a special case if one of the entities is a location
+                    for i in e:
+                        if len(i) == 1 and i[0]=='location':
+                            test_result = 1
+                        else:
+                            test_result = 0
+                elif a-b<1:                     # there are more or equal relations, check if number of indivual entities can be more
+                    count = 0
+                    for i in e:
+                        count += len(i)
+                    if count > b:
+                        test_result = 1
+                    else:
+                        test_result = 0
+
+                structure[v][p]['s'] = s
+                structure[v][p]['e'] = e
+                structure[v][p]['r'] = r
+                structure[v][p]['RE_count_result'] = test_result
+    return structure
+
+#--------------------------------------------------------------------------------------------------------#
+# check verb sentences with for relations and entities
+def _check_graph_structure(structure):
+    for v in structure:
+        for p in structure[v]:
+            structure[v][p]['graph_result'] = 0
+            if structure[v][p]['RE_count_result'] == 1:
+                # print v
+                s = structure[v][p]['s']
+                e = structure[v][p]['e']
+                r = structure[v][p]['r']
+
+                a = len(e)
+                b = len(r)
+                if v == (0,1,0,):
+                    if a-b == 1:                    # perfect case were entities are 1 more than relation
+                        #print s
+                        #print e
+                        #print r
+                        if b == 0:                  # there is only a single entity in the description
+                            if 'location' in e[0] and len(e[0])>1:
+                                structure[v][p]['graph_result'] = 1
+                        if b == 1:                  # there is only a single relation in the description
+                            structure[v][p]['graph_result'] = 1
+    return structure
+
+
+#--------------------------------------------------------------------------------------------------------#
+# check verb sentences with for relations and entities
+def _match_scene_to_hypotheses(structure):
+    for v in structure:
+        for p in structure[v]:
+            if structure[v][p]['RE_count_result'] == 1 and structure[v][p]['graph_result'] == 1:
+                s = structure[v][p]['s']
+                e = structure[v][p]['e']
+                r = structure[v][p]['r']
+                if v == (0,1,0,):
+                    # we need to find an entity and a target location
+                    # entity can be (e, ere, erere,..)
+                    # target location can be (loc, re)
+                    if a-b == 1:                    # perfect case were entities are 1 more than relation
+                        pass
+
+                        #G = nx.graph()
+                        #     pass
+                        #
+                        # if v == (0,1,):
+                        #     pass
+                        #
+                        # if v == (1,0,):
+                        #     pass
+
+#--------------------------------------------------------------------------------------------------------#
+def _print_sub_results(subset,matched_features,element,parsed_sentence,scene_description):
+    print scene_description
+    print parsed_sentence
+    for k,word in enumerate(subset):
+        print word,'-',element[k][0],matched_features[element[k][1]]
+    print '-----------------------------------'
 
 #--------------------------------------------------------------------------------------------------------#
 def calc(data):
-    #---------------------------------------------------------------#
     # initial
     subset = data[0]
     indices = data[1]
     hyp_language_pass = data[2]
     total_motion = data[3]
-    S = data[4]
+    scene_description = data[4]
     all_scene_features = data[5]
     parsed_sentence = ''
     value_sentence = ''
@@ -226,13 +332,20 @@ def calc(data):
                     if motion_pass:
                         #---------------------------------------------------------------#
                         # parse the sentence
-                        parsed_sentence, value_sentence = _parse_sentence(S,indices,subset,element,matched_features)
+                        parsed_sentence, value_sentence = _parse_sentence(scene_description,indices,subset,element,matched_features)
                         #---------------------------------------------------------------#
                         # divide sentence with verbs
-                        verb_sent = _divide_verb(parsed_sentence)
+                        verb_sentence = _divide_verb(parsed_sentence, value_sentence)
                         # check verb sentences with for relations and entities
                         # each verb sentence should have 1(e) or 2n(e) n(r)
-                        verb_sent = _check_graph_structure(verb_sent)
+                        structure = _check_relation_entity_numbers(verb_sentence)
+                        structure = _check_graph_structure(structure)
+
+                        for v in structure:
+                            for p in structure[v]:
+                                if structure[v][p]['RE_count_result'] == 1 and structure[v][p]['graph_result'] == 1:
+                                    _print_sub_results(subset,matched_features,element,parsed_sentence,scene_description)
+
 
     return ([parsed_sentence,value_sentence],)
 
@@ -1436,6 +1549,83 @@ class process_data():
                         print map(prettyfloat, value),
                         print("{0:.3f}".format( self.hyp_language_pass[word][f][value]))
 
+    #--------------------------------------------------------------------------------------------------------#
+    def _create_moving_obj_graph(self):
+        # Creating the graph structure
+        G = nx.Graph()
+        # creating the object layer
+        m_count = 2.0                     # moving object location
+        r_count = m_count+.5                 # 1 is reserved for the moving object
+        obj_count = 3.0                 # 1 is reserved for the moving object
+        G_count = 1.0
+        for I in [0,-1]:
+            print '-----------------------'
+            print I
+
+            for key in self.keys:
+                #print key,self.Data[key]['color']
+                if key == 'G':
+                    G.add_node(str(key),type1='G',position=(G_count,3))
+                else:
+                    if key == self.m_obj:
+                        G.add_node(str(key),type1='mo',position=(m_count,3))
+                    else:
+                        G.add_node(str(key),type1='o',position=(obj_count,3))
+                        obj_count+=1
+                    G.add_node(str(key)+'_color',type1='of',type2='color', value=self.Data[key]['color'],position=(m_count-.25,1));         #color
+                    G.add_node(str(key)+'_shape',type1='of',type2='shape', value=self.Data[key]['shape'],position=(m_count,1));         #shape
+                    x = self.Data[key]['x'][I]/7.0
+                    y = self.Data[key]['y'][I]/7.0
+                    G.add_node(str(key)+'_location',type1='of',type2='location', value=[x,y],position=(m_count+.25,1));         #location
+                    G.add_edge(str(key),str(key)+'_color')
+                    G.add_edge(str(key),str(key)+'_shape')
+                    G.add_edge(str(key),str(key)+'_location')
+
+            # creating the relation layer
+            counter = 0
+            for k1 in self.keys:
+                for k2 in self.keys:
+                    if k2 != k1 and k2 != 'G' and k1 != 'G':
+                        #if k1 == self.m_obj:
+                            G.add_node(str(k1)+'_'+str(k2),type1='r',position=(r_count,7.0))     # it's a directed node from k1 to k2
+                            G.add_edge(str(k1)+'_'+str(k2),str(k1))
+                            G.add_edge(str(k1)+'_'+str(k2),str(k2))
+                            #G.add_node(str(k1)+'_'+str(k2)+'_dist',type1='rf',position=(r_count-.15,5));         #distance
+                            #direction = [dirx_m[counter,distance],diry_m[counter,distance],dirz_m[counter,distance]]
+                            x1 = self.Data[k1]['x'][I]
+                            y1 = self.Data[k1]['y'][I]
+                            z1 = self.Data[k1]['z'][I]
+                            x2 = self.Data[k2]['x'][I]
+                            y2 = self.Data[k2]['y'][I]
+                            z2 = self.Data[k2]['z'][I]
+                            if np.abs(sum(np.abs([x1-x2,y1-y2,z1-z2])))<=1.1:
+                                print k1,k2,[x1,y1,z1],[x2,y2,z2],[x1-x2,y1-y2,z1-z2]
+                            G.add_node(str(k1)+'_'+str(k2)+'_dir',type1='rf',position=(r_count,5));                     #direction
+                            #G.add_node(str(k1)+'_'+str(k2)+'_mot',type1='rf',position=(r_count+.15,5));                     #motion
+                            #G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dist')
+                            G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dir')
+                            #G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_mot')
+                            counter += 1
+                            r_count += 1
+
+                """
+                    if k2 != k1 and k2 == 'G':
+                        G.add_node(str(k1)+'_'+str(k2),type1='r',position=(G_count+.5,7.0))     # it's a directed node from k1 to k2
+                        G.add_edge(str(k1)+'_'+str(k2),str(k1))
+                        G.add_edge(str(k1)+'_'+str(k2),str(k2))
+                        G.add_node(str(k1)+'_'+str(k2)+'_dist',type1='rf',position=(G_count+.5,5));         #distance
+                        #direction = [dirx_m[counter,distance],diry_m[counter,distance],dirz_m[counter,distance]]
+                        G.add_node(str(k1)+'_'+str(k2)+'_dir',type1='rf',position=(G_count+.5-.15,5));                     #direction
+                        G.add_node(str(k1)+'_'+str(k2)+'_mot',type1='rf',position=(G_count+.5+.15,5));                     #motion
+                        G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dist')
+                        G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dir')
+                        G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_mot')
+                """
+            if I == 0:          self.G_i = G
+            if I == -1:         self.G_f = G
+
+
+
 
 
 
@@ -1494,67 +1684,7 @@ class process_data():
         #plt.pause(.00001)
         #plt.show()
 
-    #--------------------------------------------------------------------------------------------------------#
-    def _create_moving_obj_graph(self,T):
-            # Creating the graph structure
-            G = nx.Graph()
-            # creating the object layer
-            m_count = 2.0                     # moving object location
-            r_count = m_count+.5                 # 1 is reserved for the moving object
-            obj_count = 3.0                 # 1 is reserved for the moving object
-            G_count = 1.0
-            for key in self.keys:
-                if key == self.m_obj:
-                    G.add_node(str(key),type1='mo',position=(m_count,3))
-                    G.add_node(str(key)+'_c',type1='of',position=(m_count-.25,1));         #color
-                    G.add_node(str(key)+'_s',type1='of',position=(m_count,1));         #shape
-                    G.add_node(str(key)+'_l',type1='of',position=(m_count+.25,1));         #location
-                    G.add_edge(str(key),str(key)+'_c')
-                    G.add_edge(str(key),str(key)+'_s')
-                    G.add_edge(str(key),str(key)+'_l')
-                elif key == 'G':
-                    G.add_node(str(key),type1='G',position=(G_count,3))
-                else:
-                    G.add_node(str(key),type1='o',position=(obj_count,3))
-                    G.add_node(str(key)+'_c',type1='of',position=(obj_count-.25,1));         #color
-                    G.add_node(str(key)+'_s',type1='of',position=(obj_count,1));         #shape
-                    G.add_node(str(key)+'_l',type1='of',position=(obj_count+.25,1));         #location
-                    G.add_edge(str(key),str(key)+'_c')
-                    G.add_edge(str(key),str(key)+'_s')
-                    G.add_edge(str(key),str(key)+'_l')
-                    obj_count+=1
 
-            # creating the relation layer
-
-            k1 = self.m_obj
-            counter = 0
-            for k2 in self.keys:
-                if k2 != k1 and k2 != 'G':
-                    G.add_node(str(k1)+'_'+str(k2),type1='r',position=(r_count,7.0))     # it's a directed node from k1 to k2
-                    G.add_edge(str(k1)+'_'+str(k2),str(k1))
-                    G.add_edge(str(k1)+'_'+str(k2),str(k2))
-                    G.add_node(str(k1)+'_'+str(k2)+'_dist',type1='rf',position=(r_count,5));         #distance
-                    #direction = [dirx_m[counter,distance],diry_m[counter,distance],dirz_m[counter,distance]]
-                    G.add_node(str(k1)+'_'+str(k2)+'_dir',type1='rf',position=(r_count-.15,5));                     #direction
-                    G.add_node(str(k1)+'_'+str(k2)+'_mot',type1='rf',position=(r_count+.15,5));                     #motion
-                    G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dist')
-                    G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dir')
-                    G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_mot')
-                    counter += 1
-                    r_count += 1
-
-                if k2 != k1 and k2 == 'G':
-                    G.add_node(str(k1)+'_'+str(k2),type1='r',position=(G_count+.5,7.0))     # it's a directed node from k1 to k2
-                    G.add_edge(str(k1)+'_'+str(k2),str(k1))
-                    G.add_edge(str(k1)+'_'+str(k2),str(k2))
-                    G.add_node(str(k1)+'_'+str(k2)+'_dist',type1='rf',position=(G_count+.5,5));         #distance
-                    #direction = [dirx_m[counter,distance],diry_m[counter,distance],dirz_m[counter,distance]]
-                    G.add_node(str(k1)+'_'+str(k2)+'_dir',type1='rf',position=(G_count+.5-.15,5));                     #direction
-                    G.add_node(str(k1)+'_'+str(k2)+'_mot',type1='rf',position=(G_count+.5+.15,5));                     #motion
-                    G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dist')
-                    G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dir')
-                    G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_mot')
-            return G
 
     #--------------------------------------------------------------------------------------------------------#
     def _plot_final_graph(self):
@@ -1562,7 +1692,7 @@ class process_data():
             for sub,T in enumerate(self.transition['all']):
                 plt.sca(self.ax[sub,feature])
 
-                G = self._create_moving_obj_graph(T)
+                G = self._create_moving_obj_graph()
                 # Creating the group effect
                 if feature == 1:
                     if T not in self.transition['motion']:
