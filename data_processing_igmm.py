@@ -1550,7 +1550,7 @@ class process_data():
                         print("{0:.3f}".format( self.hyp_language_pass[word][f][value]))
 
     #--------------------------------------------------------------------------------------------------------#
-    def _create_moving_obj_graph(self):
+    def _create_scene_graph(self):
         # Creating the graph structure
         G = nx.Graph()
         # creating the object layer
@@ -1598,9 +1598,15 @@ class process_data():
                             x2 = self.Data[k2]['x'][I]
                             y2 = self.Data[k2]['y'][I]
                             z2 = self.Data[k2]['z'][I]
-                            if np.abs(sum(np.abs([x1-x2,y1-y2,z1-z2])))<=1.1:
-                                print k1,k2,[x1,y1,z1],[x2,y2,z2],[x1-x2,y1-y2,z1-z2]
-                            G.add_node(str(k1)+'_'+str(k2)+'_dir',type1='rf',position=(r_count,5));                     #direction
+                            d = [x1-x2,y1-y2,z1-z2]
+                            if np.abs(sum(np.abs(d)))<=1.1:
+                                if d[0] != 0:   d[0] /= np.abs(d[0])
+                                if d[1] != 0:   d[1] /= np.abs(d[1])
+                                if d[2] != 0:   d[2] /= np.abs(d[2])
+                            else:
+                                d = [0,0,0]
+
+                            G.add_node(str(k1)+'_'+str(k2)+'_dir',type1='rf',type2='direction',value=d,position=(r_count,5));                     #direction
                             #G.add_node(str(k1)+'_'+str(k2)+'_mot',type1='rf',position=(r_count+.15,5));                     #motion
                             #G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dist')
                             G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dir')

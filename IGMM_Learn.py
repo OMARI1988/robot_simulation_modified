@@ -9,14 +9,14 @@ import pickle
 P = process_data()
 plot = 0
 
-# print           'reading object hypotheses'
-# P.gmm_obj       = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "rb" ) )
-# print           'reading motion hypotheses'
-# P.hyp_motion    = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/hyp_motion_1000.p", "rb" ) )
-# print           'reading relation hypotheses'
-# P.hyp_relation  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/hyp_relation_1000.p", "rb" ) )
-# print           'reading total motion'
-# P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "rb" ) )
+print           'reading object hypotheses'
+P.gmm_obj       = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "rb" ) )
+print           'reading motion hypotheses'
+P.hyp_motion    = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/hyp_motion_1000.p", "rb" ) )
+print           'reading relation hypotheses'
+P.hyp_relation  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/hyp_relation_1000.p", "rb" ) )
+print           'reading total motion'
+P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "rb" ) )
 
 for scan in range(1):
   print 'scan number :',scan
@@ -50,7 +50,7 @@ for scan in range(1):
     P._convert_color_shape_location_to_gmm(plot)    # = P.gmm_M, P.M
     #P._convert_direction_to_gmm(plot)              # to do
     #P._convert_motion_to_gmm(plot)                 # to do
-    """
+
     #########################################################################################################
     #   Learning starts here, first we update the histograms of objects, relations and motions              #
     #########################################################################################################
@@ -72,6 +72,7 @@ for scan in range(1):
     #########################################################################################################
     #   Comparing language hypotheses to scene                                                              #
     #########################################################################################################
+    P._create_scene_graph()
     P._get_all_valid_combinations()
     P._test_all_valid_combinations()
 
@@ -81,8 +82,7 @@ for scan in range(1):
     #P._build_parser()                               #
     #P._test_sentence_hyp()                          # test if the whole sentence make sense
     P._print_results()
-    """
-    P._create_moving_obj_graph()
+
     print P.G_i.nodes()
     #print P.G_i.edges()
     print '**================= end of scene ===================**'
@@ -132,6 +132,8 @@ for scan in range(1):
 #   P.M                         = a dictionery for all M values of each gmm of each feature
 #   self.hyp_language_pass      = a dictionery of all valid hypotheses in language
 #   self.all_scene_features     = a dictionary that has all the scene features
+#   self.G_i                    = a graph for the first frame in the scene
+#   self.G_f                    = a graph for the final frame in the scene
 #
 ##############################################################################################################
 
