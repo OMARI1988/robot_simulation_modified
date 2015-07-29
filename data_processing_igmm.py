@@ -343,7 +343,7 @@ def calc(data):
 
                         for v in structure:
                             for p in structure[v]:
-                                if structure[v][p]['RE_count_result'] == 1 and structure[v][p]['graph_result'] == 1:
+                                if structure[v][p]['graph_result'] == 1:
                                     _print_sub_results(subset,matched_features,element,parsed_sentence,scene_description)
 
 
@@ -1689,8 +1689,6 @@ class process_data():
         #plt.draw() # display
         #plt.pause(.00001)
         #plt.show()
-
-
 
     #--------------------------------------------------------------------------------------------------------#
     def _plot_final_graph(self):
