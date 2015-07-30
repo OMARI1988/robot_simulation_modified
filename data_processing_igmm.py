@@ -134,8 +134,8 @@ def _parse_sentence(S,indices,subset,element,matched_features):
     return parsed_sentence, value_sentence
 
 #--------------------------------------------------------------------------------------------------------#
-# divide sentence with verbs
-def _divide_verb(parsed_sentence, value_sentence):
+# divide sentence with activities
+def _activity_domain(parsed_sentence, value_sentence):
     motion_ind = [i for i, x in enumerate(parsed_sentence) if x == 'motion']
     motion_ind2 = [0]
     for i in motion_ind:
@@ -172,6 +172,26 @@ def _divide_verb(parsed_sentence, value_sentence):
             verb_sentence[value_sentence[ind]]['after']['type'] = c
             verb_sentence[value_sentence[ind]]['after']['value'] = d
     return verb_sentence
+
+#--------------------------------------------------------------------------------------------------------#
+# divide activity domain into TE and TV according to the activity
+def _divide_into_TE_and_TV(activity_sentence):
+    domains = ['before','after']
+    for v in activity_sentence:
+        if v == (0,1,0,):
+            # we need both TE and TV
+            for d in domains:
+                print activity_sentence[v][d]['type']
+
+        if v == (0,1,):
+            # we need TE
+            pass
+
+        if v == (1,0,):
+            # we need TV
+            pass
+
+    return activity_sentence
 
 #--------------------------------------------------------------------------------------------------------#
 # check verb sentences with for relations and entities
@@ -445,10 +465,10 @@ def calc(data):
                         parsed_sentence, value_sentence = _parse_sentence(scene_description,indices,subset,element,matched_features)
                         #---------------------------------------------------------------#
                         # divide sentence with verbs
-                        verb_sentence = _divide_verb(parsed_sentence, value_sentence)
-                        # check verb sentences with for relations and entities
-                        # each verb sentence should have 1(e) or 2n(e) n(r)
-                        structure = _check_relation_entity_numbers(verb_sentence)
+                        activity_sentence = _activity_domain(parsed_sentence, value_sentence)
+                        activity_sentence = _divide_into_TE_and_TV(activity_sentence)
+                        # old method ! not clear
+                        structure = _check_relation_entity_numbers(activity_sentence)
                         structure = _check_graph_structure(structure)
                         structure = _match_scene_to_hypotheses(structure,graph_i,graph_f)
                         results   = _get_results(structure,scene_description,parsed_sentence,subset,element,matched_features)
