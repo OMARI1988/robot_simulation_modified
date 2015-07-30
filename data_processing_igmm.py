@@ -137,34 +137,46 @@ def _parse_sentence(S,indices,subset,element,matched_features):
 # divide sentence with verbs
 def _divide_verb(parsed_sentence, value_sentence):
     motion_ind = [i for i, x in enumerate(parsed_sentence) if x == 'motion']
-    sentence = ' '.join(parsed_sentence)
-    sentence = sentence.split('motion')
-    verb_sent = {}
+    motion_ind2 = [0]
+    for i in motion_ind:
+        motion_ind2.append(i)
+        motion_ind2.append(i+1)
+    motion_ind2 = motion_ind2+[len(parsed_sentence)]
+
+    sentence = []
+    values = []
+    for i in range(len(motion_ind2)/2):
+        sentence.append(parsed_sentence[motion_ind2[2*i]:motion_ind2[2*i+1]])
+        values.append(value_sentence[motion_ind2[2*i]:motion_ind2[2*i+1]])
+
+    verb_sentence = {}
     for k,ind in enumerate(motion_ind):
-        verb_sent[value_sentence[ind]] = {}
+        verb_sentence[value_sentence[ind]] = {}
         # Before the verb
-        verb_sent[value_sentence[ind]]['before'] = []
+        verb_sentence[value_sentence[ind]]['before'] = {}
+        verb_sentence[value_sentence[ind]]['before']['value'] = []
+        verb_sentence[value_sentence[ind]]['before']['type'] = []
         c = sentence[k]
+        d = values[k]
         if c != '':
-            A = c.split(' ')
-            while 1:
-                if '' in A:     A.remove('')
-                else:           break
-            verb_sent[value_sentence[ind]]['before'] = A
+            verb_sentence[value_sentence[ind]]['before']['type'] = c
+            verb_sentence[value_sentence[ind]]['before']['value'] = d
+
         # After the verb
-        verb_sent[value_sentence[ind]]['after'] = []
+        verb_sentence[value_sentence[ind]]['after'] = {}
+        verb_sentence[value_sentence[ind]]['after']['value'] = []
+        verb_sentence[value_sentence[ind]]['after']['type'] = []
         c = sentence[k+1]
+        d = values[k+1]
         if c != '':
-            A = c.split(' ')
-            while 1:
-                if '' in A:     A.remove('')
-                else:           break
-            verb_sent[value_sentence[ind]]['after'] = A
-    return verb_sent
+            verb_sentence[value_sentence[ind]]['after']['type'] = c
+            verb_sentence[value_sentence[ind]]['after']['value'] = d
+    return verb_sentence
 
 #--------------------------------------------------------------------------------------------------------#
 # check verb sentences with for relations and entities
 def _check_relation_entity_numbers(verb_sentence):
+
     possibilities = ['before','after']
     entity = ['color','shape','location']
     relation = ['direction']
@@ -176,47 +188,73 @@ def _check_relation_entity_numbers(verb_sentence):
             structure[v][p]['s'] = []
             structure[v][p]['e'] = []
             structure[v][p]['r'] = []
+            structure[v][p]['s_val'] = []
+            structure[v][p]['e_val'] = []
+            structure[v][p]['r_val'] = []
             structure[v][p]['RE_count_result'] = 0
             #print 'the verb is',v,'the sentence is',p
-            sentence = verb_sentence[v][p]
+            sentence    = verb_sentence[v][p]['type']
+            values      = verb_sentence[v][p]['value']
+            while 1:
+                if '_' in sentence:     sentence.remove('_')
+                else:                   break
+            while 1:
+                if '_' in values:       values.remove('_')
+                else:                   break
             if sentence != []:
-                while 1:
-                    if '_' in sentence:     sentence.remove('_')
-                    else:                   break
                 e = []
                 r = []
                 s = [[]]
+                e_val = []
+                r_val = []
+                s_val = [[]]
                 # keeping in mind that relations dont span, and objects dont span
                 # finding the minimum entities in a sentence
-                for word in sentence:
-                    if s[-1] == []:                     s[-1] = [word]
+                for word,value in zip(sentence,values):
+                    if s[-1] == []:
+                        s[-1] = [word]
+                        s_val[-1] = [value]
                     else:
                         if s[-1][-1] in entity:         #previous is entity
                             if word in entity       :   # new is entity
-                                if word not in s[-1]:   s[-1].append(word)
-                                else                :   s.append([word])
+                                if word not in s[-1]:
+                                    s[-1].append(word)
+                                    s_val[-1].append(value)
+                                else:
+                                    s.append([word])
+                                    s_val.append([value])
                             if word in relation     :   #new is relation
                                 s.append([word])
+                                s_val.append([value])
 
                         elif s[-1][-1] in relation:       #previous is relation
                             if word in entity       :   #new is entity
                                 s.append([word])
+                                s_val.append([value])
                             if word in relation     :   #new is relation
-                                if word not in s[-1]:   s[-1].append(word)
-                                else                :   s.append([word])
-                for sub in s:
+                                if word not in s[-1]:
+                                    s[-1].append(word)
+                                    s_val[-1].append(value)
+                                else:
+                                    s.append([word])
+                                    s_val.append([value])
+                for sub,val in zip(s,s_val):
                     if sub[0] in entity:
                         e.append(sub)
+                        e_val.append(val)
                     if sub[0] in relation:
                         r.append(sub)
+                        r_val.append(val)
                 # based on the number of allowed features to be in each entity or relation divide the sentence to get all posiible options :)
                 # then check the 2n(O) and 1n(R)
                 a = len(e)
                 b = len(r)
                 test_result = 'VERY BAD'
+                # MORE ENTITIES than RELATIONs
                 if a-b == 1:                    # perfect case were entities are 1 more than relation
                     test_result = 1
-                elif a-b > 2:                   # Wrong with no special cases
+                ############# IF YOU WANT TO LEARN BETWEEN CHANGET THIS ! THIS DONT ALLOW 3 E and 1 R
+                elif a-b > 2:                   # Wrong with no special cases ex 3 e and 1 r
                     test_result = 0
                 elif a-b == 2:                  # there might be a special case if one of the entities is a location
                     for i in e:
@@ -224,6 +262,7 @@ def _check_relation_entity_numbers(verb_sentence):
                             test_result = 1
                         else:
                             test_result = 0
+                # MORE or EQUAL RELATIONS THAN ENTITIES
                 elif a-b<1:                     # there are more or equal relations, check if number of indivual entities can be more
                     count = 0
                     for i in e:
@@ -236,68 +275,137 @@ def _check_relation_entity_numbers(verb_sentence):
                 structure[v][p]['s'] = s
                 structure[v][p]['e'] = e
                 structure[v][p]['r'] = r
+                structure[v][p]['s_val'] = s_val
+                structure[v][p]['e_val'] = e_val
+                structure[v][p]['r_val'] = r_val
                 structure[v][p]['RE_count_result'] = test_result
     return structure
 
 #--------------------------------------------------------------------------------------------------------#
-# check verb sentences with for relations and entities
+# This needs to check target entity and target location for every operation in every sentence
 def _check_graph_structure(structure):
+    # structure is a dictionary that has the verbs, then before,after the verb, (sentence,entity,relations,and their values stored in s,e,r,s_val,e_val,r_val)
     for v in structure:
         for p in structure[v]:
             structure[v][p]['graph_result'] = 0
             if structure[v][p]['RE_count_result'] == 1:
-                # print v
                 s = structure[v][p]['s']
                 e = structure[v][p]['e']
                 r = structure[v][p]['r']
-
+                s_val = structure[v][p]['s_val']
+                e_val = structure[v][p]['e_val']
+                r_val = structure[v][p]['r_val']
+                structure[v][p]['T_entity'] = []
+                structure[v][p]['T_value']  = []
                 a = len(e)
                 b = len(r)
                 if v == (0,1,0,):
+                    # we need a target entity and a target value
                     if a-b == 1:                    # perfect case were entities are 1 more than relation
-                        #print s
-                        #print e
-                        #print r
                         if b == 0:                  # there is only a single entity in the description
                             if 'location' in e[0] and len(e[0])>1:
-                                structure[v][p]['graph_result'] = 1
-                        if b == 1:                  # there is only a single relation in the description
-                            structure[v][p]['graph_result'] = 1
-    return structure
+                                if e[0][0] == 'location':
+                                    T_entity        = e[0][1:-1]
+                                    T_entity_val    = e_val[0][1:-1]
+                                    T_value         = e[0][0]
+                                    T_value_val     = e_val[0][0]
+                                    structure[v][p]['T_entity'] = [[T_entity,T_entity_val]]
+                                    structure[v][p]['T_value']  = [[T_value ,T_value_val ]]
+                                    structure[v][p]['graph_result'] = 1
+                                elif e[0][-1] == 'location':
+                                    T_entity        = e[0][0:len(e[0])-1]
+                                    T_entity_val    = e_val[0][0:len(e[0])-1]
+                                    T_value         = e[0][-1]
+                                    T_value_val     = e_val[0][-1]
+                                    structure[v][p]['T_entity'] = [[T_entity,T_entity_val]]
+                                    structure[v][p]['T_value']  = [[T_value ,T_value_val ]]
+                                    structure[v][p]['graph_result'] = 1
+                        if b > 0:                  # there are relations also
+                            pass
+                            # structure[v][p]['graph_result'] = 1
 
+                if v == (0,1,):
+                    # we need a target entitiy
+                    pass
+
+
+                if v == (1,0,):
+                    # we need a target value
+                    pass
+    return structure
 
 #--------------------------------------------------------------------------------------------------------#
 # check verb sentences with for relations and entities
-def _match_scene_to_hypotheses(structure):
+def _match_scene_to_hypotheses(structure,scene_i,scene_f):
     for v in structure:
         for p in structure[v]:
-            if structure[v][p]['RE_count_result'] == 1 and structure[v][p]['graph_result'] == 1:
-                s = structure[v][p]['s']
-                e = structure[v][p]['e']
-                r = structure[v][p]['r']
+            structure[v][p]['match_result'] = 0
+            structure[v][p]['valid_hypotheses'] = []
+            if structure[v][p]['graph_result'] == 1:
                 if v == (0,1,0,):
-                    # we need to find an entity and a target location
-                    # entity can be (e, ere, erere,..)
-                    # target location can be (loc, re)
-                    if a-b == 1:                    # perfect case were entities are 1 more than relation
-                        pass
+                    for E,V in zip(structure[v][p]['T_entity'],structure[v][p]['T_value']):
+                        match = 0
+                        T_entity        = E[0]
+                        T_entity_val    = E[1]
+                        objects = _get_the_objects_from_scene(T_entity,T_entity_val,scene_i)
+                        if len(objects)==1:
+                            T_value     =   V[0]
+                            T_value_val =   V[1]
+                            match = _match_final_scene(objects,T_value,T_value_val,scene_f)
+                            if match:
+                                structure[v][p]['match_result'] = 1
+                        structure[v][p]['valid_hypotheses'].append(match)
+                if v == (0,1,):
+                    pass
 
-                        #G = nx.graph()
-                        #     pass
-                        #
-                        # if v == (0,1,):
-                        #     pass
-                        #
-                        # if v == (1,0,):
-                        #     pass
+                if v == (1,0,):
+                    pass
+    return structure
 
 #--------------------------------------------------------------------------------------------------------#
-def _print_sub_results(subset,matched_features,element,parsed_sentence,scene_description):
-    print scene_description
-    print parsed_sentence
-    for k,word in enumerate(subset):
-        print word,'-',element[k][0],matched_features[element[k][1]]
-    print '-----------------------------------'
+# This function gets all the objects in the scene with certain features NO RELATIONS
+def _get_the_objects_from_scene(obj_features,obj_value,scene):
+
+    m_objects = list((n for n in scene if scene.node[n]['type1']=='mo'))
+    objects = list((n for n in scene if scene.node[n]['type1']=='o'))#
+    all_objects = m_objects+objects
+
+    obj_pass = []
+    for obj in all_objects:
+        ok = 1
+        for feature,value in zip(obj_features,obj_value):
+            if np.sum(np.abs(np.asarray(scene.node[obj+'_'+feature]['value'])-np.asarray(value))) != 0:
+                ok = 0
+        if ok:  obj_pass.append(obj)
+    return obj_pass
+
+#--------------------------------------------------------------------------------------------------------#
+# match the final scene location
+def _match_final_scene(objects,target_feature,target_value,scene):
+    if target_feature == 'location':
+        target_value = np.asarray(target_value)
+        target_value /= 7.0
+    match = 0
+    if np.sum(np.abs(np.asarray(scene.node[objects[0]+'_'+target_feature]['value'])-np.asarray(target_value)))==0:
+        match = 1
+
+    return match
+
+#--------------------------------------------------------------------------------------------------------#
+def _get_results(structure,scene_description,parsed_sentence,subset,element,matched_features):
+    for v in structure:
+        for p in structure[v]:
+            A = structure[v][p]
+            if A['match_result'] == 1:
+                for result,T_e,T_v in zip(A['valid_hypotheses'],A['T_entity'],A['T_value']):
+                    if result:
+                        print scene_description
+                        print parsed_sentence
+                        print T_e
+                        print T_v
+                        for k,word in enumerate(subset):
+                            print word,'-',element[k][0],matched_features[element[k][1]]
+                        print '-----------------------------------'
 
 #--------------------------------------------------------------------------------------------------------#
 def calc(data):
@@ -308,6 +416,8 @@ def calc(data):
     total_motion = data[3]
     scene_description = data[4]
     all_scene_features = data[5]
+    graph_i = data[6][0]
+    graph_f = data[6][1]
     parsed_sentence = ''
     value_sentence = ''
     #---------------------------------------------------------------#
@@ -340,11 +450,9 @@ def calc(data):
                         # each verb sentence should have 1(e) or 2n(e) n(r)
                         structure = _check_relation_entity_numbers(verb_sentence)
                         structure = _check_graph_structure(structure)
+                        structure = _match_scene_to_hypotheses(structure,graph_i,graph_f)
+                        results   = _get_results(structure,scene_description,parsed_sentence,subset,element,matched_features)
 
-                        for v in structure:
-                            for p in structure[v]:
-                                if structure[v][p]['graph_result'] == 1:
-                                    _print_sub_results(subset,matched_features,element,parsed_sentence,scene_description)
 
 
     return ([parsed_sentence,value_sentence],)
@@ -1273,6 +1381,8 @@ class process_data():
     # generate all possible sentences that have hypotheses in language hypotheses pass
     def _test_all_valid_combinations(self):
         # test the hypotheses sentence by sentence
+        print self.G_i
+        print self.G_f
         if 'motion' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
@@ -1284,7 +1394,7 @@ class process_data():
                 for L in range(2, len(phrases_with_hyp)+1):
                     #out1 = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene]] for subset in itertools.combinations(phrases_with_hyp, L)]))
                     for subset in itertools.combinations(phrases_with_hyp, L):
-                        out1 = calc([subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene]])
+                        out1 = calc([subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f]])
 
 
     #------------------------------------------------------------------#
@@ -1559,8 +1669,6 @@ class process_data():
         obj_count = 3.0                 # 1 is reserved for the moving object
         G_count = 1.0
         for I in [0,-1]:
-            print '-----------------------'
-            print I
 
             for key in self.keys:
                 #print key,self.Data[key]['color']
