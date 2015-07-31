@@ -21,16 +21,14 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pi
 for scan in range(1):
   print 'scan number :',scan
   #for scene in range(1,58):
-  for scene in range(1,2):
+  for scene in range(1,6):
     if scene in [891,892]: continue
     #ts = time.time()
     #########################################################################################################
     #   Read sentences and scenes                                                                           #
     #########################################################################################################
     P._read(scene)                                  # Objects, Graph, Sentences
-
-    #P._print_scentenses()
-    #if len(P.G.nodes()) > 10:       continue
+    P._print_scentenses()
 
     #########################################################################################################
     #  Process scenes                                                                                       #
@@ -73,6 +71,7 @@ for scan in range(1):
     #   Comparing language hypotheses to scene                                                              #
     #########################################################################################################
     P._create_scene_graph()
+    P._print_results()
     P._get_all_valid_combinations()
     P._test_all_valid_combinations()
 
@@ -81,7 +80,6 @@ for scan in range(1):
     #########################################################################################################
     #P._build_parser()                               #
     #P._test_sentence_hyp()                          # test if the whole sentence make sense
-    P._print_results()
 
     #print P.G_i.nodes()
     #print P.G_i.edges()

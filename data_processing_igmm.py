@@ -178,20 +178,278 @@ def _activity_domain(parsed_sentence, value_sentence):
 def _divide_into_TE_and_TV(activity_sentence):
     domains = ['before','after']
     for v in activity_sentence:
-        if v == (0,1,0,):
-            # we need both TE and TV
-            for d in domains:
-                print activity_sentence[v][d]['type']
+        for d in domains:
+            activity_sentence[v][d]['valid_configurations'] = []
+            if activity_sentence[v][d]['type'] != []:
+                s1 = activity_sentence[v][d]['type']
+                s2 = activity_sentence[v][d]['value']
+                if v == (0,1,0,):
+                    # we need both TE and TV
+                    for L in range(1,len(s1)):
+                        x = _check_TE_TV(s1[0:L],s1[L:len(s1)],s2[0:L],s2[L:len(s2)])
+                        if x != []:
+                            activity_sentence[v][d]['valid_configurations'].append(x)
 
-        if v == (0,1,):
-            # we need TE
-            pass
+                if v == (0,1,):
+                    # we need TE
+                    pass
 
-        if v == (1,0,):
-            # we need TV
-            pass
+                if v == (1,0,):
+                    # we need TV
+                    pass
+
+            # for k in activity_sentence[v][d]['valid_configurations']:
+            #     for i in k:
+            #         print 'order',i[0]
+            #         print 'sentences_a',i[1][0]
+            #         print 'sentences_b',i[1][1]
+            #         print 'TE results',i[2][0]
+            #         print 'TE values',i[3][0]
+            #         print 'TV results',i[4][0]
+            #         print 'TV values',i[5][0]
+            # print '----'
 
     return activity_sentence
+
+#--------------------------------------------------------------------------------------------------------#
+# check domain for TE and TV
+def _check_TE_TV(a,b,a_val,b_val):
+    Valid = []
+    # [[the order TV,TE or TE,TV].[the sentences a,b],[TE results],[TV results]]
+    TE_result,[s1,e1,r1],[s1_v,e1_v,r1_v] = _check_TE(a[:],a_val[:])
+    TV_result,[s2,e2,r2],[s2_v,e2_v,r2_v] = _check_TV(b[:],b_val[:])
+    if TE_result and TV_result:
+        Valid.append([['TE,TV'],[a,b],[s1,e1,r1],[s1_v,e1_v,r1_v],[s2,e2,r2],[s2_v,e2_v,r2_v]])
+    # TE_result,[s1,e1,r1] = _check_TE(b)
+    # TV_result,[s2,e2,r2] = _check_TV(a)
+    # if TE_result and TV_result:
+    #     Valid.append([['TV,TE'],[a,b],[s1,e1,r1],[s2,e2,r2]])
+    return Valid
+
+#--------------------------------------------------------------------------------------------------------#
+# check domain for TE e,ere,erere,...
+def _check_TE(sentence,value):
+    [s,e,r],[s_val,e_val,r_val] = _check_R_E(sentence[:],value[:])
+    a = len(e)
+    b = len(r)
+    test_result = 0
+    if a!=0:
+        # MORE ENTITIES than RELATIONs
+        if a-b == 1:                    # perfect case were entities are 1 more than relation
+            test_result = 1
+        ############# IF YOU WANT TO LEARN BETWEEN CHANGET THIS ! THIS DONT ALLOW 3 E and 1 R
+        # elif a-b > 1:                   # Wrong with no special cases ex 3 e and 1 r
+        #     test_result = 0
+        # # MORE or EQUAL RELATIONS THAN ENTITIES
+        ############# IF YOU WANT TO LEARN ((PICK UP the [[green object, which the pyrimd]] is near it )) uncomment
+        # elif a-b<1:                     # there are more or equal relations, check if number of indivual entities can be more
+        #     count = 0
+        #     for i in e:
+        #         count += len(i)
+        #     if count > b:
+        #         test_result = 1
+        #     else:
+        #         test_result = 0
+    return test_result,[s,e,r],[s_val,e_val,r_val]
+
+#--------------------------------------------------------------------------------------------------------#
+# check domain for TV location,re,rere,...
+def _check_TV(sentence,value):
+    [s,e,r],[s_val,e_val,r_val] = _check_R_E(sentence[:],value[:])
+    a = len(e)
+    b = len(r)
+    test_result = 0
+    if a!=0:
+        # MORE ENTITIES than RELATIONs
+        if a-b == 0:                    # perfect case were entities are equal to relations
+            test_result = 1
+        elif b == 0 and a == 1:                  # there might be a special case if one of the entities is a location
+            if e[0][0]=='location':
+                test_result = 1
+    return test_result,[s,e,r],[s_val,e_val,r_val]
+
+#--------------------------------------------------------------------------------------------------------#
+# check domain for relations and entities
+def _check_R_E(a,b):
+    while 1:
+        if '_' in a:            a.remove('_')
+        else:                   break
+        if '_' in b:            b.remove('_')
+        else:                   break
+    e = []
+    r = []
+    s = [[]]
+    e_val = []
+    r_val = []
+    s_val = [[]]
+    entity = ['color','shape','location']
+    relation = ['direction']
+    if a != []:
+        for word,value in zip(a,b):
+            if s[-1] == []:
+                s[-1] = [word]
+                s_val[-1] = [value]
+            else:
+                if s[-1][-1] in entity:         #previous is entity
+                    if word in entity       :   # new is entity
+                        if word not in s[-1]:
+                            s[-1].append(word)
+                            s_val[-1].append(value)
+                        else:
+                            s.append([word])
+                            s_val.append([value])
+                    if word in relation     :   #new is relation
+                        s.append([word])
+                        s_val.append([value])
+
+                elif s[-1][-1] in relation:       #previous is relation
+                    if word in entity       :   #new is entity
+                        s.append([word])
+                        s_val.append([value])
+                    if word in relation     :   #new is relation
+                        if word not in s[-1]:
+                            s[-1].append(word)
+                            s_val[-1].append(value)
+                        else:
+                            s.append([word])
+                            s_val.append([value])
+        for sub,val in zip(s,s_val):
+        # for sub in s:
+            if sub[0] in entity:
+                e.append(sub)
+                e_val.append(val)
+            if sub[0] in relation:
+                r.append(sub)
+                r_val.append(val)
+    return [s,e,r],[s_val,e_val,r_val]
+
+#--------------------------------------------------------------------------------------------------------#
+# check verb sentences with for relations and entities
+def _match_scene_to_hypotheses(activity_sentence,scene_i,scene_f):
+    for v in activity_sentence:
+        for d in activity_sentence[v]:
+            activity_sentence[v][d]['valid_hypotheses'] = []
+            for k in activity_sentence[v][d]['valid_configurations']:
+                for i in k:
+                    match = 0
+                    order = i[0]
+                    sentences_a = i[1][0]
+                    sentences_b = i[1][1]
+                    TE_results = i[2]
+                    TE_values = i[3]
+                    TV_results = i[4]
+                    TV_values = i[5]
+                    if v == (0,1,0,):
+                        objects = _get_the_TE_from_scene(TE_results[:],TE_values[:],scene_i)
+                        if len(objects)==1:
+                            #print 'the object is:',objects
+                            location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i)
+                            if len(location)==1:
+                                #print 'the target location is:',location
+                                match = _match_final_scene(objects,'location',location,scene_f)
+                                #print match
+                    if v == (0,1,):
+                        pass
+
+                    if v == (1,0,):
+                        pass
+                    activity_sentence[v][d]['valid_hypotheses'].append(match)
+    return activity_sentence
+
+#--------------------------------------------------------------------------------------------------------#
+# This function gets all the objects in the scene with certain features NO RELATIONS (get target entitity)
+def _get_the_TE_from_scene(TE_results,TE_values,scene):
+    m_objects = list((n for n in scene if scene.node[n]['type1']=='mo'))
+    objects = list((n for n in scene if scene.node[n]['type1']=='o'))#
+    all_objects = m_objects+objects
+    features = TE_results[1]
+    relations = TE_results[2]
+    features_v = TE_values[1]
+    relations_v = TE_values[2]
+    obj_pass = []
+    if relations == []:
+        for obj in all_objects:
+            ok = 1
+            for feature,value in zip(features[0],features_v[0]):
+                if np.sum(np.abs(np.asarray(scene.node[obj+'_'+feature]['value'])-np.asarray(value))) != 0:
+                    ok = 0
+            if ok:  obj_pass.append(obj)
+    return obj_pass
+
+#--------------------------------------------------------------------------------------------------------#
+# This function gets all the objects in the scene with certain features NO RELATIONS (get target entitity)
+def _get_the_TV_from_scene(TV_results,TV_values,scene):
+    m_objects = list((n for n in scene if scene.node[n]['type1']=='mo'))
+    objects = list((n for n in scene if scene.node[n]['type1']=='o'))#
+    all_objects = m_objects+objects
+    features = TV_results[1]
+    relations = TV_results[2]
+    features_v = TV_values[1]
+    relations_v = TV_values[2]
+    # print '---',features
+    # print '---',features_v
+    # print '---',relations
+    # print '---',relations_v
+    location_pass = []
+    if relations == []:
+        if len(features[0]) == 1:
+            if features[0][0] == 'location':
+                loc = np.asarray(features_v[0][0])/7.0
+                location_pass.append(loc)
+    elif len(relations)==1 and len(features)==1:
+        obj_pass = []
+        for obj in all_objects:
+            ok = 1
+            for feature,value in zip(features[0],features_v[0]):
+                if np.sum(np.abs(np.asarray(scene.node[obj+'_'+feature]['value'])-np.asarray(value))) != 0:
+                    ok = 0
+            if ok:  obj_pass.append(obj)
+        for obj in obj_pass:
+            #NOTE: if you want to learn right and left this is where you have to look
+            #NOTE: this will only work for over !
+            #NOTE: if you want to learn nearset its also here
+            loc = scene.node[obj+'_'+'location']['value']
+            location_pass.append(loc)
+    return location_pass
+
+#--------------------------------------------------------------------------------------------------------#
+# match the final scene location
+def _match_final_scene(objects,target_feature,target_value,scene):
+    match = 0
+    loc = scene.node[objects[0]+'_'+target_feature]['value']
+    if np.sum(np.abs(np.asarray(scene.node[objects[0]+'_'+target_feature]['value'])-np.asarray(target_value)))==0:
+        match = 1
+    return match
+
+#--------------------------------------------------------------------------------------------------------#
+def _print_results(activity_sentence,scene_description,parsed_sentence,subset,element,matched_features):
+    for v in activity_sentence:
+        for d in ['before','after']:
+            for k in activity_sentence[v][d]['valid_hypotheses']:
+                if k:
+                    print scene_description
+                    for a,b in zip(subset,element):
+                        print a,b
+                    print '---------------'
+                    for k1 in activity_sentence[v][d]['valid_configurations']:
+                        for i in k1:
+                            print 'order',i[0]
+                            print 'sentences_a',i[1][0]
+                            print 'sentences_b',i[1][1]
+                            print 'TE results',i[2][0]
+                            print 'TE values',i[3][0]
+                            print 'TV results',i[4][0]
+                            print 'TV values',i[5][0]
+                    print '*****************'
+                    print
+                    print
+
+
+
+
+
+
+
 
 #--------------------------------------------------------------------------------------------------------#
 # check verb sentences with for relations and entities
@@ -356,7 +614,7 @@ def _check_graph_structure(structure):
 
 #--------------------------------------------------------------------------------------------------------#
 # check verb sentences with for relations and entities
-def _match_scene_to_hypotheses(structure,scene_i,scene_f):
+def _match_scene_to_hypotheses2(structure,scene_i,scene_f):
     for v in structure:
         for p in structure[v]:
             structure[v][p]['match_result'] = 0
@@ -367,7 +625,7 @@ def _match_scene_to_hypotheses(structure,scene_i,scene_f):
                         match = 0
                         T_entity        = E[0]
                         T_entity_val    = E[1]
-                        objects = _get_the_objects_from_scene(T_entity,T_entity_val,scene_i)
+                        objects = _get_the_objects_from_scene2(T_entity,T_entity_val,scene_i)
                         if len(objects)==1:
                             T_value     =   V[0]
                             T_value_val =   V[1]
@@ -384,7 +642,7 @@ def _match_scene_to_hypotheses(structure,scene_i,scene_f):
 
 #--------------------------------------------------------------------------------------------------------#
 # This function gets all the objects in the scene with certain features NO RELATIONS
-def _get_the_objects_from_scene(obj_features,obj_value,scene):
+def _get_the_objects_from_scene2(obj_features,obj_value,scene):
 
     m_objects = list((n for n in scene if scene.node[n]['type1']=='mo'))
     objects = list((n for n in scene if scene.node[n]['type1']=='o'))#
@@ -398,18 +656,6 @@ def _get_the_objects_from_scene(obj_features,obj_value,scene):
                 ok = 0
         if ok:  obj_pass.append(obj)
     return obj_pass
-
-#--------------------------------------------------------------------------------------------------------#
-# match the final scene location
-def _match_final_scene(objects,target_feature,target_value,scene):
-    if target_feature == 'location':
-        target_value = np.asarray(target_value)
-        target_value /= 7.0
-    match = 0
-    if np.sum(np.abs(np.asarray(scene.node[objects[0]+'_'+target_feature]['value'])-np.asarray(target_value)))==0:
-        match = 1
-
-    return match
 
 #--------------------------------------------------------------------------------------------------------#
 def _get_results(structure,scene_description,parsed_sentence,subset,element,matched_features):
@@ -426,6 +672,9 @@ def _get_results(structure,scene_description,parsed_sentence,subset,element,matc
                         for k,word in enumerate(subset):
                             print word,'-',element[k][0],matched_features[element[k][1]]
                         print '-----------------------------------'
+
+
+
 
 #--------------------------------------------------------------------------------------------------------#
 def calc(data):
@@ -467,11 +716,14 @@ def calc(data):
                         # divide sentence with verbs
                         activity_sentence = _activity_domain(parsed_sentence, value_sentence)
                         activity_sentence = _divide_into_TE_and_TV(activity_sentence)
+                        activity_sentence = _match_scene_to_hypotheses(activity_sentence,graph_i,graph_f)
+                        results  = _print_results(activity_sentence,scene_description,parsed_sentence,subset,element,matched_features)
+
                         # old method ! not clear
-                        structure = _check_relation_entity_numbers(activity_sentence)
-                        structure = _check_graph_structure(structure)
-                        structure = _match_scene_to_hypotheses(structure,graph_i,graph_f)
-                        results   = _get_results(structure,scene_description,parsed_sentence,subset,element,matched_features)
+                        # structure = _check_relation_entity_numbers(activity_sentence)
+                        # structure = _check_graph_structure(structure)
+                        # structure = _match_scene_to_hypotheses2(structure,graph_i,graph_f)
+                        # results   = _get_results(structure,scene_description,parsed_sentence,subset,element,matched_features)
 
 
 
@@ -1412,9 +1664,9 @@ class process_data():
 
                 # generate all subsets (pick from 1 word to n words) with no repatetion in phrases
                 for L in range(2, len(phrases_with_hyp)+1):
-                    #out1 = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene]] for subset in itertools.combinations(phrases_with_hyp, L)]))
-                    for subset in itertools.combinations(phrases_with_hyp, L):
-                        out1 = calc([subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f]])
+                    out1 = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f]] for subset in itertools.combinations(phrases_with_hyp, L)]))
+                    # for subset in itertools.combinations(phrases_with_hyp, L):
+                    #     out1 = calc([subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f]])
 
 
     #------------------------------------------------------------------#
@@ -1755,8 +2007,8 @@ class process_data():
                         G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dir')
                         G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_mot')
                 """
-            if I == 0:          self.G_i = G
-            if I == -1:         self.G_f = G
+            if I == 0:          self.G_i = G.copy()
+            if I == -1:         self.G_f = G.copy()
 
 
 
