@@ -20,8 +20,10 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pi
 
 for scan in range(1):
   print 'scan number :',scan
-  #for scene in range(1,58):
-  for scene in range(1,6):
+  # I have checked sentences toll 12 check more and see what can be learned, or slightly hard to learn !
+  for scene in range(10,13):
+    if scene not in [1,2,7,8,11,12]: continue
+    #slightly hard [10,]
     if scene in [891,892]: continue
     #ts = time.time()
     #########################################################################################################
@@ -29,7 +31,7 @@ for scan in range(1):
     #########################################################################################################
     P._read(scene)                                  # Objects, Graph, Sentences
     P._print_scentenses()
-
+    #continue
     #########################################################################################################
     #  Process scenes                                                                                       #
     #########################################################################################################
