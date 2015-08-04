@@ -6,6 +6,16 @@ from data_processing_igmm import *
 import time
 import pickle
 
+
+##############################################################################################################
+# TO DO (START FROM HERE)
+# I have checked sentences toll 12 check more and see what can be learned, or slightly hard to learn !
+# for some reason its slow, check why when you come back
+
+
+
+
+
 P = process_data()
 plot = 0
 
@@ -20,8 +30,7 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pi
 
 for scan in range(1):
   print 'scan number :',scan
-  # I have checked sentences toll 12 check more and see what can be learned, or slightly hard to learn !
-  for scene in range(10,13):
+  for scene in range(1,2):
     if scene not in [1,2,7,8,11,12]: continue
     #slightly hard [10,]
     if scene in [891,892]: continue
@@ -80,7 +89,7 @@ for scan in range(1):
     #########################################################################################################
     #   Build the grammar                                                                                   #
     #########################################################################################################
-    #P._build_parser()                               #
+    P._build_grammar()                               #
     #P._test_sentence_hyp()                          # test if the whole sentence make sense
 
     #print P.G_i.nodes()

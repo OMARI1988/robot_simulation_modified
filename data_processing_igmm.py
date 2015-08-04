@@ -111,8 +111,10 @@ def _parse_sentence(S,indices,subset,element,matched_features):
     parsed_sentence = []
     value_sentence = []
     for i in S.split(' '):
-        parsed_sentence.append('_')
-        value_sentence.append('_')
+        #parsed_sentence.append('_')
+        #value_sentence.append('_')
+        parsed_sentence.append(i)
+        value_sentence.append(i)
     for word1 in subset:
         for i1 in indices[word1]:
             for k1,j1 in enumerate(i1):
@@ -129,8 +131,6 @@ def _parse_sentence(S,indices,subset,element,matched_features):
             parsed_sentence.remove('delete')
             value_sentence.remove('delete')
         else:       break
-    #for k,word in enumerate(subset):
-    #   print word,'-',element[k][0],matched_features[element[k][1]]
     return parsed_sentence, value_sentence
 
 #--------------------------------------------------------------------------------------------------------#
@@ -271,11 +271,6 @@ def _check_TV(sentence,value):
 #--------------------------------------------------------------------------------------------------------#
 # check domain for relations and entities
 def _check_R_E(a,b):
-    while 1:
-        if '_' in a:            a.remove('_')
-        else:                   break
-        if '_' in b:            b.remove('_')
-        else:                   break
     e = []
     r = []
     s = [[]]
@@ -284,6 +279,13 @@ def _check_R_E(a,b):
     s_val = [[]]
     entity = ['color','shape','location']
     relation = ['direction']
+    to_remove = []
+    for k,i in enumerate(a):
+        if i not in entity and i not in relation:
+            to_remove.append(k)
+    for j in reversed(to_remove):
+        a.pop(j)
+        b.pop(j)
     if a != []:
         for word,value in zip(a,b):
             if s[-1] == []:
@@ -422,27 +424,33 @@ def _match_final_scene(objects,target_feature,target_value,scene):
     return match
 
 #--------------------------------------------------------------------------------------------------------#
-def _print_results(activity_sentence,scene_description,parsed_sentence,subset,element,matched_features):
+def _print_results(activity_sentence,scene_description,parsed_sentence,subset,element,matched_features,scene,L):
+    results = []
     for v in activity_sentence:
         for d in ['before','after']:
-            for k in activity_sentence[v][d]['valid_hypotheses']:
+            for k2,k in enumerate(activity_sentence[v][d]['valid_hypotheses']):
                 if k:
                     print scene_description
+                    print 'scene number:',scene
+                    print 'L:',L
                     for a,b in zip(subset,element):
                         print a,b
                     print '---------------'
-                    for k1 in activity_sentence[v][d]['valid_configurations']:
-                        for i in k1:
-                            print 'order',i[0]
-                            print 'sentences_a',i[1][0]
-                            print 'sentences_b',i[1][1]
-                            print 'TE results',i[2][0]
-                            print 'TE values',i[3][0]
-                            print 'TV results',i[4][0]
-                            print 'TV values',i[5][0]
+                    for k3,k1 in enumerate(activity_sentence[v][d]['valid_configurations']):
+                        if k2==k3:
+                            for i in k1:
+                                print 'order        :',i[0]
+                                print 'target entity:',i[1][0]
+                                print 'target value :',i[1][1]
+                                print 'TE results   :',i[2][0]
+                                print 'TE values    :',i[3][0]
+                                print 'TV results   :',i[4][0]
+                                print 'TV values    :',i[5][0]
+                                results.append([i[0],i[1][0],i[1][1],subset,element])
                     print '*****************'
                     print
                     print
+    return results
 
 
 
@@ -687,8 +695,9 @@ def calc(data):
     all_scene_features = data[5]
     graph_i = data[6][0]
     graph_f = data[6][1]
-    parsed_sentence = ''
-    value_sentence = ''
+    scene = data[7]
+    L = data[8]
+    results = [[]]
     #---------------------------------------------------------------#
     # no 2 phrases are allowed to intersect in the same sentence
     no_intersection = _intersection(subset,indices)
@@ -717,17 +726,14 @@ def calc(data):
                         activity_sentence = _activity_domain(parsed_sentence, value_sentence)
                         activity_sentence = _divide_into_TE_and_TV(activity_sentence)
                         activity_sentence = _match_scene_to_hypotheses(activity_sentence,graph_i,graph_f)
-                        results  = _print_results(activity_sentence,scene_description,parsed_sentence,subset,element,matched_features)
-
+                        results.append(_print_results(activity_sentence,scene_description,parsed_sentence,subset,element,matched_features,scene,L))
+                        #print scene,L,'---',results
                         # old method ! not clear
                         # structure = _check_relation_entity_numbers(activity_sentence)
                         # structure = _check_graph_structure(structure)
                         # structure = _match_scene_to_hypotheses2(structure,graph_i,graph_f)
                         # results   = _get_results(structure,scene_description,parsed_sentence,subset,element,matched_features)
-
-
-
-    return ([parsed_sentence,value_sentence],)
+    return (results,)
 
 
 class prettyfloat(float):
@@ -740,10 +746,13 @@ class process_data():
         self.dir2 = '/home/omari/Datasets/robot_modified/scenes/'
         self.dir3 = '/home/omari/Datasets/robot_modified/graphs/scene'
 
-        # initial language
+        # initial language grammar
         self.N                      = {}                    # non-terminals
         self.N['e']                 = {}                    # non-terminals entity
         self.N['e']['sum']          = 0.0                   # non-terminals entity counter
+        self.T = {}                                         # terminals
+        self.T['features'] = {}
+        self.T['sum'] = {}
 
         # connecting language to vision hypotheses
         self.hyp_language           = {}
@@ -757,6 +766,8 @@ class process_data():
         self.all_total_motion       = {}
         self.all_scene_features     = {}
 
+
+        #phrases
         self.n_word                 = 3
         self.step                   = 3
         self.all_words              = []
@@ -764,14 +775,14 @@ class process_data():
         #gmm
         self.gmm_obj                = {}
         self.gmm_M                  = {}
-        self.cv_types = ['spherical', 'tied', 'diag', 'full']
-        # self.cv_types = ['full']
+        #self.cv_types = ['spherical', 'tied', 'diag', 'full']
+        self.cv_types = ['full']
 
         # habituation parameter
         self.p_parameter            = 3.0                       # probability parameter for exp function in habituation
         self.pass_distance          = .25                       # distance test for how much igmms match
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
-        self.p_obj_pass             = .75                        # for object
+        self.p_obj_pass             = .7                        # for object
         self.p_relation_pass        = .8                        # for both relation and motion
         self.pool = multiprocessing.Pool(8)
 
@@ -1653,21 +1664,24 @@ class process_data():
     # generate all possible sentences that have hypotheses in language hypotheses pass
     def _test_all_valid_combinations(self):
         # test the hypotheses sentence by sentence
-        print self.G_i
-        print self.G_f
+        self.valid_combination = {}
         if 'motion' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
+                self.valid_combination[scene] = {}
                 #print scene
                 # get the words that have hypotheses and are in the sentence
                 phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
 
                 # generate all subsets (pick from 1 word to n words) with no repatetion in phrases
                 for L in range(2, len(phrases_with_hyp)+1):
-                    out1 = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f]] for subset in itertools.combinations(phrases_with_hyp, L)]))
+                    self.valid_combination[scene][L] = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L] for subset in itertools.combinations(phrases_with_hyp, L)]))
                     # for subset in itertools.combinations(phrases_with_hyp, L):
-                    #     out1 = calc([subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f]])
-
+                    #     out1 = calc([subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L])
+                        #
+                        # for o1 in out1[0]:
+                        #     if o1 != []:
+                        #         print '-------',o1
 
     #------------------------------------------------------------------#
     # get the index of every phrase in every sentence
@@ -1792,32 +1806,61 @@ class process_data():
                         print '----'
 
     #--------------------------------------------------------------------------------------------------------#
-    def _build_parser(self):
+    # takes the valid hypotheses and build the grammar
+    def _build_grammar(self):
+        self.max_L = {}
+        for scene in self.valid_combination:
+            self.max_L[scene] = -1
+            for L in self.valid_combination[scene]:
+                # print scene,L
+                for i in self.valid_combination[scene][L]:
+                    for j in i:
+                        for k in j:
+                            if k != []:
+                                if L>self.max_L[scene]:
+                                    self.max_L[scene] = L
+                                for k1 in k:
+                                    print self.S[scene]
+                                    print 'Scene:',scene,'L:',L,k1
+                                    print '******'
+        print self.max_L
         self._update_terminals()
         self._update_nonterminals()
-        self._build_PCFG()
+        #self._build_PCFG()
 
     #--------------------------------------------------------------------------------------------------------#
     def _update_terminals(self):
         hypotheses = self.hyp_language_pass
+        for scene in self.valid_combination:
+            #for L in self.valid_combination[scene]:
+            L = self.max_L[scene]
+            if L>0:
+                for i in self.valid_combination[scene][L]:
+                    for j in i:
+                        for k in j:
+                            if k != []:
+                                for k1 in k:
+                                    words   = k1[3]
+                                    values  = k1[4]
+                                    for word,value in zip(words,values):
+                                        feature = value[0]
+                                        val = hypotheses[word][value[0]][value[1]]
+                                        if feature not in self.T['features']:
+                                            self.T['features'][feature] = {}
+                                            self.T['sum'][feature]      = 0.0
+                                        if word not in self.T['features'][feature]:
+                                            self.T['features'][feature][word] = 0.0
+                                        #print word,value
+                                        #print val
+                                        self.T['features'][feature][word] += val
+                                        self.T['sum'][feature] += val
+                                    #print '******'
         self.grammar = ''
-        self.T = {}                                             # terminals
-        self.T['features'] = {}
-        self.T['sum'] = {}
-        for word in hypotheses:
-            for feature in hypotheses[word]:
-                if feature not in ['possibilities','all']:
-                    if feature not in self.T['features']:
-                        self.T['features'][feature] = []
-                        self.T['sum'][feature] = 0
-                    for hyp in hypotheses[word][feature]:
-                        self.T['features'][feature].append((word,hyp[1]))
-                        self.T['sum'][feature] += hyp[1]
-
         for feature in self.T['features']:
-            l = len(self.T['features'][feature])
             for hyp in self.T['features'][feature]:
-                self.grammar += feature+" -> '"+hyp[0]+"' ["+str(hyp[1]/self.T['sum'][feature])+"]"+'\n'
+                val = self.T['features'][feature][hyp]
+                self.grammar += feature+" -> '"+hyp+"' ["+str(val/self.T['sum'][feature])+"]"+'\n'
+        print self.grammar
 
     #--------------------------------------------------------------------------------------------------------#
     def _update_nonterminals(self,):
@@ -1825,68 +1868,35 @@ class process_data():
 
         entity_features = ['color','shape','location']
 
-        def rotate(l,n):
-            return l[n:] + l[:n]
 
-        def _find_entities(A):
-            all_e = []
-            e = []
-            k_1 = 0
-            for k in A:
-                if e == []:
-                    e.append(k)
-                    k_1 = k
-                elif k-k_1 == 1:
-                    e.append(k)
-                    k_1 = k
-                else:
-                    all_e.append(e)
-                    e = [k]
-                    k_1 = k
-            all_e.append(e)
-            return all_e
+        for scene in self.valid_combination:
+            #for L in self.valid_combination[scene]:
+            L = self.max_L[scene]
+            if L>0:
+                for i in self.valid_combination[scene][L]:
+                    for j in i:
+                        for k in j:
+                            if k != []:
+                                for k1 in k:
+                                    order   = k1[0]
+                                    TE      = k1[1]
+                                    TV      = k1[2]
+                                    print L
+                                    print k1
+                                    print 'target E:',TE
+                                    print 'target V:',TV
+                                    print '*****'
 
-        # loop through all sentences
-        features = self.T['features'].keys()
-        for s in self.S:
-            sentence = self.S[s].split(' ')
-            indices = {}
-            for feature in features:
-                indices[feature] = []
-                for hyp in self.T['features'][feature]:
-                    A = [i for i, x in enumerate(sentence) if x == hyp[0]]
-                    for i in A:
-                        indices[feature].append(i)
 
-            # plug in the hypotheses of each word
-            parsed_sentence = []
-            entity_sentence = []                        #to check connectivity of an entity
-            for ind,word in enumerate(sentence):
-                parsed_sentence.append('_')
-                entity_sentence.append(0)
-                for feature in indices:
-                    if ind in indices[feature]:
-                        parsed_sentence[ind] = feature
-                        if feature in entity_features:
-                            entity_sentence[ind] = 1
-
-            # find the number of entity based on connectivity of features in a sentence
-            A = [i for i, x in enumerate(entity_sentence) if x == 1]
-            all_entities = _find_entities(A)
-
-            #print sentence
-            #print self.scene,parsed_sentence
-            #print self.scene,entity_sentence
-
-            # update the non-terminal counter
-            for entity in all_entities:
-                if entity != []:
-                    h = ()
-                    for j in entity:
-                        h += (parsed_sentence[j],)
-                    if h not in self.N['e']:        self.N['e'][h] =  1.0
-                    else:        self.N['e'][h] += 1.0
-                    self.N['e']['sum'] += 1.0
+        # update the non-terminal counter
+        for entity in all_entities:
+            if entity != []:
+                h = ()
+                for j in entity:
+                    h += (parsed_sentence[j],)
+                if h not in self.N['e']:        self.N['e'][h] =  1.0
+                else:        self.N['e'][h] += 1.0
+                self.N['e']['sum'] += 1.0
 
         # add entities, ++ to grammer
         for feature in self.N:
