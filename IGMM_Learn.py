@@ -30,8 +30,7 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pi
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,3):
-    if scene not in [1,2,7,8,11,12]: continue
+  for scene in range(1,1001):
     #slightly hard [10,]
     if scene in [891,892]: continue
     #ts = time.time()
@@ -94,7 +93,7 @@ for scan in range(1):
 
     #print P.G_i.nodes()
     #print P.G_i.edges()
-    print '**================= end of scene ===================**'
+    print '**================= end of scene '+str(P.scene)+' ===================**'
     print '\n\n\n'
 
 

@@ -441,7 +441,7 @@ def _print_results(activity_sentence,scene_description,parsed_sentence,subset,el
             for k2,k in enumerate(activity_sentence[v][d]['valid_hypotheses']):
                 if k:
                     print scene_description
-                    print 'scene number:',scene
+                    print 'sentence number:',scene
                     print 'L:',L
                     for a,b in zip(subset,element):
                         print a,b
@@ -683,13 +683,14 @@ def _get_results(structure,scene_description,parsed_sentence,subset,element,matc
             if A['match_result'] == 1:
                 for result,T_e,T_v in zip(A['valid_hypotheses'],A['T_entity'],A['T_value']):
                     if result:
-                        print scene_description
-                        print parsed_sentence
-                        print T_e
-                        print T_v
-                        for k,word in enumerate(subset):
-                            print word,'-',element[k][0],matched_features[element[k][1]]
-                        print '-----------------------------------'
+                        pass
+                        # print scene_description
+                        # print parsed_sentence
+                        # print T_e
+                        # print T_v
+                        # for k,word in enumerate(subset):
+                        #     print word,'-',element[k][0],matched_features[element[k][1]]
+                        # print '-----------------------------------'
 
 
 
@@ -1736,90 +1737,6 @@ class process_data():
                                     if word not in self.indices[scene]:
                                         self.indices[scene][word] = []
                                     self.indices[scene][word].append([i1,i2,i3])
-        #for s in self.indices:
-        #    print s,self.indices[s]
-
-    #------------------------------------------------------------------#
-    def _test(self,subset,scene):
-
-        # no 2 phrases are allowed to intersect in the same sentence
-        no_intersection = 1
-        all_indeces = []
-        for w in subset:
-            #print w
-            for w1 in self.indices[scene][w]:
-                for w2 in w1:
-                    if w2 not in all_indeces:
-                        all_indeces.append(w2)
-                    else:
-                        no_intersection = 0
-        #print no_intersection
-        #print '------'
-
-        if no_intersection:
-            # this function tests one susbet of words at a time
-            all_possibilities = []      # all the possibilities gathered in one list
-            for word in subset:
-                all_possibilities.append(self.hyp_language_pass[word]['all'])
-
-            #print all_possibilities
-            #print '---------------',len(all_possibilities)
-            # find the actual possibilities for every word in the subset
-            #c = 1
-            for element in itertools.product(*all_possibilities):
-                #print c
-                #c+=1
-                hyp_motion = {}
-                motion_pass = 0
-
-                # no 2 words are allowed to mean the same thing
-                not_same = 1
-                features = {}
-                for i in element:
-                    if i[0] not in features: features[i[0]] = []
-                    features[i[0]].append(i[1])
-
-                for f in features:
-                    if len(features[f])>1:
-                        for f1 in range(len(features[f])-1):
-                            for f2 in range(f1+1,len(features[f])):
-                                m1 = np.asarray(list(features[f][f1]))
-                                m2 = np.asarray(list(features[f][f2]))
-                                if len(m1) != len(m2):          continue        # motions !
-                                if self._distance_test(m1,m2)<self.pass_distance:
-                                    not_same = 0
-                                    continue
-                if not_same:
-                    # 1) does actions match ?   it should match 100%
-                    for k,word in enumerate(subset):
-                        if element[k][0] == 'motion':
-                            a = element[k][1]
-                            if a not in hyp_motion:     hyp_motion[a] = len(self.indices[scene][word])
-                            else:                       hyp_motion[a] += len(self.indices[scene][word])
-                    for i in self.total_motion:
-                        if self.total_motion[i] == hyp_motion:
-                            motion_pass = 1
-                        #else: print self.scene,'fail'
-
-                    # 2) parse the sentence
-                    if motion_pass:
-                        parsed_sentence = []
-                        value_sentence = []
-                        for i in self.S[scene].split(' '):
-                            parsed_sentence.append('_')
-                            value_sentence.append('_')
-                        for word1 in subset:
-                            for i1 in self.indices[scene][word1]:
-                                for j1 in i1:
-                                    #print word1,j1
-                                    k = subset.index(word1)
-                                    parsed_sentence[j1] = element[k][0]
-                                    value_sentence[j1] = map(prettyfloat, element[k][1])
-                        print subset
-                        print self.S[scene].split(' ')
-                        print parsed_sentence
-                        print value_sentence
-                        print '----'
 
     #--------------------------------------------------------------------------------------------------------#
     # takes the valid hypotheses and build the grammar
@@ -2185,10 +2102,18 @@ class process_data():
                     self.grammar += feature+" -> '"+hyp+"' ["+str(val/self.T['sum'][feature])+"]"+'\n'
 
         # PCFG
-        print self.grammar
         if self.grammar != '':
             self.pcfg1 = PCFG.fromstring(self.grammar)
             print self.pcfg1
+
+        if self.scene<10:            sc = '0000'+str(self.scene)
+        elif self.scene<100:         sc = '000'+str(self.scene)
+        elif self.scene<1000:        sc = '00'+str(self.scene)
+        elif self.scene<10000:       sc = '0'+str(self.scene)
+
+        file1 = open("/home/omari/Datasets/robot_modified/grammar/grammar_"+sc+".txt", "w")
+        file1.write(self.grammar)
+        file1.close()
 
     #--------------------------------------------------------------------------------------------------------#
     def _print_results(self):

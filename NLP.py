@@ -416,7 +416,8 @@ def demo():
 
     # Define two demos.  Each demo has a sentence and a grammar.
     demos = [('move the green prism to the bottom left corner', toy_pcfg3),
-             ('move the green pyramid over the red block', toy_pcfg3)]
+             ('move the green pyramid over the red block', toy_pcfg3),
+              ('put the green pyramid on the red block', toy_pcfg3)]
 
     # Ask the user which demo they want to use.
     print()
