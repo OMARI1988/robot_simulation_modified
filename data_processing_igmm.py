@@ -135,7 +135,7 @@ def _parse_sentence(S,indices,subset,element,matched_features):
 
 #--------------------------------------------------------------------------------------------------------#
 # divide sentence with activities
-def _activity_domain(parsed_sentence, value_sentence):
+def _activity_domain(parsed_sentence, value_sentence, subset, element):
     motion_ind = [i for i, x in enumerate(parsed_sentence) if x == 'motion']
     motion_ind2 = [0]
     for i in motion_ind:
@@ -150,8 +150,18 @@ def _activity_domain(parsed_sentence, value_sentence):
         values.append(value_sentence[motion_ind2[2*i]:motion_ind2[2*i+1]])
 
     verb_sentence = {}
+    # verb_names = {}
     for k,ind in enumerate(motion_ind):
         verb_sentence[value_sentence[ind]] = {}
+
+        # verb_name = 'NONE'
+        # for i1,i2 in zip(subset,element):
+        #     if i2[0]=='motion' and i2[1]==value_sentence[ind]:
+        #         verb_name = i1
+        #
+        # verb_sentence[value_sentence[ind]] = verb_name
+
+
         # Before the verb
         verb_sentence[value_sentence[ind]]['before'] = {}
         verb_sentence[value_sentence[ind]]['before']['value'] = []
@@ -219,11 +229,11 @@ def _check_TE_TV(a,b,a_val,b_val):
     TE_result,[s1,e1,r1],[s1_v,e1_v,r1_v] = _check_TE(a[:],a_val[:])
     TV_result,[s2,e2,r2],[s2_v,e2_v,r2_v] = _check_TV(b[:],b_val[:])
     if TE_result and TV_result:
-        Valid.append([['TE,TV'],[a,b],[s1,e1,r1],[s1_v,e1_v,r1_v],[s2,e2,r2],[s2_v,e2_v,r2_v]])
+        Valid.append([['TE','TV'],[a,b],[s1,e1,r1],[s1_v,e1_v,r1_v],[s2,e2,r2],[s2_v,e2_v,r2_v]])
     # TE_result,[s1,e1,r1] = _check_TE(b)
     # TV_result,[s2,e2,r2] = _check_TV(a)
     # if TE_result and TV_result:
-    #     Valid.append([['TV,TE'],[a,b],[s1,e1,r1],[s2,e2,r2]])
+    #     Valid.append([['TV','TE'],[a,b],[s1,e1,r1],[s2,e2,r2]])
     return Valid
 
 #--------------------------------------------------------------------------------------------------------#
@@ -446,7 +456,7 @@ def _print_results(activity_sentence,scene_description,parsed_sentence,subset,el
                                 print 'TE values    :',i[3][0]
                                 print 'TV results   :',i[4][0]
                                 print 'TV values    :',i[5][0]
-                                results.append([i[0],i[1][0],i[1][1],subset,element])
+                                results.append([i[0],i[1][0],i[1][1],subset,element,parsed_sentence,d,v,scene_description])
                     print '*****************'
                     print
                     print
@@ -723,7 +733,7 @@ def calc(data):
                         parsed_sentence, value_sentence = _parse_sentence(scene_description,indices,subset,element,matched_features)
                         #---------------------------------------------------------------#
                         # divide sentence with verbs
-                        activity_sentence = _activity_domain(parsed_sentence, value_sentence)
+                        activity_sentence = _activity_domain(parsed_sentence, value_sentence, subset, element)
                         activity_sentence = _divide_into_TE_and_TV(activity_sentence)
                         activity_sentence = _match_scene_to_hypotheses(activity_sentence,graph_i,graph_f)
                         results.append(_print_results(activity_sentence,scene_description,parsed_sentence,subset,element,matched_features,scene,L))
@@ -748,11 +758,17 @@ class process_data():
 
         # initial language grammar
         self.N                      = {}                    # non-terminals
-        self.N['e']                 = {}                    # non-terminals entity
-        self.N['e']['sum']          = 0.0                   # non-terminals entity counter
+        self.N['feature']           = {}                    # non-terminals
+        self.N['sum']               = {}                    # non-terminals
+        #self.N['e']                 = {}                    # non-terminals entity
+        #self.N['e']['sum']          = 0.0                   # non-terminals entity counter
         self.T = {}                                         # terminals
         self.T['features'] = {}
         self.T['sum'] = {}
+
+        self.no_match = {}
+        self.no_match['features'] = {}
+        self.no_match['sum'] = {}
 
         # connecting language to vision hypotheses
         self.hyp_language           = {}
@@ -1819,14 +1835,13 @@ class process_data():
                             if k != []:
                                 if L>self.max_L[scene]:
                                     self.max_L[scene] = L
-                                for k1 in k:
-                                    print self.S[scene]
-                                    print 'Scene:',scene,'L:',L,k1
-                                    print '******'
-        print self.max_L
+                                # for k1 in k:
+                                #     print self.S[scene]
+                                #     print 'Scene:',scene,'L:',L,k1
+                                #     print '******'
         self._update_terminals()
         self._update_nonterminals()
-        #self._build_PCFG()
+        self._build_PCFG()
 
     #--------------------------------------------------------------------------------------------------------#
     def _update_terminals(self):
@@ -1840,35 +1855,57 @@ class process_data():
                         for k in j:
                             if k != []:
                                 for k1 in k:
+                                    order   = k1[0]
                                     words   = k1[3]
                                     values  = k1[4]
                                     for word,value in zip(words,values):
                                         feature = value[0]
+                                        if value[0] == 'motion':
+                                            if len(order)==2:
+                                                feature = value[0]+'_'+order[0]+order[1]
+                                            if len(order)==1:
+                                                feature = value[0]+'_'+order[0]
                                         val = hypotheses[word][value[0]][value[1]]
                                         if feature not in self.T['features']:
                                             self.T['features'][feature] = {}
                                             self.T['sum'][feature]      = 0.0
-                                        if word not in self.T['features'][feature]:
-                                            self.T['features'][feature][word] = 0.0
-                                        #print word,value
-                                        #print val
-                                        self.T['features'][feature][word] += val
-                                        self.T['sum'][feature] += val
-                                    #print '******'
-        self.grammar = ''
-        for feature in self.T['features']:
-            for hyp in self.T['features'][feature]:
-                val = self.T['features'][feature][hyp]
-                self.grammar += feature+" -> '"+hyp+"' ["+str(val/self.T['sum'][feature])+"]"+'\n'
-        print self.grammar
+                                        if len(word.split(' '))>1:
+                                            words = word.split(' ')
+                                            word = '_'+'_'.join(words)
+                                            if word not in self.T['features'][feature]:
+                                                self.T['features'][feature][word] = 0.0
+                                            self.T['features'][feature][word] += val
+                                            self.T['sum'][feature] += val
+
+                                            for w in words:
+                                                if w not in self.no_match['features']:
+                                                    self.no_match['features'][w] = {}
+                                                    self.no_match['sum'][w]      = 1.0
+                                                    self.no_match['features'][w][w] = 1.0
+
+                                            if word not in self.N:
+                                                self.N[word] = {}
+                                                self.N[word][' '.join(words)] = 1.0
+                                                self.N[word]['sum'] = 1.0
+
+                                            # if feature not in self.N:
+                                            #     self.N[feature] = {}
+                                            #     self.N[feature]['sum'] = 0.0
+                                            # if word not in self.N[feature]:
+                                            #     self.N[feature][word] = 0.0
+                                            # self.N[feature][word] += 1.0
+                                            # self.N[feature]['sum'] += 1.0
+                                        else:
+                                            if word not in self.T['features'][feature]:
+                                                self.T['features'][feature][word] = 0.0
+                                            self.T['features'][feature][word] += val
+                                            self.T['sum'][feature] += val
 
     #--------------------------------------------------------------------------------------------------------#
     def _update_nonterminals(self,):
         # there is a threshold in NLTK to drop a hypotheses 9.99500249875e-05 I think it;s 1e-4
-
-        entity_features = ['color','shape','location']
-
-
+        entity = ['shape','color','location']
+        relation = ['direction']
         for scene in self.valid_combination:
             #for L in self.valid_combination[scene]:
             L = self.max_L[scene]
@@ -1881,42 +1918,274 @@ class process_data():
                                     order   = k1[0]
                                     TE      = k1[1]
                                     TV      = k1[2]
-                                    print L
-                                    print k1
-                                    print 'target E:',TE
-                                    print 'target V:',TV
-                                    print '*****'
+                                    subset   = k1[3]
+                                    element  = k1[4]
+                                    PS      = k1[5]
+                                    ba      = k1[6]
+                                    verb                    = k1[7]
+                                    scene_description       = k1[8]
+                                    for i1,i2 in zip(subset,element):
+                                        if i2[0]=='motion' and i2[1]==verb:
+                                            verb_name = i1
+                                            if len(order)==2:
+                                                TETV_grammar = order[0]+'_'+order[1]
+                                                verb_grammar = i2[0]+'_'+order[0]+order[1]
+                                            if len(order)==1:
+                                                TETV_grammar = order[0]
+                                                verb_grammar = i2[0]+'_'+order[0]
 
+                                    # print 'target E          :',TE
+                                    # print 'target V          :',TV
+                                    # print 'Parsed S          :',PS
+                                    # print 'Scene description :',scene_description
+                                    # print 'before/after      :',ba
+                                    # print 'motion            :',verb
+                                    # print 'motion name       :',verb_name
+                                    # print 'features          :',verb_grammar
+                                    # print '*****'
 
-        # update the non-terminal counter
-        for entity in all_entities:
-            if entity != []:
-                h = ()
-                for j in entity:
-                    h += (parsed_sentence[j],)
-                if h not in self.N['e']:        self.N['e'][h] =  1.0
-                else:        self.N['e'][h] += 1.0
-                self.N['e']['sum'] += 1.0
+                                    #building the sentence level
+                                    if 'S' not in self.N:
+                                        self.N['S'] = {}
+                                        self.N['S']['sum'] = 0.0
 
-        # add entities, ++ to grammer
-        for feature in self.N:
-            sorted_f = sorted(self.N[feature].items(), key=operator.itemgetter(1))
-            for l in range(len(sorted_f),0,-1):
-                hyp = sorted_f[l-1]
-                if hyp[0] != 'sum':
-                    val = hyp[1]/self.N[feature]['sum']
-                    if val > 1e-4:
-                        small_msg = ''
-                        if len(hyp[0]) == 1:
-                            small_msg += hyp[0][0]
-                        else:
-                            for j in range(len(hyp[0])-1):
-                                small_msg += hyp[0][j]+' '
-                            small_msg += hyp[0][j+1]
-                        self.grammar += feature+" -> '"+small_msg+"' ["+str(val)+"]"+'\n'
+                                    if ba == 'after':
+                                        S1 = verb_grammar+' '+TETV_grammar
+                                    if ba == 'before':
+                                        S1 = TETV_grammar+' '+verb_grammar
+                                    if S1 not in self.N['S']:
+                                        self.N['S'][S1] = 1.0
+                                    else:
+                                        self.N['S'][S1] += 1.0
+                                    self.N['S']['sum'] += 1.0
+
+                                    #building the target entity and target value
+                                    if TETV_grammar not in self.N:
+                                        self.N[TETV_grammar] = {}
+                                        self.N[TETV_grammar]['sum'] = 0.0
+
+                                    if len(order)==2:
+                                        connecter = []
+                                        if order[0] == 'TE':
+                                            for l in reversed(range(len(TE))):
+                                                if TE[l] in entity or TE[l] in relation:
+                                                    break
+                                            TE_f = TE[0:l+1]
+                                            for l1 in TE[l+1:len(TE)]:
+                                                connecter.append(l1)
+                                            for l in range(len(TV)):
+                                                if TV[l] in entity or TV[l] in relation:
+                                                    break
+                                            TV_f = TV[l:len(TV)]
+                                            for l1 in TV[0:l]:
+                                                connecter.append(l1)
+                                        if order[0] == 'TV':
+                                            for l in reversed(range(len(TV))):
+                                                if TV[l] in entity or TV[l] in relation:
+                                                    break
+                                            TV_f = TV[0:l+1]
+                                            for l1 in TV[l+1:len(TV)]:
+                                                connecter.append(l1)
+                                            for l in range(len(TE)):
+                                                if TE[l] in entity or TE[l] in relation:
+                                                    break
+                                            TE_f = TE[l:len(TE)]
+                                            for l1 in TE[0:l]:
+                                                connecter.append(l1)
+
+                                    # build TE and TV them self
+                                    if len(order)==2:
+                                        #print '>>>>',TE_f
+                                        #print '>>>>',TV_f
+                                        TE_converted,e, e_bar = self._TE_TV_conversion(TE_f)
+                                        TV_converted,v, v_bar = self._TE_TV_conversion(TV_f)
+
+                                        #---------------------------------#
+                                        # TE = the _entity
+                                        T = 'TE'
+                                        if T not in self.N:
+                                            self.N[T] = {}
+                                            self.N[T]['sum'] = 0.0
+                                        if TE_converted not in self.N[T]:
+                                            self.N[T][TE_converted] = 1.0
+                                        else:
+                                            self.N[T][TE_converted] += 1.0
+                                        self.N[T]['sum'] += 1.0
+
+                                        T = 'TV'
+                                        if T not in self.N:
+                                            self.N[T] = {}
+                                            self.N[T]['sum'] = 0.0
+                                        if TV_converted not in self.N[T]:
+                                            self.N[T][TV_converted] = 1.0
+                                        else:
+                                            self.N[T][TV_converted] += 1.0
+                                        self.N[T]['sum'] += 1.0
+                                        #---------------------------------#
+                                        # _entity and _shape and _location
+                                        for T,val in zip(e_bar,e):
+                                            if T not in self.N:
+                                                self.N[T] = {}
+                                                self.N[T]['sum'] = 0.0
+                                            value = ' '.join(val)
+
+                                            if value not in self.N[T]:
+                                                self.N[T][value] = 1.0
+                                            else:
+                                                self.N[T][value] += 1.0
+                                            self.N[T]['sum'] += 1.0
+
+                                        for T,val in zip(v_bar,v):
+                                            if T not in self.N:
+                                                self.N[T] = {}
+                                                self.N[T]['sum'] = 0.0
+                                            value = ' '.join(val)
+
+                                            if value not in self.N[T]:
+                                                self.N[T][value] = 1.0
+                                            else:
+                                                self.N[T][value] += 1.0
+                                            self.N[T]['sum'] += 1.0
+
+                                        #---------------------------------#
+                                        # no meaning words in TE and TV
+                                        for word in TE_converted.split(' '):
+                                            if word[0] != '_':
+                                                if word not in self.no_match['features']:
+                                                    self.no_match['features'][word] = {}
+                                                    self.no_match['sum'][word]      = 1.0
+                                                    self.no_match['features'][word][word] = 1.0
+
+                                        for word in TV_converted.split(' '):
+                                            if word[0] != '_':
+                                                if word not in self.no_match['features']:
+                                                    self.no_match['features'][word] = {}
+                                                    self.no_match['sum'][word]      = 1.0
+                                                    self.no_match['features'][word][word] = 1.0
+
+                                    if len(order)==2:
+                                        if connecter != []:
+                                            S1 = order[0]+' '+order[0]+order[1]+'_connect'+' '+order[1]
+                                        else:
+                                            S1 = order[0]+' '+order[1]
+                                        if S1 not in self.N[TETV_grammar]:
+                                            self.N[TETV_grammar][S1] = 1.0
+                                        else:
+                                            self.N[TETV_grammar][S1] += 1.0
+                                    self.N[TETV_grammar]['sum'] += 1.0
+
+                                    #connecter
+                                    if connecter != []:
+                                        C = order[0]+order[1]+'_connect'
+                                        if C not in self.N:
+                                            self.N[C] = {}
+                                            self.N[C]['sum'] = 0.0
+                                        con = ' '.join(connecter)
+                                        if con not in self.N[C]:
+                                            self.N[C][con]      = 0.0
+                                        self.N[C][con]    += 1.0
+                                        self.N[C]['sum']  += 1.0
+
+                                        for i in connecter:
+                                            if i not in self.no_match['features']:
+                                                self.no_match['features'][i] = {}
+                                                self.no_match['sum'][i]      = 1.0
+                                                self.no_match['features'][i][i] = 1.0
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _TE_TV_conversion(self,T):
+        entity = ['shape','color','location']
+        relation = ['direction']
+        s = [[]]
+        s_bar = []
+        final_T = []
+        for word in T:
+            if word in entity or word in relation:
+                if s[-1] == []:
+                    s[-1] = [word]
+                    if word in entity:
+                        final_T.append('_'+word)
+                        s_bar.append('_'+word)
+                    if word in relation:
+                        final_T.append('_'+word)
+                        s_bar.append('_'+word)
+                else:
+                    if s[-1][-1] in entity:         #previous is entity
+                        if word in entity       :   # new is entity
+                            if word not in s[-1]:
+                                s[-1].append(word)
+                                final_T[-1] = '_entity'
+                                s_bar[-1] = '_entity'
+                            else:
+                                s.append([word])
+                                final_T.append('_'+word)
+                                s_bar.append('_'+word)
+                        if word in relation     :   #new is relation
+                            s.append([word])
+                            final_T.append('_'+word)
+                            s_bar.append('_'+word)
+
+                    elif s[-1][-1] in relation:       #previous is relation
+                        if word in entity       :   #new is entity
+                            s.append([word])
+                            final_T.append('_'+word)
+                            s_bar.append('_'+word)
+                        if word in relation     :   #new is relation
+                            if word not in s[-1]:
+                                s[-1].append(word)
+                                final_T[-1] = ('_relation')
+                                s_bar[-1] = ('_relation')
+                            else:
+                                s.append([word])
+                                final_T.append('_'+word)
+                                s_bar.append('_'+word)
+            else:
+                final_T.append(word)
+        return ' '.join(final_T), s, s_bar
+
 
     #--------------------------------------------------------------------------------------------------------#
     def _build_PCFG(self):
+        self.grammar = ''
+        # Non terminals
+        for feature in self.N:
+            if feature == 'S':
+                sorted_f = sorted(self.N[feature].items(), key=operator.itemgetter(1))
+                for l in range(len(sorted_f),0,-1):
+                    hyp = sorted_f[l-1]
+                    if hyp[0] != 'sum':
+                        val = hyp[1]/self.N[feature]['sum']
+                        if val > 1e-4:
+                            self.grammar += feature+" -> "+hyp[0]+" ["+str(val)+"]"+'\n'
+
+        # Non terminals
+        for feature in self.N:
+            if feature != 'S':
+                sorted_f = sorted(self.N[feature].items(), key=operator.itemgetter(1))
+                for l in range(len(sorted_f),0,-1):
+                    hyp = sorted_f[l-1]
+                    if hyp[0] != 'sum':
+                        val = hyp[1]/self.N[feature]['sum']
+                        if val > 1e-4:
+                            self.grammar += feature+" -> "+hyp[0]+" ["+str(val)+"]"+'\n'
+
+        # No match
+        for feature in self.no_match['features']:
+            for hyp in self.no_match['features'][feature]:
+                val = self.no_match['features'][feature][hyp]
+                self.grammar += feature+" -> '"+hyp+"' ["+str(val/self.no_match['sum'][feature])+"]"+'\n'
+
+        # Terminals
+        for feature in self.T['features']:
+            for hyp in self.T['features'][feature]:
+                val = self.T['features'][feature][hyp]
+                if hyp[0] == '_':
+                    self.grammar += feature+" -> "+hyp+" ["+str(val/self.T['sum'][feature])+"]"+'\n'
+                else:
+                    self.grammar += feature+" -> '"+hyp+"' ["+str(val/self.T['sum'][feature])+"]"+'\n'
+
+        # PCFG
+        print self.grammar
         if self.grammar != '':
             self.pcfg1 = PCFG.fromstring(self.grammar)
             print self.pcfg1
