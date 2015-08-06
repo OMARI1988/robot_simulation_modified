@@ -202,23 +202,15 @@ def _divide_into_TE_and_TV(activity_sentence):
 
                 if v == (0,1,):
                     # we need TE
-                    pass
+                    x = _check_TE_main(s1,s2)
+                    if x != []:
+                        activity_sentence[v][d]['valid_configurations'].append(x)
 
                 if v == (1,0,):
                     # we need TV
-                    pass
-
-            # for k in activity_sentence[v][d]['valid_configurations']:
-            #     for i in k:
-            #         print 'order',i[0]
-            #         print 'sentences_a',i[1][0]
-            #         print 'sentences_b',i[1][1]
-            #         print 'TE results',i[2][0]
-            #         print 'TE values',i[3][0]
-            #         print 'TV results',i[4][0]
-            #         print 'TV values',i[5][0]
-            # print '----'
-
+                    x = _check_TV_main(s1,s2)
+                    if x != []:
+                        activity_sentence[v][d]['valid_configurations'].append(x)
     return activity_sentence
 
 #--------------------------------------------------------------------------------------------------------#
@@ -230,6 +222,34 @@ def _check_TE_TV(a,b,a_val,b_val):
     TV_result,[s2,e2,r2],[s2_v,e2_v,r2_v] = _check_TV(b[:],b_val[:])
     if TE_result and TV_result:
         Valid.append([['TE','TV'],[a,b],[s1,e1,r1],[s1_v,e1_v,r1_v],[s2,e2,r2],[s2_v,e2_v,r2_v]])
+    # TE_result,[s1,e1,r1] = _check_TE(b)
+    # TV_result,[s2,e2,r2] = _check_TV(a)
+    # if TE_result and TV_result:
+    #     Valid.append([['TV','TE'],[a,b],[s1,e1,r1],[s2,e2,r2]])
+    return Valid
+
+#--------------------------------------------------------------------------------------------------------#
+# check domain for TE only
+def _check_TE_main(a,a_val):
+    Valid = []
+    # [[the order TV,TE or TE,TV].[the sentences a,b],[TE results],[TV results]]
+    TE_result,[s1,e1,r1],[s1_v,e1_v,r1_v] = _check_TE(a[:],a_val[:])
+    if TE_result:
+        Valid.append([['TE'],[a,''],[s1,e1,r1],[s1_v,e1_v,r1_v],[''],['']])
+    # TE_result,[s1,e1,r1] = _check_TE(b)
+    # TV_result,[s2,e2,r2] = _check_TV(a)
+    # if TE_result and TV_result:
+    #     Valid.append([['TV','TE'],[a,b],[s1,e1,r1],[s2,e2,r2]])
+    return Valid
+
+#--------------------------------------------------------------------------------------------------------#
+# check domain for TV only
+def _check_TV_main(a,a_val):
+    Valid = []
+    # [[the order TV,TE or TE,TV].[the sentences a,b],[TE results],[TV results]]
+    TV_result,[s2,e2,r2],[s2_v,e2_v,r2_v] = _check_TV(a[:],a_val[:])
+    if TV_result:
+        Valid.append([['TV'],['',a],[''],[''],[s2,e2,r2],[s2_v,e2_v,r2_v]])
     # TE_result,[s1,e1,r1] = _check_TE(b)
     # TV_result,[s2,e2,r2] = _check_TV(a)
     # if TE_result and TV_result:
@@ -337,8 +357,10 @@ def _check_R_E(a,b):
 
 #--------------------------------------------------------------------------------------------------------#
 # check verb sentences with for relations and entities
-def _match_scene_to_hypotheses(activity_sentence,scene_i,scene_f):
+def _match_scene_to_hypotheses(activity_sentence,scene_i,scene_f,m_obj):
+    match = {}
     for v in activity_sentence:
+
         for d in activity_sentence[v]:
             activity_sentence[v][d]['valid_hypotheses'] = []
             for k in activity_sentence[v][d]['valid_configurations']:
@@ -354,17 +376,26 @@ def _match_scene_to_hypotheses(activity_sentence,scene_i,scene_f):
                     if v == (0,1,0,):
                         objects = _get_the_TE_from_scene(TE_results[:],TE_values[:],scene_i)
                         if len(objects)==1:
-                            #print 'the object is:',objects
-                            location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i)
-                            if len(location)==1:
-                                #print 'the target location is:',location
-                                match = _match_final_scene(objects,'location',location,scene_f)
-                                #print match
+                            if int(objects[0])==int(m_obj):
+                                #print 'the object is:',objects
+                                location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i)
+                                if len(location)==1:
+                                    #print 'the target location is:',location
+                                    match = _match_final_scene(objects,'location',location,scene_f)
+                                    #print match
                     if v == (0,1,):
-                        pass
+                        objects = _get_the_TE_from_scene(TE_results[:],TE_values[:],scene_i)
+                        if len(objects)==1:
+                            if int(objects[0])==int(m_obj):
+                                match = 1
 
                     if v == (1,0,):
-                        pass
+                        location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i)
+                        if len(location)==1:
+                            #print 'the target location is:',location
+                            match = _match_final_scene([int(m_obj)],'location',location,scene_f)
+                            #print match
+
                     activity_sentence[v][d]['valid_hypotheses'].append(match)
     return activity_sentence
 
@@ -428,272 +459,49 @@ def _get_the_TV_from_scene(TV_results,TV_values,scene):
 # match the final scene location
 def _match_final_scene(objects,target_feature,target_value,scene):
     match = 0
-    loc = scene.node[objects[0]+'_'+target_feature]['value']
-    if np.sum(np.abs(np.asarray(scene.node[objects[0]+'_'+target_feature]['value'])-np.asarray(target_value)))==0:
+    loc = scene.node[str(objects[0])+'_'+target_feature]['value']
+    if np.sum(np.abs(np.asarray(loc)-np.asarray(target_value)))==0:
         match = 1
     return match
 
 #--------------------------------------------------------------------------------------------------------#
 def _print_results(activity_sentence,scene_description,parsed_sentence,subset,element,matched_features,scene,L):
     results = []
-    for v in activity_sentence:
-        for d in ['before','after']:
+    for d in ['before','after']:
+        results_check = np.zeros(len(activity_sentence))
+        for count,v in enumerate(activity_sentence):
             for k2,k in enumerate(activity_sentence[v][d]['valid_hypotheses']):
                 if k:
-                    print scene_description
-                    print 'sentence number:',scene
-                    print 'L:',L
-                    for a,b in zip(subset,element):
-                        print a,b
-                    print '---------------'
-                    for k3,k1 in enumerate(activity_sentence[v][d]['valid_configurations']):
-                        if k2==k3:
-                            for i in k1:
-                                print 'order        :',i[0]
-                                print 'target entity:',i[1][0]
-                                print 'target value :',i[1][1]
-                                print 'TE results   :',i[2][0]
-                                print 'TE values    :',i[3][0]
-                                print 'TV results   :',i[4][0]
-                                print 'TV values    :',i[5][0]
-                                results.append([i[0],i[1][0],i[1][1],subset,element,parsed_sentence,d,v,scene_description])
-                    print '*****************'
-                    print
-                    print
+                    results_check[count] = 1
+        # this makes sure that the whole sentence makes sense (for more than 1 activity in the sentence)
+        if len(activity_sentence)==np.sum(results_check):
+            for count,v in enumerate(activity_sentence):
+                for k2,k in enumerate(activity_sentence[v][d]['valid_hypotheses']):
+                    if k:
+                        print scene_description
+                        print 'sentence number:',scene
+                        print 'L:',L
+                        for a,b in zip(subset,element):
+                            print a,b
+                        print '---------------'
+                        for k3,k1 in enumerate(activity_sentence[v][d]['valid_configurations']):
+                            if k2==k3:
+                                for i in k1:
+                                    print 'order        :',i[0]
+                                    print 'target entity:',i[1][0]
+                                    print 'target value :',i[1][1]
+                                    print 'TE results   :',i[2][0]
+                                    print 'TE values    :',i[3][0]
+                                    print 'TV results   :',i[4][0]
+                                    print 'TV values    :',i[5][0]
+                                    if len(activity_sentence)>1:
+                                        results.append([i[0],i[1][0],i[1][1],subset,element,parsed_sentence,d,v,scene_description,count])
+                                    else:
+                                        results.append([i[0],i[1][0],i[1][1],subset,element,parsed_sentence,d,v,scene_description,'_'])
+                        print '*****************'
+                        print
+                        print
     return results
-
-
-
-
-
-
-
-
-#--------------------------------------------------------------------------------------------------------#
-# check verb sentences with for relations and entities
-def _check_relation_entity_numbers(verb_sentence):
-
-    possibilities = ['before','after']
-    entity = ['color','shape','location']
-    relation = ['direction']
-    structure = {}
-    for p in possibilities:
-        for v in verb_sentence:
-            if v not in structure:  structure[v] = {}
-            structure[v][p] = {}
-            structure[v][p]['s'] = []
-            structure[v][p]['e'] = []
-            structure[v][p]['r'] = []
-            structure[v][p]['s_val'] = []
-            structure[v][p]['e_val'] = []
-            structure[v][p]['r_val'] = []
-            structure[v][p]['RE_count_result'] = 0
-            #print 'the verb is',v,'the sentence is',p
-            sentence    = verb_sentence[v][p]['type']
-            values      = verb_sentence[v][p]['value']
-            while 1:
-                if '_' in sentence:     sentence.remove('_')
-                else:                   break
-            while 1:
-                if '_' in values:       values.remove('_')
-                else:                   break
-            if sentence != []:
-                e = []
-                r = []
-                s = [[]]
-                e_val = []
-                r_val = []
-                s_val = [[]]
-                # keeping in mind that relations dont span, and objects dont span
-                # finding the minimum entities in a sentence
-                for word,value in zip(sentence,values):
-                    if s[-1] == []:
-                        s[-1] = [word]
-                        s_val[-1] = [value]
-                    else:
-                        if s[-1][-1] in entity:         #previous is entity
-                            if word in entity       :   # new is entity
-                                if word not in s[-1]:
-                                    s[-1].append(word)
-                                    s_val[-1].append(value)
-                                else:
-                                    s.append([word])
-                                    s_val.append([value])
-                            if word in relation     :   #new is relation
-                                s.append([word])
-                                s_val.append([value])
-
-                        elif s[-1][-1] in relation:       #previous is relation
-                            if word in entity       :   #new is entity
-                                s.append([word])
-                                s_val.append([value])
-                            if word in relation     :   #new is relation
-                                if word not in s[-1]:
-                                    s[-1].append(word)
-                                    s_val[-1].append(value)
-                                else:
-                                    s.append([word])
-                                    s_val.append([value])
-                for sub,val in zip(s,s_val):
-                    if sub[0] in entity:
-                        e.append(sub)
-                        e_val.append(val)
-                    if sub[0] in relation:
-                        r.append(sub)
-                        r_val.append(val)
-                # based on the number of allowed features to be in each entity or relation divide the sentence to get all posiible options :)
-                # then check the 2n(O) and 1n(R)
-                a = len(e)
-                b = len(r)
-                test_result = 'VERY BAD'
-                # MORE ENTITIES than RELATIONs
-                if a-b == 1:                    # perfect case were entities are 1 more than relation
-                    test_result = 1
-                ############# IF YOU WANT TO LEARN BETWEEN CHANGET THIS ! THIS DONT ALLOW 3 E and 1 R
-                elif a-b > 2:                   # Wrong with no special cases ex 3 e and 1 r
-                    test_result = 0
-                elif a-b == 2:                  # there might be a special case if one of the entities is a location
-                    for i in e:
-                        if len(i) == 1 and i[0]=='location':
-                            test_result = 1
-                        else:
-                            test_result = 0
-                # MORE or EQUAL RELATIONS THAN ENTITIES
-                elif a-b<1:                     # there are more or equal relations, check if number of indivual entities can be more
-                    count = 0
-                    for i in e:
-                        count += len(i)
-                    if count > b:
-                        test_result = 1
-                    else:
-                        test_result = 0
-
-                structure[v][p]['s'] = s
-                structure[v][p]['e'] = e
-                structure[v][p]['r'] = r
-                structure[v][p]['s_val'] = s_val
-                structure[v][p]['e_val'] = e_val
-                structure[v][p]['r_val'] = r_val
-                structure[v][p]['RE_count_result'] = test_result
-    return structure
-
-#--------------------------------------------------------------------------------------------------------#
-# This needs to check target entity and target location for every operation in every sentence
-def _check_graph_structure(structure):
-    # structure is a dictionary that has the verbs, then before,after the verb, (sentence,entity,relations,and their values stored in s,e,r,s_val,e_val,r_val)
-    for v in structure:
-        for p in structure[v]:
-            structure[v][p]['graph_result'] = 0
-            if structure[v][p]['RE_count_result'] == 1:
-                s = structure[v][p]['s']
-                e = structure[v][p]['e']
-                r = structure[v][p]['r']
-                s_val = structure[v][p]['s_val']
-                e_val = structure[v][p]['e_val']
-                r_val = structure[v][p]['r_val']
-                structure[v][p]['T_entity'] = []
-                structure[v][p]['T_value']  = []
-                a = len(e)
-                b = len(r)
-                if v == (0,1,0,):
-                    # we need a target entity and a target value
-                    if a-b == 1:                    # perfect case were entities are 1 more than relation
-                        if b == 0:                  # there is only a single entity in the description
-                            if 'location' in e[0] and len(e[0])>1:
-                                if e[0][0] == 'location':
-                                    T_entity        = e[0][1:-1]
-                                    T_entity_val    = e_val[0][1:-1]
-                                    T_value         = e[0][0]
-                                    T_value_val     = e_val[0][0]
-                                    structure[v][p]['T_entity'] = [[T_entity,T_entity_val]]
-                                    structure[v][p]['T_value']  = [[T_value ,T_value_val ]]
-                                    structure[v][p]['graph_result'] = 1
-                                elif e[0][-1] == 'location':
-                                    T_entity        = e[0][0:len(e[0])-1]
-                                    T_entity_val    = e_val[0][0:len(e[0])-1]
-                                    T_value         = e[0][-1]
-                                    T_value_val     = e_val[0][-1]
-                                    structure[v][p]['T_entity'] = [[T_entity,T_entity_val]]
-                                    structure[v][p]['T_value']  = [[T_value ,T_value_val ]]
-                                    structure[v][p]['graph_result'] = 1
-                        if b > 0:                  # there are relations also
-                            pass
-                            # structure[v][p]['graph_result'] = 1
-
-                if v == (0,1,):
-                    # we need a target entitiy
-                    pass
-
-
-                if v == (1,0,):
-                    # we need a target value
-                    pass
-    return structure
-
-#--------------------------------------------------------------------------------------------------------#
-# check verb sentences with for relations and entities
-def _match_scene_to_hypotheses2(structure,scene_i,scene_f):
-    for v in structure:
-        for p in structure[v]:
-            structure[v][p]['match_result'] = 0
-            structure[v][p]['valid_hypotheses'] = []
-            if structure[v][p]['graph_result'] == 1:
-                if v == (0,1,0,):
-                    for E,V in zip(structure[v][p]['T_entity'],structure[v][p]['T_value']):
-                        match = 0
-                        T_entity        = E[0]
-                        T_entity_val    = E[1]
-                        objects = _get_the_objects_from_scene2(T_entity,T_entity_val,scene_i)
-                        if len(objects)==1:
-                            T_value     =   V[0]
-                            T_value_val =   V[1]
-                            match = _match_final_scene(objects,T_value,T_value_val,scene_f)
-                            if match:
-                                structure[v][p]['match_result'] = 1
-                        structure[v][p]['valid_hypotheses'].append(match)
-                if v == (0,1,):
-                    pass
-
-                if v == (1,0,):
-                    pass
-    return structure
-
-#--------------------------------------------------------------------------------------------------------#
-# This function gets all the objects in the scene with certain features NO RELATIONS
-def _get_the_objects_from_scene2(obj_features,obj_value,scene):
-
-    m_objects = list((n for n in scene if scene.node[n]['type1']=='mo'))
-    objects = list((n for n in scene if scene.node[n]['type1']=='o'))#
-    all_objects = m_objects+objects
-
-    obj_pass = []
-    for obj in all_objects:
-        ok = 1
-        for feature,value in zip(obj_features,obj_value):
-            if np.sum(np.abs(np.asarray(scene.node[obj+'_'+feature]['value'])-np.asarray(value))) != 0:
-                ok = 0
-        if ok:  obj_pass.append(obj)
-    return obj_pass
-
-#--------------------------------------------------------------------------------------------------------#
-def _get_results(structure,scene_description,parsed_sentence,subset,element,matched_features):
-    for v in structure:
-        for p in structure[v]:
-            A = structure[v][p]
-            if A['match_result'] == 1:
-                for result,T_e,T_v in zip(A['valid_hypotheses'],A['T_entity'],A['T_value']):
-                    if result:
-                        pass
-                        # print scene_description
-                        # print parsed_sentence
-                        # print T_e
-                        # print T_v
-                        # for k,word in enumerate(subset):
-                        #     print word,'-',element[k][0],matched_features[element[k][1]]
-                        # print '-----------------------------------'
-
-
-
 
 #--------------------------------------------------------------------------------------------------------#
 def calc(data):
@@ -708,6 +516,7 @@ def calc(data):
     graph_f = data[6][1]
     scene = data[7]
     L = data[8]
+    m_obj = data[9]
     results = [[]]
     #---------------------------------------------------------------#
     # no 2 phrases are allowed to intersect in the same sentence
@@ -736,14 +545,10 @@ def calc(data):
                         # divide sentence with verbs
                         activity_sentence = _activity_domain(parsed_sentence, value_sentence, subset, element)
                         activity_sentence = _divide_into_TE_and_TV(activity_sentence)
-                        activity_sentence = _match_scene_to_hypotheses(activity_sentence,graph_i,graph_f)
+                        # print subset
+                        # print activity_sentence
+                        activity_sentence = _match_scene_to_hypotheses(activity_sentence,graph_i,graph_f,m_obj)
                         results.append(_print_results(activity_sentence,scene_description,parsed_sentence,subset,element,matched_features,scene,L))
-                        #print scene,L,'---',results
-                        # old method ! not clear
-                        # structure = _check_relation_entity_numbers(activity_sentence)
-                        # structure = _check_graph_structure(structure)
-                        # structure = _match_scene_to_hypotheses2(structure,graph_i,graph_f)
-                        # results   = _get_results(structure,scene_description,parsed_sentence,subset,element,matched_features)
     return (results,)
 
 
@@ -852,9 +657,9 @@ class process_data():
     def _fix_data(self):
         # correction to Data removing the step
         for i in self.Data:
-            self.Data[i]['x'] = np.delete(self.Data[i]['x'],[self.step,2*self.step])
-            self.Data[i]['y'] = np.delete(self.Data[i]['y'],[self.step,2*self.step])
-            self.Data[i]['z'] = np.delete(self.Data[i]['z'],[self.step,2*self.step])
+            self.Data[i]['x'] = np.delete(self.Data[i]['x'],[0,self.step,2*self.step])
+            self.Data[i]['y'] = np.delete(self.Data[i]['y'],[0,self.step,2*self.step])
+            self.Data[i]['z'] = np.delete(self.Data[i]['z'],[0,self.step,2*self.step])
 
     #--------------------------------------------------------------------------------------------------------#
     # find phrases and words for each sentence
@@ -1531,7 +1336,6 @@ class process_data():
         self._combine_hyp(self.hyp_language_pass,self.hyp_relation_pass)
         self._combine_hyp(self.hyp_language_pass,self.hyp_motion_pass)
 
-
     #--------------------------------------------------------------------------------------------------------#
     # NOTE: this will pass all hypotheses that are .9 of maximum value
     def _combine_hyp(self,A,B):
@@ -1579,7 +1383,6 @@ class process_data():
                 key=A[1]
                 self._remove_phrase(word, f, key)
 
-
     #--------------------------------------------------------------------------------------------------------#
     # remove sub phrases and bigger phrases based on their meanings
     # NOTE: this will remove sub phrases
@@ -1616,12 +1419,12 @@ class process_data():
                                     # case 2 if N == 0 I should keep everything
                                     # case 3 if N < 1  I should remove phrase
                                     if N == 1:
-                                        for key in matching:
-                                            pass
-                                             #if key not in phrases_to_remove:            phrases_to_remove[key] = {}
-                                             #if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
-                                             #if matching[key] not in phrases_to_remove[key][feature]:
-                                            #    phrases_to_remove[key][feature].append(matching[key])
+                                        if feature == 'motion' or feature == 'direction':
+                                            for key in matching:
+                                                 if key not in phrases_to_remove:            phrases_to_remove[key] = {}
+                                                 if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
+                                                 if matching[key] not in phrases_to_remove[key][feature]:
+                                                   phrases_to_remove[key][feature].append(matching[key])
                                     elif N > 0:
                                         #print '##########################################################################',word,p1
                                         if word not in phrases_to_remove:               phrases_to_remove[word] = {}
@@ -1692,13 +1495,14 @@ class process_data():
 
                 # generate all subsets (pick from 1 word to n words) with no repatetion in phrases
                 for L in range(2, len(phrases_with_hyp)+1):
-                    self.valid_combination[scene][L] = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L] for subset in itertools.combinations(phrases_with_hyp, L)]))
-                    # for subset in itertools.combinations(phrases_with_hyp, L):
-                    #     out1 = calc([subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L])
-                        #
-                        # for o1 in out1[0]:
-                        #     if o1 != []:
-                        #         print '-------',o1
+                    # multi processing
+                    #self.valid_combination[scene][L] = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj] for subset in itertools.combinations(phrases_with_hyp, L)]))
+
+                    # single core processing
+                    self.valid_combination[scene][L] = []
+                    for subset in itertools.combinations(phrases_with_hyp, L):
+                        out1 = calc([subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj])
+                        self.valid_combination[scene][L].append(out1)
 
     #------------------------------------------------------------------#
     # get the index of every phrase in every sentence
@@ -1824,7 +1628,6 @@ class process_data():
         entity = ['shape','color','location']
         relation = ['direction']
         for scene in self.valid_combination:
-            #for L in self.valid_combination[scene]:
             L = self.max_L[scene]
             if L>0:
                 for i in self.valid_combination[scene][L]:
@@ -1841,6 +1644,7 @@ class process_data():
                                     ba      = k1[6]
                                     verb                    = k1[7]
                                     scene_description       = k1[8]
+                                    part_of_sentence       = k1[9]
                                     for i1,i2 in zip(subset,element):
                                         if i2[0]=='motion' and i2[1]==verb:
                                             verb_name = i1
@@ -1850,7 +1654,6 @@ class process_data():
                                             if len(order)==1:
                                                 TETV_grammar = order[0]
                                                 verb_grammar = i2[0]+'_'+order[0]
-
                                     # print 'target E          :',TE
                                     # print 'target V          :',TV
                                     # print 'Parsed S          :',PS
@@ -1861,135 +1664,105 @@ class process_data():
                                     # print 'features          :',verb_grammar
                                     # print '*****'
 
-                                    #building the sentence level
+                                #building the sentence level
                                     if 'S' not in self.N:
                                         self.N['S'] = {}
                                         self.N['S']['sum'] = 0.0
-
-                                    if ba == 'after':
-                                        S1 = verb_grammar+' '+TETV_grammar
-                                    if ba == 'before':
-                                        S1 = TETV_grammar+' '+verb_grammar
-                                    if S1 not in self.N['S']:
-                                        self.N['S'][S1] = 1.0
+                                    # sentence has only 1 verb
+                                    if part_of_sentence == '_':
+                                        if ba == 'after':
+                                            S1 = verb_grammar+' '+TETV_grammar
+                                        if ba == 'before':
+                                            S1 = TETV_grammar+' '+verb_grammar
+                                        self._update_self_N('S',S1)
+                                    # this is becuase the sentence has two verbs
                                     else:
-                                        self.N['S'][S1] += 1.0
-                                    self.N['S']['sum'] += 1.0
+                                        # THIS IS LIMITED TO 2 VERB IN THE SENTENCE
+                                        S1 = '_S'
+                                        self._update_self_N('S',S1)
+                                        self._update_self_N(S1,'_S _S')
+                                        if ba == 'after':
+                                            S1 = verb_grammar+' '+TETV_grammar
+                                        if ba == 'before':
+                                            S1 = TETV_grammar+' '+verb_grammar
+                                        self._update_self_N('_S',S1)
+
+
 
                                     #building the target entity and target value
-                                    if TETV_grammar not in self.N:
-                                        self.N[TETV_grammar] = {}
-                                        self.N[TETV_grammar]['sum'] = 0.0
-
+                                    connecter = []
                                     if len(order)==2:
-                                        connecter = []
-                                        if order[0] == 'TE':
-                                            for l in reversed(range(len(TE))):
-                                                if TE[l] in entity or TE[l] in relation:
-                                                    break
-                                            TE_f = TE[0:l+1]
-                                            for l1 in TE[l+1:len(TE)]:
-                                                connecter.append(l1)
-                                            for l in range(len(TV)):
-                                                if TV[l] in entity or TV[l] in relation:
-                                                    break
-                                            TV_f = TV[l:len(TV)]
-                                            for l1 in TV[0:l]:
-                                                connecter.append(l1)
-                                        if order[0] == 'TV':
-                                            for l in reversed(range(len(TV))):
-                                                if TV[l] in entity or TV[l] in relation:
-                                                    break
-                                            TV_f = TV[0:l+1]
-                                            for l1 in TV[l+1:len(TV)]:
-                                                connecter.append(l1)
-                                            for l in range(len(TE)):
-                                                if TE[l] in entity or TE[l] in relation:
-                                                    break
-                                            TE_f = TE[l:len(TE)]
-                                            for l1 in TE[0:l]:
-                                                connecter.append(l1)
-
-                                    # build TE and TV them self
-                                    if len(order)==2:
-                                        #print '>>>>',TE_f
-                                        #print '>>>>',TV_f
+                                        TE_f,TV_f,connecter = self._find_connecter(order,TE,TV,entity,relation,connecter)
+                                        # build TE and TV them self
                                         TE_converted,e, e_bar = self._TE_TV_conversion(TE_f)
                                         TV_converted,v, v_bar = self._TE_TV_conversion(TV_f)
 
                                         #---------------------------------#
                                         # TE = the _entity
                                         T = 'TE'
-                                        if T not in self.N:
-                                            self.N[T] = {}
-                                            self.N[T]['sum'] = 0.0
-                                        if TE_converted not in self.N[T]:
-                                            self.N[T][TE_converted] = 1.0
-                                        else:
-                                            self.N[T][TE_converted] += 1.0
-                                        self.N[T]['sum'] += 1.0
-
+                                        self._update_self_N(T,TE_converted)
                                         T = 'TV'
-                                        if T not in self.N:
-                                            self.N[T] = {}
-                                            self.N[T]['sum'] = 0.0
-                                        if TV_converted not in self.N[T]:
-                                            self.N[T][TV_converted] = 1.0
-                                        else:
-                                            self.N[T][TV_converted] += 1.0
-                                        self.N[T]['sum'] += 1.0
+                                        self._update_self_N(T,TV_converted)
+
                                         #---------------------------------#
                                         # _entity and _shape and _location
                                         for T,val in zip(e_bar,e):
-                                            if T not in self.N:
-                                                self.N[T] = {}
-                                                self.N[T]['sum'] = 0.0
                                             value = ' '.join(val)
-
-                                            if value not in self.N[T]:
-                                                self.N[T][value] = 1.0
-                                            else:
-                                                self.N[T][value] += 1.0
-                                            self.N[T]['sum'] += 1.0
-
+                                            self._update_self_N(T,value)
                                         for T,val in zip(v_bar,v):
-                                            if T not in self.N:
-                                                self.N[T] = {}
-                                                self.N[T]['sum'] = 0.0
                                             value = ' '.join(val)
-
-                                            if value not in self.N[T]:
-                                                self.N[T][value] = 1.0
-                                            else:
-                                                self.N[T][value] += 1.0
-                                            self.N[T]['sum'] += 1.0
+                                            self._update_self_N(T,value)
 
                                         #---------------------------------#
                                         # no meaning words in TE and TV
                                         for word in TE_converted.split(' '):
                                             if word[0] != '_':
-                                                if word not in self.no_match['features']:
-                                                    self.no_match['features'][word] = {}
-                                                    self.no_match['sum'][word]      = 1.0
-                                                    self.no_match['features'][word][word] = 1.0
-
+                                                self._update_self_no_match(word)
                                         for word in TV_converted.split(' '):
                                             if word[0] != '_':
-                                                if word not in self.no_match['features']:
-                                                    self.no_match['features'][word] = {}
-                                                    self.no_match['sum'][word]      = 1.0
-                                                    self.no_match['features'][word][word] = 1.0
+                                                self._update_self_no_match(word)
 
-                                    if len(order)==2:
                                         if connecter != []:
                                             S1 = order[0]+' '+order[0]+order[1]+'_connect'+' '+order[1]
                                         else:
                                             S1 = order[0]+' '+order[1]
-                                        if S1 not in self.N[TETV_grammar]:
-                                            self.N[TETV_grammar][S1] = 1.0
-                                        else:
-                                            self.N[TETV_grammar][S1] += 1.0
-                                    self.N[TETV_grammar]['sum'] += 1.0
+                                        self._update_self_N(TETV_grammar,S1)
+
+                                    elif len(order)==1:
+                                        if order[0] == 'TE':
+                                            TE_converted,e, e_bar = self._TE_TV_conversion(TE)
+                                            #---------------------------------#
+                                            T = 'TE'
+                                            self._update_self_N(T,TE_converted)
+                                            #---------------------------------#
+                                            # _entity and _shape and _location
+                                            for T,val in zip(e_bar,e):
+                                                value = ' '.join(val)
+                                                self._update_self_N(T,value)
+                                            #---------------------------------#
+                                            # no meaning words in TE and TV
+                                            for word in TE_converted.split(' '):
+                                                if word[0] != '_':
+                                                    self._update_self_no_match(word)
+
+                                        if order[0] == 'TV':
+                                            TV_converted,v, v_bar = self._TE_TV_conversion(TV)
+                                            #---------------------------------#
+                                            T = 'TV'
+                                            self._update_self_N(T,TV_converted)
+                                            #---------------------------------#
+                                            # _entity and _shape and _location
+                                            for T,val in zip(v_bar,v):
+                                                value = ' '.join(val)
+                                                self._update_self_N(T,value)
+                                            #---------------------------------#
+                                            # no meaning words in TE and TV
+                                            for word in TV_converted.split(' '):
+                                                if word[0] != '_':
+                                                    self._update_self_no_match(word)
+
+
+
 
                                     #connecter
                                     if connecter != []:
@@ -2008,6 +1781,54 @@ class process_data():
                                                 self.no_match['features'][i] = {}
                                                 self.no_match['sum'][i]      = 1.0
                                                 self.no_match['features'][i][i] = 1.0
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _update_self_N(self,T,Tbar):
+        if T not in self.N:
+            self.N[T] = {}
+            self.N[T]['sum'] = 0.0
+        if Tbar not in self.N[T]:
+            self.N[T][Tbar] = 1.0
+        else:
+            self.N[T][Tbar] += 1.0
+        self.N[T]['sum'] += 1.0
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _update_self_no_match(self,word):
+        if word not in self.no_match['features']:
+            self.no_match['features'][word] = {}
+            self.no_match['sum'][word]      = 1.0
+            self.no_match['features'][word][word] = 1.0
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _find_connecter(self,order,TE,TV,entity,relation,connecter):
+        if order[0] == 'TE':
+            for l in reversed(range(len(TE))):
+                if TE[l] in entity or TE[l] in relation:
+                    break
+            TE_f = TE[0:l+1]
+            for l1 in TE[l+1:len(TE)]:
+                connecter.append(l1)
+            for l in range(len(TV)):
+                if TV[l] in entity or TV[l] in relation:
+                    break
+            TV_f = TV[l:len(TV)]
+            for l1 in TV[0:l]:
+                connecter.append(l1)
+        if order[0] == 'TV':
+            for l in reversed(range(len(TV))):
+                if TV[l] in entity or TV[l] in relation:
+                    break
+            TV_f = TV[0:l+1]
+            for l1 in TV[l+1:len(TV)]:
+                connecter.append(l1)
+            for l in range(len(TE)):
+                if TE[l] in entity or TE[l] in relation:
+                    break
+            TE_f = TE[l:len(TE)]
+            for l1 in TE[0:l]:
+                connecter.append(l1)
+        return TE_f,TV_f,connecter
 
     #--------------------------------------------------------------------------------------------------------#
     def _TE_TV_conversion(self,T):
@@ -2059,7 +1880,6 @@ class process_data():
             else:
                 final_T.append(word)
         return ' '.join(final_T), s, s_bar
-
 
     #--------------------------------------------------------------------------------------------------------#
     def _build_PCFG(self):
@@ -2118,10 +1938,12 @@ class process_data():
     #--------------------------------------------------------------------------------------------------------#
     def _print_results(self):
         print '====-----------------------------------------------------------------===='
+        self.number_of_valid_hypotheses = 0
         for word in self.hyp_language_pass:
             for f in self.hyp_language_pass[word]:
                 if f != 'possibilities' and f != 'all':
                     for value in self.hyp_language_pass[word][f]:
+                        self.number_of_valid_hypotheses += 1
                         if len(f) < 7:
                             print f,'\t\t>>>\t',
                         elif len(f) < 15:

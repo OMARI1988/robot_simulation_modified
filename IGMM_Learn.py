@@ -30,7 +30,7 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pi
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,1001):
+  for scene in range(7,8):
     #slightly hard [10,]
     if scene in [891,892]: continue
     #ts = time.time()
@@ -76,19 +76,20 @@ for scan in range(1):
     P._combine_language_hyp()                       # combine object, relations and motion hypotheses in one place.
     P._filter_hyp()                                 # filter hypotheses to include only .9 of the best hypothesis
     P._filter_phrases()                             # remove larger phrases (and small phrases commented) = self.hyp_language_pass
-
+    print P.total_motion
     #########################################################################################################
     #   Comparing language hypotheses to scene                                                              #
     #########################################################################################################
     P._create_scene_graph()
     P._print_results()
-    P._get_all_valid_combinations()
-    P._test_all_valid_combinations()
+    if P.number_of_valid_hypotheses <= 50:
+        P._get_all_valid_combinations()
+        P._test_all_valid_combinations()
 
-    #########################################################################################################
-    #   Build the grammar                                                                                   #
-    #########################################################################################################
-    P._build_grammar()                               #
+        #########################################################################################################
+        #   Build the grammar                                                                                   #
+        #########################################################################################################
+        P._build_grammar()                               #
     #P._test_sentence_hyp()                          # test if the whole sentence make sense
 
     #print P.G_i.nodes()

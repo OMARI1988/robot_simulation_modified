@@ -275,11 +275,14 @@ class Robot():
             # move the robot and the object
             initial_position = final_position
             final_position = l2[F]['position']
-            self.rotate_robot_with_object(initial_position, final_position, z_offset, save)
+            if final_position != initial_position:
+                self.rotate_robot_with_object(initial_position, final_position, z_offset, save)
             # move the robot and the object down
+            initial_position = final_position
             final_position = self.Data['gripper'][self.Data['scenes'][self.scene]['final']]
-            a1,a2,a3 = self._inverse_kinematics(final_position[0],final_position[1],final_position[2])
-            self.rotate_robot(-a1,-a2,-a3,save)
+            if final_position != initial_position:
+                a1,a2,a3 = self._inverse_kinematics(final_position[0],final_position[1],final_position[2])
+                self.rotate_robot(-a1,-a2,-a3,save)
 
     #-----------------------------------------------------------------------------------------------------#     save motion
     def _save_motion(self):
