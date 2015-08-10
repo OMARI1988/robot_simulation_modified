@@ -588,7 +588,6 @@ class process_data():
         self.all_total_motion       = {}
         self.all_scene_features     = {}
 
-
         #phrases
         self.n_word                 = 3
         self.step                   = 3
@@ -608,11 +607,19 @@ class process_data():
         self.p_relation_pass        = .8                        # for both relation and motion
         self.pool = multiprocessing.Pool(8)
 
+        # Analysis
+        self.correct_commands = {}
+        self.commands_so_far = 0
+        self.scenes_so_far = 0
+        self.all_Sentences = ''
+
     #--------------------------------------------------------------------------------------------------------#
     # read the sentences and data from file
     def _read(self,scene):
+        self.scenes_so_far += 1
         self.scene = scene
         print 'reading scene number:',self.scene
+        self.all_Sentences += 'scene number:'+str(self.scene)+'\n'
         f = open(self.dir1+str(scene)+'.txt', 'r')
         data = f.read().split('\n')
         self.G = nx.Graph()
@@ -626,7 +633,10 @@ class process_data():
         # reading sentences
         self.S = {}
         for count,s in enumerate(sentences):
-            if data[s].split(':')[0] == 'GOOD': self.S[count] = (data[s].split(':')[1]).lower()
+            if count == 8:
+                if data[s].split(':')[0] == 'GOOD':
+                    self.commands_so_far += 1
+                    self.S[count] = (data[s].split(':')[1]).lower()
         # reading Data of objects
         self.Data = {}
         for count,o in enumerate(objects):
@@ -650,7 +660,16 @@ class process_data():
     def _print_scentenses(self):
         for count,i in enumerate(self.S):
             print count,'-',self.S[i]
+            self.all_Sentences += str(count)+'-'+self.S[i]+'\n'
         print '====-----------------------------------------------------------------===='
+        self.all_Sentences += '====-----------------------------------------------------------------====\n'
+
+    #--------------------------------------------------------------------------------------------------------#
+    # print sentences on terminal
+    def _save_all_sentences(self):
+        file1 = open("/home/omari/Datasets/robot_modified/sentences.txt", "w")
+        file1.write(self.all_Sentences)
+        file1.close()
 
     #--------------------------------------------------------------------------------------------------------#
     # correcting motion planning simulation
@@ -1352,7 +1371,7 @@ class process_data():
                         if len(B[word][f]) > 1:
                             C = copy.deepcopy(B[word][f])
                             maxval = max(C.iteritems(), key=operator.itemgetter(1))[1]
-                            keys = [k for k,v in C.items() if v>.9*maxval]
+                            keys = [k for k,v in C.items() if v>.5*maxval]
                             A[word][f] = {}
                             for key in keys:
                                 A[word]['possibilities'] += 1
@@ -1362,7 +1381,7 @@ class process_data():
                             A[word]['possibilities'] += 1
 
     #--------------------------------------------------------------------------------------------------------#
-    # NOTE: this will pass all hypotheses that are .9 of maximum value expect location
+    # NOTE: this will pass all hypotheses that are .7 of maximum value expect location
     def _filter_hyp(self):
         for word in self.hyp_language_pass:
             max_hyp = 0
@@ -1492,17 +1511,34 @@ class process_data():
                 #print scene
                 # get the words that have hypotheses and are in the sentence
                 phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
-
+                print phrases_with_hyp
+                print hhh
                 # generate all subsets (pick from 1 word to n words) with no repatetion in phrases
                 for L in range(2, len(phrases_with_hyp)+1):
                     # multi processing
-                    #self.valid_combination[scene][L] = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj] for subset in itertools.combinations(phrases_with_hyp, L)]))
+                    # self.valid_combination[scene][L] = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj] for subset in itertools.combinations(phrases_with_hyp, L)]))
+                    #
+                    # for p in self.valid_combination[scene][L]:
+                    #     for p2 in p:
+                    #         if p2 != []:
+                    #             if self.scene not in self.correct_commands:
+                    #                 self.correct_commands[self.scene] = []
+                    #             if scene not in self.correct_commands[self.scene]:
+                    #                 self.correct_commands[self.scene].append(scene)
 
                     # single core processing
                     self.valid_combination[scene][L] = []
                     for subset in itertools.combinations(phrases_with_hyp, L):
+                        print subset
                         out1 = calc([subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj])
                         self.valid_combination[scene][L].append(out1)
+                        for p in out1:
+                            for p2 in p:
+                                if p2 != []:
+                                    if self.scene not in self.correct_commands:
+                                        self.correct_commands[self.scene] = []
+                                    if scene not in self.correct_commands[self.scene]:
+                                        self.correct_commands[self.scene].append(scene)
 
     #------------------------------------------------------------------#
     # get the index of every phrase in every sentence
@@ -2036,6 +2072,34 @@ class process_data():
             if I == 0:          self.G_i = G.copy()
             if I == -1:         self.G_f = G.copy()
 
+    #--------------------------------------------------------------------------------------------------------#
+    def _analysis(self):
+
+        analysis = ''
+        print '********** analysis ***********'
+        print
+        analysis += 'number of correct scenes    :'+str(len(self.correct_commands.keys()))+'\n'
+        analysis += 'number of scenes so far     :'+str(self.scenes_so_far)+'\n'
+        analysis += '% of correct scenes         :'+str(len(self.correct_commands.keys())/(1.0*self.scenes_so_far))+'\n'
+        sum1 = 0
+        for key in self.correct_commands:
+            sum1 += len(self.correct_commands[key])
+        analysis += '\n'
+        analysis += 'number of correct commands  :'+str(sum1)+'\n'
+        analysis += 'number of commands so far   :'+str(self.commands_so_far)+'\n'
+        analysis += '% of correct commands       :'+str(sum1/(1.0*self.commands_so_far))+'\n'
+        analysis += '\n'
+        print '******************************'
+        print
+
+        if self.scene<10:            sc = '0000'+str(self.scene)
+        elif self.scene<100:         sc = '000'+str(self.scene)
+        elif self.scene<1000:        sc = '00'+str(self.scene)
+        elif self.scene<10000:       sc = '0'+str(self.scene)
+
+        file1 = open("/home/omari/Datasets/robot_modified/analysis/analysis_"+sc+".txt", "w")
+        file1.write(analysis)
+        file1.close()
 
 
 

@@ -83,10 +83,10 @@ class Robot():
         change_prism_to = ['ball','sphere','orb','orb']
         change_prisms = ['pyramids','prisms','tetrahedrons','triangles']
         change_prisms_to = ['balls','spheres','orbs','orbs']
-        change_box = ['block','cube','box','slab','parallelipiped','parallelepiped']
-        change_box_to = ['cylinder','can','drum','drum','can','can']
-        change_boxes = ['cubes','boxes','blocks','slabs','parallelipipeds']
-        change_boxes_to = ['cylinders','cans','drums','drums','cans']
+        change_box = ['block','cube','box','slab','parallelipiped','parallelepiped','brick']
+        change_box_to = ['cylinder','can','drum','drum','can','can','can']
+        change_boxes = ['cubes','boxes','blocks','slabs','parallelipipeds','bricks']
+        change_boxes_to = ['cylinders','cans','drums','drums','cans','cans']
 
         a1 = randint(0,1)
         a2 = randint(0,1)

@@ -12,6 +12,9 @@ import pickle
 # I have checked sentences toll 12 check more and see what can be learned, or slightly hard to learn !
 # for some reason its slow, check why when you come back
 
+##############################################################################################################
+# Some good examples
+# scene 939 sentence 6
 
 
 
@@ -28,9 +31,11 @@ P.hyp_relation  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle
 print           'reading total motion'
 P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "rb" ) )
 
+
+
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(7,8):
+  for scene in range(939,940):
     #slightly hard [10,]
     if scene in [891,892]: continue
     #ts = time.time()
@@ -39,6 +44,7 @@ for scan in range(1):
     #########################################################################################################
     P._read(scene)                                  # Objects, Graph, Sentences
     P._print_scentenses()
+
     #continue
     #########################################################################################################
     #  Process scenes                                                                                       #
@@ -76,28 +82,25 @@ for scan in range(1):
     P._combine_language_hyp()                       # combine object, relations and motion hypotheses in one place.
     P._filter_hyp()                                 # filter hypotheses to include only .9 of the best hypothesis
     P._filter_phrases()                             # remove larger phrases (and small phrases commented) = self.hyp_language_pass
-    print P.total_motion
+
     #########################################################################################################
     #   Comparing language hypotheses to scene                                                              #
     #########################################################################################################
     P._create_scene_graph()
     P._print_results()
-    if P.number_of_valid_hypotheses <= 50:
-        P._get_all_valid_combinations()
-        P._test_all_valid_combinations()
+    # if P.number_of_valid_hypotheses <= 50:
+    P._get_all_valid_combinations()
+    P._test_all_valid_combinations()
 
-        #########################################################################################################
-        #   Build the grammar                                                                                   #
-        #########################################################################################################
-        P._build_grammar()                               #
-    #P._test_sentence_hyp()                          # test if the whole sentence make sense
-
-    #print P.G_i.nodes()
-    #print P.G_i.edges()
+    #########################################################################################################
+    #   Build the grammar                                                                                   #
+    #########################################################################################################
+    P._build_grammar()                               #
+    P._analysis()
     print '**================= end of scene '+str(P.scene)+' ===================**'
     print '\n\n\n'
 
-
+# P._save_all_sentences()
 # pickle.dump( P.gmm_obj, open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "wb" ) )
 # pickle.dump( P.hyp_motion, open( "/home/omari/Datasets/robot_modified/pickle/hyp_motion_1000.p", "wb" ) )
 # pickle.dump( P.hyp_relation, open( "/home/omari/Datasets/robot_modified/pickle/hyp_relation_1000.p", "wb" ) )
