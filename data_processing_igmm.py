@@ -359,7 +359,6 @@ def _check_R_E(a,b):
 # check verb sentences with for relations and entities
 def _match_scene_to_hypotheses(activity_sentence,scene_i,scene_f,m_obj):
     match = {}
-    print activity_sentence.keys()
     for v in activity_sentence:
         for d in activity_sentence[v]:
             activity_sentence[v][d]['valid_hypotheses'] = []
@@ -373,10 +372,6 @@ def _match_scene_to_hypotheses(activity_sentence,scene_i,scene_f,m_obj):
                     TE_values = i[3]
                     TV_results = i[4]
                     TV_values = i[5]
-
-                    print '>>>>',v
-                    print '>>>>',TE_results
-                    print '>>>>',TV_results
 
                     if v == (0,1,0,):
                         objects = _get_the_TE_from_scene(TE_results[:],TE_values[:],scene_i)
@@ -392,15 +387,12 @@ def _match_scene_to_hypotheses(activity_sentence,scene_i,scene_f,m_obj):
                         objects = _get_the_TE_from_scene(TE_results[:],TE_values[:],scene_i)
                         if len(objects)==1:
                             if int(objects[0])==int(m_obj):
-                                print 'TE is working'
                                 match = 1
 
                     if v == (1,0,):
                         location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i)
-                        print location
                         if len(location)==1:
                             #print 'the target location is:',location
-                            print 'TV is working'
                             match = _match_final_scene([int(m_obj)],'location',location,scene_f)
                             #print match
 
@@ -456,13 +448,12 @@ def _get_the_TV_from_scene(TV_results,TV_values,scene):
                     ok = 0
             if ok:  obj_pass.append(obj)
         for obj in obj_pass:
-            #NOTE: if you want to learn right and left this is where you have to look
             #NOTE: this will only work for over !
             #NOTE: if you want to learn nearset its also here
             loc = scene.node[obj+'_'+'location']['value']
-            print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOt sure if it will work !!!!'
-            print loc + [relations_v[0][0][0],relations_v[0][0][1]]
-            loc += [relations_v[0][0][0],relations_v[0][0][1]]
+            loc[0] += relations_v[0][0][0]
+            loc[1] += relations_v[0][0][1]
+            #print loc
             location_pass.append(loc)
     elif len(relations) == len(features):
         obj1 = []
@@ -471,27 +462,27 @@ def _get_the_TV_from_scene(TV_results,TV_values,scene):
         for i in range(len(features)-1,0,-1):
             # Get the base object in the relation
             if obj2 == []:
-                print '>>>> the 2nd object is:',i,features[i],features_v[i]
+                #print '>>>> the 2nd object is:',i,features[i],features_v[i]
                 for obj in all_objects:
                     ok = 1
                     for feature,value in zip(features[i],features_v[i]):
                         if np.sum(np.abs(np.asarray(scene.node[obj+'_'+feature]['value'])-np.asarray(value))) != 0:
                             ok = 0
                     if ok:  obj2.append(obj)
-                print '---- object 2 is :', obj2
+                #print '---- object 2 is :', obj2
 
             # Get the main object in the relation
-            print '>>>> the 1st object is:',i-1,features[i-1],features_v[i-1]
+            #print '>>>> the 1st object is:',i-1,features[i-1],features_v[i-1]
             for obj in all_objects:
                 ok = 1
                 for feature,value in zip(features[i-1],features_v[i-1]):
                     if np.sum(np.abs(np.asarray(scene.node[obj+'_'+feature]['value'])-np.asarray(value))) != 0:
                         ok = 0
                 if ok:  obj1.append(obj)
-            print '---- object 1 is :', obj1
+            #print '---- object 1 is :', obj1
 
             # See if the relation is valid between the main object and the base object
-            print '>>>> the relation is  :',i,relations[i],relations_v[i]
+            #print '>>>> the relation is  :',i,relations[i],relations_v[i]
             for o2 in obj2:
                 for o1 in obj1:
                     distance = np.asarray(scene.node[o1+'_location']['value'])-np.asarray(scene.node[o2+'_location']['value'])
@@ -506,7 +497,7 @@ def _get_the_TV_from_scene(TV_results,TV_values,scene):
             else:
                 break
         if len(obj2)==1:
-            print 'The final object',obj2
+            #print 'The final object',obj2
             loc = scene.node[obj2[0]+'_'+'location']['value']
             location_pass.append(loc)
 
@@ -663,7 +654,7 @@ class process_data():
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
         self.p_obj_pass             = .7                        # for object
         self.p_relation_pass        = .8                        # for both relation and motion
-        self.pool = multiprocessing.Pool(8)
+        self.pool = multiprocessing.Pool(7)
 
         # Analysis
         self.correct_commands = {}
@@ -691,10 +682,9 @@ class process_data():
         # reading sentences
         self.S = {}
         for count,s in enumerate(sentences):
-            if count == 8:
-                if data[s].split(':')[0] == 'GOOD':
-                    self.commands_so_far += 1
-                    self.S[count] = (data[s].split(':')[1]).lower()
+            if data[s].split(':')[0] == 'GOOD':
+                self.commands_so_far += 1
+                self.S[count] = (data[s].split(':')[1]).lower()
         # reading Data of objects
         self.Data = {}
         for count,o in enumerate(objects):
@@ -1570,34 +1560,32 @@ class process_data():
                 # get the words that have hypotheses and are in the sentence
                 phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
                 # generate all subsets (pick from 1 word to n words) with no repatetion in phrases
-                phrases_with_hyp = list(set(phrases_with_hyp).intersection(['green','blue','move','place','cylinder','red','on top of']))
-                print phrases_with_hyp
-                for L in range(7, 8):
-                # for L in range(2, len(phrases_with_hyp)+1):
-                    print L
+                # phrases_with_hyp = list(set(phrases_with_hyp).intersection(['green','blue','move','place','cylinder','red','on top of']))
+                # for L in range(7, 8):
+                for L in range(2, len(phrases_with_hyp)+1):
                     # multi processing
-                    # self.valid_combination[scene][L] = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj] for subset in itertools.combinations(phrases_with_hyp, L)]))
-                    #
-                    # for p in self.valid_combination[scene][L]:
-                    #     for p2 in p:
-                    #         if p2 != []:
-                    #             if self.scene not in self.correct_commands:
-                    #                 self.correct_commands[self.scene] = []
-                    #             if scene not in self.correct_commands[self.scene]:
-                    #                 self.correct_commands[self.scene].append(scene)
+                    self.valid_combination[scene][L] = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj] for subset in itertools.combinations(phrases_with_hyp, L)]))
+
+                    for p in self.valid_combination[scene][L]:
+                        for p2 in p:
+                            if p2 != []:
+                                if self.scene not in self.correct_commands:
+                                    self.correct_commands[self.scene] = []
+                                if scene not in self.correct_commands[self.scene]:
+                                    self.correct_commands[self.scene].append(scene)
 
                     # single core processing
-                    self.valid_combination[scene][L] = []
-                    for subset in itertools.combinations(phrases_with_hyp, L):
-                        out1 = calc([subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj])
-                        self.valid_combination[scene][L].append(out1)
-                        for p in out1:
-                            for p2 in p:
-                                if p2 != []:
-                                    if self.scene not in self.correct_commands:
-                                        self.correct_commands[self.scene] = []
-                                    if scene not in self.correct_commands[self.scene]:
-                                        self.correct_commands[self.scene].append(scene)
+                    # self.valid_combination[scene][L] = []
+                    # for subset in itertools.combinations(phrases_with_hyp, L):
+                    #     out1 = calc([subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj])
+                    #     self.valid_combination[scene][L].append(out1)
+                    #     for p in out1:
+                    #         for p2 in p:
+                    #             if p2 != []:
+                    #                 if self.scene not in self.correct_commands:
+                    #                     self.correct_commands[self.scene] = []
+                    #                 if scene not in self.correct_commands[self.scene]:
+                    #                     self.correct_commands[self.scene].append(scene)
 
     #------------------------------------------------------------------#
     # get the index of every phrase in every sentence
@@ -1810,6 +1798,8 @@ class process_data():
                                         # build TE and TV them self
                                         TE_converted,e, e_bar = self._TE_TV_conversion(TE_f)
                                         TV_converted,v, v_bar = self._TE_TV_conversion(TV_f)
+                                        TE_converted = self._more_conversion(TE_converted[:],e_bar[:])
+                                        TV_converted = self._more_conversion(TV_converted[:],v_bar[:])
 
                                         #---------------------------------#
                                         # TE = the _entity
@@ -1845,6 +1835,7 @@ class process_data():
                                     elif len(order)==1:
                                         if order[0] == 'TE':
                                             TE_converted,e, e_bar = self._TE_TV_conversion(TE)
+                                            TE_converted = self._more_conversion(TE_converted[:],e_bar[:])
                                             #---------------------------------#
                                             T = 'TE'
                                             self._update_self_N(T,TE_converted)
@@ -1861,7 +1852,7 @@ class process_data():
 
                                         if order[0] == 'TV':
                                             TV_converted,v, v_bar = self._TE_TV_conversion(TV)
-                                            TV_converted,TV_sub_converted = self._more_conversion(TV_converted,v_bar)
+                                            TV_converted = self._more_conversion(TV_converted[:],v_bar[:])
                                             #---------------------------------#
                                             T = 'TV'
                                             self._update_self_N(T,TV_converted)
@@ -1997,11 +1988,17 @@ class process_data():
                 if s[-1] == []:
                     s[-1] = [word]
                     if word in entity:
-                        final_T.append('_'+word)
-                        s_bar.append('_'+word)
+                        if word == 'location':
+                            final_T.append('_'+word)
+                            s_bar.append('_'+word)
+                        else:
+                            final_T.append('_entity')
+                            s_bar.append('_entity')
                     if word in relation:
-                        final_T.append('_'+word)
-                        s_bar.append('_'+word)
+                        # final_T.append('_'+word)
+                        # s_bar.append('_'+word)
+                        final_T.append('_relation')
+                        s_bar.append('_relation')
                 else:
                     if s[-1][-1] in entity:         #previous is entity
                         if word in entity       :   # new is entity
@@ -2011,18 +2008,24 @@ class process_data():
                                 s_bar[-1] = '_entity'
                             else:
                                 s.append([word])
-                                final_T.append('_'+word)
-                                s_bar.append('_'+word)
+                                # final_T.append('_'+word)
+                                # s_bar.append('_'+word)
+                                final_T.append('_relation')
+                                s_bar.append('_relation')
                         if word in relation     :   #new is relation
                             s.append([word])
-                            final_T.append('_'+word)
-                            s_bar.append('_'+word)
+                            # final_T.append('_'+word)
+                            # s_bar.append('_'+word)
+                            final_T.append('_relation')
+                            s_bar.append('_relation')
 
                     elif s[-1][-1] in relation:       #previous is relation
                         if word in entity       :   #new is entity
                             s.append([word])
-                            final_T.append('_'+word)
-                            s_bar.append('_'+word)
+                            # final_T.append('_'+word)
+                            # s_bar.append('_'+word)
+                            final_T.append('_entity')
+                            s_bar.append('_entity')
                         if word in relation     :   #new is relation
                             if word not in s[-1]:
                                 s[-1].append(word)
@@ -2030,8 +2033,10 @@ class process_data():
                                 s_bar[-1] = ('_relation')
                             else:
                                 s.append([word])
-                                final_T.append('_'+word)
-                                s_bar.append('_'+word)
+                                # final_T.append('_'+word)
+                                # s_bar.append('_'+word)
+                                final_T.append('_relation')
+                                s_bar.append('_relation')
             else:
                 final_T.append(word)
         return ' '.join(final_T), s, s_bar
@@ -2043,13 +2048,37 @@ class process_data():
         print '>>>>>',T
         print '>>>>>',T_bar
         sub_category = []
+        sub_category_val = []
         connecter = []
-        for word in reversed(T):
-            if word in special_words:
-                print '>> s word',word
-            else:
-                print '>> connect',word
-        return sentence,sentence
+        for i in range(len(T_bar)-1):
+            sub1 = []
+            c1 = []
+            for count,word in enumerate(reversed(T)):
+                if word in special_words:
+                    print '>> s word',word
+                    sub1.append(word)
+                else:
+                    if sub1 != []:
+                        print '>> connect',word
+                        c1.append(word)
+                if len(sub1) == 2:
+                    break
+            for i in range(count+1):
+                T.pop(-1)
+            T.append(sub1[1])
+            sub_category.append(sub1[1])
+            sent = sub1[1]+' '+' '.join(reversed(c1))+' '+sub1[0]
+            sub_category_val.append(sent)
+
+            for word in c1:
+                self._update_self_no_match(word)
+
+        print sub_category
+        print sub_category_val
+        for T1,T2 in zip(sub_category,sub_category_val):
+            self._update_self_N(T1,T2)
+        print '--------'
+        return ' '.join(T)
 
     #--------------------------------------------------------------------------------------------------------#
     def _build_PCFG(self):
