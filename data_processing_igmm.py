@@ -359,8 +359,8 @@ def _check_R_E(a,b):
 # check verb sentences with for relations and entities
 def _match_scene_to_hypotheses(activity_sentence,scene_i,scene_f,m_obj):
     match = {}
+    print activity_sentence.keys()
     for v in activity_sentence:
-
         for d in activity_sentence[v]:
             activity_sentence[v][d]['valid_hypotheses'] = []
             for k in activity_sentence[v][d]['valid_configurations']:
@@ -373,6 +373,11 @@ def _match_scene_to_hypotheses(activity_sentence,scene_i,scene_f,m_obj):
                     TE_values = i[3]
                     TV_results = i[4]
                     TV_values = i[5]
+
+                    print '>>>>',v
+                    print '>>>>',TE_results
+                    print '>>>>',TV_results
+
                     if v == (0,1,0,):
                         objects = _get_the_TE_from_scene(TE_results[:],TE_values[:],scene_i)
                         if len(objects)==1:
@@ -387,12 +392,15 @@ def _match_scene_to_hypotheses(activity_sentence,scene_i,scene_f,m_obj):
                         objects = _get_the_TE_from_scene(TE_results[:],TE_values[:],scene_i)
                         if len(objects)==1:
                             if int(objects[0])==int(m_obj):
+                                print 'TE is working'
                                 match = 1
 
                     if v == (1,0,):
                         location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i)
+                        print location
                         if len(location)==1:
                             #print 'the target location is:',location
+                            print 'TV is working'
                             match = _match_final_scene([int(m_obj)],'location',location,scene_f)
                             #print match
 
@@ -452,7 +460,56 @@ def _get_the_TV_from_scene(TV_results,TV_values,scene):
             #NOTE: this will only work for over !
             #NOTE: if you want to learn nearset its also here
             loc = scene.node[obj+'_'+'location']['value']
+            print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOt sure if it will work !!!!'
+            print loc + [relations_v[0][0][0],relations_v[0][0][1]]
+            loc += [relations_v[0][0][0],relations_v[0][0][1]]
             location_pass.append(loc)
+    elif len(relations) == len(features):
+        obj1 = []
+        obj2 = []
+        obj2_bar = []
+        for i in range(len(features)-1,0,-1):
+            # Get the base object in the relation
+            if obj2 == []:
+                print '>>>> the 2nd object is:',i,features[i],features_v[i]
+                for obj in all_objects:
+                    ok = 1
+                    for feature,value in zip(features[i],features_v[i]):
+                        if np.sum(np.abs(np.asarray(scene.node[obj+'_'+feature]['value'])-np.asarray(value))) != 0:
+                            ok = 0
+                    if ok:  obj2.append(obj)
+                print '---- object 2 is :', obj2
+
+            # Get the main object in the relation
+            print '>>>> the 1st object is:',i-1,features[i-1],features_v[i-1]
+            for obj in all_objects:
+                ok = 1
+                for feature,value in zip(features[i-1],features_v[i-1]):
+                    if np.sum(np.abs(np.asarray(scene.node[obj+'_'+feature]['value'])-np.asarray(value))) != 0:
+                        ok = 0
+                if ok:  obj1.append(obj)
+            print '---- object 1 is :', obj1
+
+            # See if the relation is valid between the main object and the base object
+            print '>>>> the relation is  :',i,relations[i],relations_v[i]
+            for o2 in obj2:
+                for o1 in obj1:
+                    distance = np.asarray(scene.node[o1+'_location']['value'])-np.asarray(scene.node[o2+'_location']['value'])
+                    if distance[0] == relations_v[i][0][0] and distance[1] == relations_v[i][0][1]:
+                        obj2_bar.append(o1)
+
+            # There are some objects that achive this relation
+            if obj2_bar != []:
+                obj2 = obj2_bar
+                obj1 = []
+            #None of the objects achive this relation !
+            else:
+                break
+        if len(obj2)==1:
+            print 'The final object',obj2
+            loc = scene.node[obj2[0]+'_'+'location']['value']
+            location_pass.append(loc)
+
     return location_pass
 
 #--------------------------------------------------------------------------------------------------------#
@@ -495,6 +552,7 @@ def _print_results(activity_sentence,scene_description,parsed_sentence,subset,el
                                     print 'TV results   :',i[4][0]
                                     print 'TV values    :',i[5][0]
                                     if len(activity_sentence)>1:
+                                        print 'part of sentence:',count
                                         results.append([i[0],i[1][0],i[1][1],subset,element,parsed_sentence,d,v,scene_description,count])
                                     else:
                                         results.append([i[0],i[1][0],i[1][1],subset,element,parsed_sentence,d,v,scene_description,'_'])
@@ -1371,7 +1429,7 @@ class process_data():
                         if len(B[word][f]) > 1:
                             C = copy.deepcopy(B[word][f])
                             maxval = max(C.iteritems(), key=operator.itemgetter(1))[1]
-                            keys = [k for k,v in C.items() if v>.5*maxval]
+                            keys = [k for k,v in C.items() if v>.9*maxval]
                             A[word][f] = {}
                             for key in keys:
                                 A[word]['possibilities'] += 1
@@ -1511,10 +1569,12 @@ class process_data():
                 #print scene
                 # get the words that have hypotheses and are in the sentence
                 phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
-                print phrases_with_hyp
-                print hhh
                 # generate all subsets (pick from 1 word to n words) with no repatetion in phrases
-                for L in range(2, len(phrases_with_hyp)+1):
+                phrases_with_hyp = list(set(phrases_with_hyp).intersection(['green','blue','move','place','cylinder','red','on top of']))
+                print phrases_with_hyp
+                for L in range(7, 8):
+                # for L in range(2, len(phrases_with_hyp)+1):
+                    print L
                     # multi processing
                     # self.valid_combination[scene][L] = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj] for subset in itertools.combinations(phrases_with_hyp, L)]))
                     #
@@ -1529,7 +1589,6 @@ class process_data():
                     # single core processing
                     self.valid_combination[scene][L] = []
                     for subset in itertools.combinations(phrases_with_hyp, L):
-                        print subset
                         out1 = calc([subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj])
                         self.valid_combination[scene][L].append(out1)
                         for p in out1:
@@ -1663,6 +1722,7 @@ class process_data():
         # there is a threshold in NLTK to drop a hypotheses 9.99500249875e-05 I think it;s 1e-4
         entity = ['shape','color','location']
         relation = ['direction']
+        sentence_connectors = []
         for scene in self.valid_combination:
             L = self.max_L[scene]
             if L>0:
@@ -1680,7 +1740,7 @@ class process_data():
                                     ba      = k1[6]
                                     verb                    = k1[7]
                                     scene_description       = k1[8]
-                                    part_of_sentence       = k1[9]
+                                    part_of_sentence        = k1[9]
                                     for i1,i2 in zip(subset,element):
                                         if i2[0]=='motion' and i2[1]==verb:
                                             verb_name = i1
@@ -1701,6 +1761,7 @@ class process_data():
                                     # print '*****'
 
                                 #building the sentence level
+                                    connecter_sentence = []
                                     if 'S' not in self.N:
                                         self.N['S'] = {}
                                         self.N['S']['sum'] = 0.0
@@ -1716,19 +1777,36 @@ class process_data():
                                         # THIS IS LIMITED TO 2 VERB IN THE SENTENCE
                                         S1 = '_S'
                                         self._update_self_N('S',S1)
-                                        self._update_self_N(S1,'_S _S')
                                         if ba == 'after':
                                             S1 = verb_grammar+' '+TETV_grammar
                                         if ba == 'before':
                                             S1 = TETV_grammar+' '+verb_grammar
                                         self._update_self_N('_S',S1)
 
+                                        # this is valid only for two parts !
+                                        if ba == 'after':
+                                            if part_of_sentence == 0:
+                                                if order[0] == 'TE':
+                                                    TE,connecter_sentence = self._find_connecter_sentences(TE,ba,entity,relation,connecter_sentence)
+                                                if order[0] == 'TV':
+                                                    TV,connecter_sentence = self._find_connecter_sentences(TV,ba,entity,relation,connecter_sentence)
+                                                if connecter_sentence != []:
+                                                    self._update_self_N('_S','_S _S_connect _S')
+                                                else:
+                                                    self._update_self_N('_S','_S _S')
+                                        if ba == 'before':
+                                            if part_of_sentence == 1:
+                                                if order[0] == 'TE':
+                                                    TE,connecter = self._find_connecter_sentences(TE,ba,entity,relation,connecter_sentence)
+                                                if order[0] == 'TV':
+                                                    TV,connecter = self._find_connecter_sentences(TV,ba,entity,relation,connecter_sentence)
+
 
 
                                     #building the target entity and target value
                                     connecter = []
                                     if len(order)==2:
-                                        TE_f,TV_f,connecter = self._find_connecter(order,TE,TV,entity,relation,connecter)
+                                        TE_f,TV_f,connecter = self._find_connecter(ba,order,TE,TV,entity,relation,connecter)
                                         # build TE and TV them self
                                         TE_converted,e, e_bar = self._TE_TV_conversion(TE_f)
                                         TV_converted,v, v_bar = self._TE_TV_conversion(TV_f)
@@ -1783,6 +1861,7 @@ class process_data():
 
                                         if order[0] == 'TV':
                                             TV_converted,v, v_bar = self._TE_TV_conversion(TV)
+                                            TV_converted,TV_sub_converted = self._more_conversion(TV_converted,v_bar)
                                             #---------------------------------#
                                             T = 'TV'
                                             self._update_self_N(T,TV_converted)
@@ -1798,6 +1877,25 @@ class process_data():
                                                     self._update_self_no_match(word)
 
 
+
+
+                                    #connecter_sentence
+                                    if connecter_sentence != []:
+                                        C = '_S_connect'
+                                        if C not in self.N:
+                                            self.N[C] = {}
+                                            self.N[C]['sum'] = 0.0
+                                        con = ' '.join(connecter_sentence)
+                                        if con not in self.N[C]:
+                                            self.N[C][con]      = 0.0
+                                        self.N[C][con]    += 1.0
+                                        self.N[C]['sum']  += 1.0
+
+                                        for i in connecter_sentence:
+                                            if i not in self.no_match['features']:
+                                                self.no_match['features'][i] = {}
+                                                self.no_match['sum'][i]      = 1.0
+                                                self.no_match['features'][i][i] = 1.0
 
 
                                     #connecter
@@ -1837,33 +1935,54 @@ class process_data():
             self.no_match['features'][word][word] = 1.0
 
     #--------------------------------------------------------------------------------------------------------#
-    def _find_connecter(self,order,TE,TV,entity,relation,connecter):
-        if order[0] == 'TE':
+    def _find_connecter_sentences(self,TE,ba,entity,relation,connecter):
+        if ba == 'after':
             for l in reversed(range(len(TE))):
                 if TE[l] in entity or TE[l] in relation:
                     break
             TE_f = TE[0:l+1]
             for l1 in TE[l+1:len(TE)]:
                 connecter.append(l1)
-            for l in range(len(TV)):
-                if TV[l] in entity or TV[l] in relation:
-                    break
-            TV_f = TV[l:len(TV)]
-            for l1 in TV[0:l]:
-                connecter.append(l1)
-        if order[0] == 'TV':
-            for l in reversed(range(len(TV))):
-                if TV[l] in entity or TV[l] in relation:
-                    break
-            TV_f = TV[0:l+1]
-            for l1 in TV[l+1:len(TV)]:
-                connecter.append(l1)
-            for l in range(len(TE)):
+
+
+        if ba == 'before':
+            for l in reversed(range(len(TE))):
                 if TE[l] in entity or TE[l] in relation:
                     break
-            TE_f = TE[l:len(TE)]
-            for l1 in TE[0:l]:
+            TE_f = TE[0:l+1]
+            for l1 in TE[l+1:len(TE)]:
                 connecter.append(l1)
+        return TE_f,connecter
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _find_connecter(self,ba,order,TE,TV,entity,relation,connecter):
+        if ba == 'after':
+            if order[0] == 'TE':
+                for l in reversed(range(len(TE))):
+                    if TE[l] in entity or TE[l] in relation:
+                        break
+                TE_f = TE[0:l+1]
+                for l1 in TE[l+1:len(TE)]:
+                    connecter.append(l1)
+                for l in range(len(TV)):
+                    if TV[l] in entity or TV[l] in relation:
+                        break
+                TV_f = TV[l:len(TV)]
+                for l1 in TV[0:l]:
+                    connecter.append(l1)
+            if order[0] == 'TV':
+                for l in reversed(range(len(TV))):
+                    if TV[l] in entity or TV[l] in relation:
+                        break
+                TV_f = TV[0:l+1]
+                for l1 in TV[l+1:len(TV)]:
+                    connecter.append(l1)
+                for l in range(len(TE)):
+                    if TE[l] in entity or TE[l] in relation:
+                        break
+                TE_f = TE[l:len(TE)]
+                for l1 in TE[0:l]:
+                    connecter.append(l1)
         return TE_f,TV_f,connecter
 
     #--------------------------------------------------------------------------------------------------------#
@@ -1916,6 +2035,21 @@ class process_data():
             else:
                 final_T.append(word)
         return ' '.join(final_T), s, s_bar
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _more_conversion(self,sentence,T_bar):
+        special_words = T_bar
+        T = sentence.split(' ')
+        print '>>>>>',T
+        print '>>>>>',T_bar
+        sub_category = []
+        connecter = []
+        for word in reversed(T):
+            if word in special_words:
+                print '>> s word',word
+            else:
+                print '>> connect',word
+        return sentence,sentence
 
     #--------------------------------------------------------------------------------------------------------#
     def _build_PCFG(self):

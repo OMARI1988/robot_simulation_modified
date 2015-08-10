@@ -14,6 +14,38 @@ from nltk.compat import python_2_unicode_compatible
 from nltk.parse.api import ParserI
 from nltk import PCFG
 
+
+toy_pcfg4 = PCFG.fromstring("""
+S -> _S [1.0]
+_S_connect -> and [1.0]
+TV -> it _direction the _entity that is _direction a _entity [1.0]
+_S -> _S _S_connect _S [0.333333]
+_S -> motion_TV TV [0.333333]
+_S -> motion_TE TE [0.333333]
+_on_top_of -> on top of [1.0]
+_entity -> color shape [1.0]
+TE -> the _entity [1.0]
+_direction -> direction [1.0]
+and -> 'and' [1.0]
+on -> 'on' [1.0]
+that -> 'that' [1.0]
+of -> 'of' [1.0]
+top -> 'top' [1.0]
+it -> 'it' [1.0]
+a -> 'a' [1.0]
+the -> 'the' [1.0]
+is -> 'is' [1.0]
+color -> 'blue' [0.332641]
+color -> 'green' [0.337497]
+color -> 'red' [0.329862]
+shape -> 'cylinder' [1.0]
+direction -> _on_top_of [1.0]
+motion_TE -> 'move' [0.499973]
+motion_TE -> 'place' [0.500027]
+motion_TV -> 'move' [0.499973]
+motion_TV -> 'place' [0.500027]
+""")
+
 toy_pcfg3 = PCFG.fromstring("""
 S -> motion_TETV TE_TV [0.838709677419]
 S -> _S [0.161290322581]
@@ -442,7 +474,8 @@ def demo():
     # Define two demos.  Each demo has a sentence and a grammar.
     demos = [('move the green pyramid in the top left corner', toy_pcfg3),
              ('take the green pyramid and put it in the top left corner', toy_pcfg3),
-              ('put the green pyramid on the red block', toy_pcfg3)]
+              ('put the green pyramid on the red block', toy_pcfg3),
+              ('move the red cylinder and place it on top of the blue cylinder that is on top of a green cylinder', toy_pcfg4),]
 
     # Ask the user which demo they want to use.
     print()
