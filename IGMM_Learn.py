@@ -35,7 +35,7 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pi
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(939,940):
+  for scene in range(1,2):
     #slightly hard [10,]
     if scene in [891,892]: continue
     #ts = time.time()
@@ -91,10 +91,10 @@ for scan in range(1):
     # if P.number_of_valid_hypotheses <= 50:
     P._get_all_valid_combinations()
     P._test_all_valid_combinations()
-
-    #########################################################################################################
-    #   Build the grammar                                                                                   #
-    #########################################################################################################
+    #
+    # #########################################################################################################
+    # #   Build the grammar                                                                                   #
+    # #########################################################################################################
     P._build_grammar()                               #
     P._analysis()
     print '**================= end of scene '+str(P.scene)+' ===================**'
