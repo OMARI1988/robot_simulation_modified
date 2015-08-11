@@ -35,7 +35,7 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pi
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,2):
+  for scene in range(1,1001):
     #slightly hard [10,]
     if scene in [891,892]: continue
     #ts = time.time()

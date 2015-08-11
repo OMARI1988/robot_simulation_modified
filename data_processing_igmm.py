@@ -440,7 +440,6 @@ def calc(data):
                 if features[0][0] == 'location':
                     loc = np.asarray(features_v[0][0])/7.0
                     location_pass.append(loc)
-                    print '----------------------------------------',location_pass
         elif len(relations)==1 and len(features)==1:
             obj_pass = []
             for obj in all_objects:
@@ -510,9 +509,6 @@ def calc(data):
     def _match_final_scene(objects,target_feature,target_value,scene):
         match = 0
         loc = scene.node[str(objects[0])+'_'+target_feature]['value']
-        print '>>>',loc
-        print '>>>',target_value
-        print '>>>>>>>>>> location subtraction:',np.sum(np.abs(np.asarray(loc)-np.asarray(target_value)))
         if np.sum(np.abs(np.asarray(loc)-np.asarray(target_value)))==0:
             match = 1
         return match
@@ -579,11 +575,11 @@ def calc(data):
             motion_flag = 1
 
     results = [[]]
+    hypotheses = []
     #---------------------------------------------------------------#
     # no 2 phrases are allowed to intersect in the same sentence
     #no_intersection = _intersection(subset,indices)
-    no_intersection = 1
-    if no_intersection and motion_flag:
+    if motion_flag:
         all_possibilities = _all_possibilities_func(subset, hyp_language_pass)
         #---------------------------------------------------------------#
         # find the actual possibilities for every word in the subset
@@ -611,7 +607,9 @@ def calc(data):
                         # print activity_sentence
                         activity_sentence = _match_scene_to_hypotheses(activity_sentence,graph_i,graph_f,m_obj)
                         results.append(_print_results(activity_sentence,scene_description,parsed_sentence,subset,element,matched_features,scene,L))
-    return (results,)
+                        if results[-1] != []:
+                            if [subset,element] not in hypotheses:  hypotheses.append([subset,element])
+    return (results,),(hypotheses,)
 
 
 class prettyfloat(float):
@@ -675,6 +673,7 @@ class process_data():
         self.commands_so_far = 0
         self.scenes_so_far = 0
         self.all_Sentences = ''
+        self.all_valid_hypotheses = {}
 
     #--------------------------------------------------------------------------------------------------------#
     # read the sentences and data from file
@@ -1631,6 +1630,7 @@ class process_data():
     def _test_all_valid_combinations(self):
         # test the hypotheses sentence by sentence
         self.valid_combination = {}
+        self.valid_hypotheses = {}
         if 'motion' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
@@ -1664,13 +1664,23 @@ class process_data():
                     #                     self.correct_commands[self.scene].append(scene)
 
                 self.valid_combination[scene] = {}
+                self.valid_hypotheses[scene] = {}
                 # Test
                 for count,P in enumerate(self.valid_configurations[scene]):
                     # if count < 112: continue
                     phrases_with_hyp = P[0]
-                    for L in range(2,np.min([len(phrases_with_hyp),self.maximum_hyp_in_sentence+1])):#
+                    for L in range(2,np.min([len(phrases_with_hyp)+1,self.maximum_hyp_in_sentence+1])):#
+                        if L not in self.valid_combination[scene]:
+                            self.valid_combination[scene][L]    = []
+                            self.valid_hypotheses[scene][L]     = []
                         print '>>>>>>>>>>>>>>>>>>>>>>>',scene,count,L
-                        self.valid_combination[scene][L] = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj,P[1]] for subset in itertools.combinations(phrases_with_hyp, L)]))
+                        v1,v2 = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj,P[1]] for subset in itertools.combinations(phrases_with_hyp, L)]))
+
+                        for i in v1:
+                            self.valid_combination[scene][L].append(i)
+
+                        for i in v2:
+                            self.valid_hypotheses[scene][L].append(i)
 
     #------------------------------------------------------------------#
     # get the index of every phrase in every sentence
@@ -2323,6 +2333,17 @@ class process_data():
     #--------------------------------------------------------------------------------------------------------#
     def _analysis(self):
 
+        for scene in self.valid_combination:
+            for L in self.valid_combination[scene]:
+                for p in self.valid_combination[scene][L]:
+                    for p2 in p:
+                        for p3 in p2:
+                            if p3 != []:
+                                if self.scene not in self.correct_commands:
+                                    self.correct_commands[self.scene] = []
+                                if str(self.scene)+'-'+str(scene)+'-'+self.S[scene] not in self.correct_commands[self.scene]:
+                                    self.correct_commands[self.scene].append(str(self.scene)+'-'+str(scene)+'-'+self.S[scene])
+
         analysis = ''
         print '********** analysis ***********'
         print
@@ -2349,6 +2370,53 @@ class process_data():
         file1.write(analysis)
         file1.close()
 
+        file1 = open("/home/omari/Datasets/robot_modified/hypotheses/all_scenes.txt", "w")
+        scenes = sorted(self.correct_commands.keys())
+        for s in scenes:
+            file1.write(str(s)+'\n')
+        file1.close()
+
+        file1 = open("/home/omari/Datasets/robot_modified/hypotheses/all_commands.txt", "w")
+        scenes = sorted(self.correct_commands.keys())
+        for s in scenes:
+            for c in self.correct_commands[s]:
+                file1.write(c+'\n')
+        file1.close()
+
+        for scene in self.valid_hypotheses:
+            L = self.max_L[scene]
+            if L > 0:
+                for hyp in self.valid_hypotheses[scene][L]:
+                    if hyp[0] != []:
+                        for word,F in zip(hyp[0][0][0],hyp[0][0][1]):
+                            if F[0] not in self.all_valid_hypotheses:           self.all_valid_hypotheses[F[0]] = {}
+                            if word not in self.all_valid_hypotheses[F[0]]:     self.all_valid_hypotheses[F[0]][word] = {}
+                            no_match = 1
+                            for k,val in enumerate(self.all_valid_hypotheses[F[0]][word]):
+                                m1 = np.asarray(list(val))
+                                m2 = np.asarray(list(F[1]))
+                                #print m1,m2
+                                if len(m1) != len(m2):          continue        # motions !
+                                if self._distance_test(m1,m2)<self.pass_distance_phrases:
+                                    self.all_valid_hypotheses[F[0]][word][tuple(val)] += 1
+                                    no_match = 0
+                            if no_match:
+                                self.all_valid_hypotheses[F[0]][word][tuple(F[1])] = 1
+
+        file1 = open("/home/omari/Datasets/robot_modified/hypotheses/correct_hyp.txt", "w")
+        for feature in self.all_valid_hypotheses:
+            x = self.all_valid_hypotheses[feature]
+            for word in self.all_valid_hypotheses[feature]:
+                x = self.all_valid_hypotheses[feature][word]
+                sorted_values = sorted(x.items(), key=operator.itemgetter(1))
+                for val in sorted_values:
+                    line = feature+','+word+',['
+                    for i in range(len(val[0])-1):
+                        line += str(val[0][i])+' '
+                    line += str(val[0][-1])
+                    line += '],'+str(self.all_valid_hypotheses[feature][word][val[0]])+'\n'
+                    file1.write(line)
+        file1.close()
 
 
 
