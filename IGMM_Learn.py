@@ -32,11 +32,12 @@ P.hyp_relation  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle
 print           'reading total motion'
 P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "rb" ) )
 
-
+# TO DO
+# Scene 16 and 17
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,5):
+  for scene in range(16,17):
     #slightly hard [10,]
     if scene in [891,892]: continue
     #ts = time.time()

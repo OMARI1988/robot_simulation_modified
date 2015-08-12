@@ -96,7 +96,7 @@ def calc(data):
                             m1 = np.asarray(features[f1][k1])
                             m2 = np.asarray(all_scene_features[f2][k2])
                             if f2=='location':  m2 /= 7.0
-                            if _distance_test(m1,m2)<.05:
+                            if _distance_test(m1,m2)<.09:
                                 passed = 1
                                 matched_features[features[f1][k1]] = all_scene_features[f2][k2]
                         if not passed:                                  feature_match = 0
@@ -566,7 +566,7 @@ def calc(data):
     L = data[8]
     m_obj = data[9]
     motion_words = data[10]
-
+    print '>>>>>',subset
     #---------------------------------------------------------------#
     #test if the subset has a motion word
     motion_flag = 0
@@ -586,10 +586,13 @@ def calc(data):
             #---------------------------------------------------------------#
             # no 2 words are allowed to mean the same thing
             not_same, features = _not_same_func(element)
+            print '---',element
+            print '!!',not_same
             if not_same:
                 #---------------------------------------------------------------#
                 # all features should be in the scene
                 feature_match, matched_features = _all_features_match(features,all_scene_features)
+                print '++',feature_match
                 if feature_match:
                     #---------------------------------------------------------------#
                     # does actions match ?   it should match 100%
@@ -1634,6 +1637,7 @@ class process_data():
         if 'motion' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
+                if scene != 5: continue
             #     self.valid_combination[scene] = {}
                 # get the words that have hypotheses and self.valid_configurationsare in the sentence
                 # phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
@@ -2359,8 +2363,8 @@ class process_data():
             if ok:
                 if self.scene not in self.wrong_commands:
                     self.wrong_commands[self.scene] = []
-                if str(self.scene)+'-'+str(s)+'-'+self.S[scene] not in self.wrong_commands[self.scene]:
-                    self.wrong_commands[self.scene].append(str(self.scene)+'-'+str(scene)+'-'+self.S[scene])
+                if str(self.scene)+'-'+str(s)+'-'+self.S[s] not in self.wrong_commands[self.scene]:
+                    self.wrong_commands[self.scene].append(str(self.scene)+'-'+str(s)+'-'+self.S[s])
 
         analysis = ''
         print '********** analysis ***********'
