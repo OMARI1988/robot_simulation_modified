@@ -666,7 +666,7 @@ class process_data():
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
         self.p_obj_pass             = .7                        # for object
         self.p_relation_pass        = .8                        # for both relation and motion
-        self.pool = multiprocessing.Pool(7)
+        self.pool = multiprocessing.Pool(30)
 
         # Analysis
         self.correct_commands = {}
@@ -1673,7 +1673,7 @@ class process_data():
                         if L not in self.valid_combination[scene]:
                             self.valid_combination[scene][L]    = []
                             self.valid_hypotheses[scene][L]     = []
-                        print '>>>>>>>>>>>>>>>>>>>>>>>',scene,count,L
+                        print '>>',self.scene,'..',scene,count,L
                         v1,v2 = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj,P[1]] for subset in itertools.combinations(phrases_with_hyp, L)]))
 
                         for i in v1:
@@ -2367,21 +2367,32 @@ class process_data():
         elif self.scene<10000:       sc = '0'+str(self.scene)
 
         file1 = open("/home/omari/Datasets/robot_modified/analysis/analysis_"+sc+".txt", "w")
+        file2 = open("/home/omari/Dropbox/robot_modified/analysis/analysis_"+sc+".txt", "w")
         file1.write(analysis)
+        file2.write(analysis)
         file1.close()
+        file2.close()
+
+
 
         file1 = open("/home/omari/Datasets/robot_modified/hypotheses/all_scenes.txt", "w")
+        file2 = open("/home/omari/Dropbox/robot_modified/hypotheses/all_scenes.txt", "w")
         scenes = sorted(self.correct_commands.keys())
         for s in scenes:
             file1.write(str(s)+'\n')
+            file2.write(str(s)+'\n')
         file1.close()
+        file2.close()
 
         file1 = open("/home/omari/Datasets/robot_modified/hypotheses/all_commands.txt", "w")
+        file2 = open("/home/omari/Dropbox/robot_modified/hypotheses/all_commands.txt", "w")
         scenes = sorted(self.correct_commands.keys())
         for s in scenes:
             for c in self.correct_commands[s]:
                 file1.write(c+'\n')
+                file2.write(c+'\n')
         file1.close()
+        file2.close()
 
         for scene in self.valid_hypotheses:
             L = self.max_L[scene]
@@ -2404,6 +2415,7 @@ class process_data():
                                 self.all_valid_hypotheses[F[0]][word][tuple(F[1])] = 1
 
         file1 = open("/home/omari/Datasets/robot_modified/hypotheses/correct_hyp.txt", "w")
+        file2 = open("/home/omari/Dropbox/robot_modified/hypotheses/correct_hyp.txt", "w")
         for feature in self.all_valid_hypotheses:
             x = self.all_valid_hypotheses[feature]
             for word in self.all_valid_hypotheses[feature]:
@@ -2416,7 +2428,9 @@ class process_data():
                     line += str(val[0][-1])
                     line += '],'+str(self.all_valid_hypotheses[feature][word][val[0]])+'\n'
                     file1.write(line)
+                    file2.write(line)
         file1.close()
+        file2.close()
 
 
 
