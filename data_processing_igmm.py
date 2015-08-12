@@ -2221,10 +2221,13 @@ class process_data():
 
         file1 = open("/home/omari/Datasets/robot_modified/grammar/grammar_"+sc+".txt", "w")
         file2 = open("/home/omari/Dropbox/robot_modified/grammar/grammar_"+sc+".txt", "w")
+        file3 = open("/home/omari/Dropbox/robot_modified/hypotheses/grammar.txt", "w")
         file1.write(self.grammar)
         file2.write(self.grammar)
+        file3.write(self.grammar)
         file1.close()
         file2.close()
+        file3.close()
 
     #--------------------------------------------------------------------------------------------------------#
     def _print_results(self):
@@ -2349,9 +2352,10 @@ class process_data():
                                     self.correct_commands[self.scene].append(str(self.scene)+'-'+str(scene)+'-'+self.S[scene])
         for s in self.S:
             ok = 1
-            for i in self.correct_commands[self.scene]:
-                if self.S[s] == i.split('-')[-1]:
-                    ok = 0
+            if self.scene in self.correct_commands:
+                for i in self.correct_commands[self.scene]:
+                    if self.S[s] == i.split('-')[-1]:
+                        ok = 0
             if ok:
                 if self.scene not in self.wrong_commands:
                     self.wrong_commands[self.scene] = []
