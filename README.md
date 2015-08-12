@@ -8,3 +8,6 @@
 
 # Robot_simulation.py
 ## script to run the whole simulation
+
+# IGMM_Learn.py
+## runs everything

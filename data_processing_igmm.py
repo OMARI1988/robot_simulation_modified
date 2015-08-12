@@ -692,14 +692,16 @@ class process_data():
             elif g<1000:        sc = '00'+str(g)
             elif g<10000:       sc = '0'+str(g)
             print           'reading grammar rules'
-            grammar         = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/grammar_"+sc+".p", "rb" ) )
+            grammar         = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/grammar_"+sc+".p", "rb" ) )
             self.T          = grammar[0]
             self.N          = grammar[1]
             self.no_match   = grammar[2]
+            analysis                    = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/analysis_"+sc+".p", "rb" ) )
+            self.correct_commands       = analysis[0]
+            self.wrong_commands         = analysis[1]
+            self.all_valid_hypotheses   = analysis[2]
         else:
             print           'No scenes grammar found'
-
-
 
     #--------------------------------------------------------------------------------------------------------#
     # read the sentences and data from file
@@ -2506,7 +2508,9 @@ class process_data():
         file1.close()
 
 
+        pickle.dump( [self.correct_commands, self.wrong_commands, self.all_valid_hypotheses], open( "/home/omari/Datasets/robot_modified/pickle/analysis_"+sc+".p", "wb" ) )
         if self.dropbox:
+            pickle.dump( [self.correct_commands, self.wrong_commands, self.all_valid_hypotheses], open( "/home/omari/Dropbox/robot_modified/pickle/analysis_"+sc+".p", "wb" ) )
             file2 = open("/home/omari/Dropbox/robot_modified/analysis/analysis_"+sc+".txt", "w")
             file2.write(analysis)
             file2.close()
