@@ -696,12 +696,22 @@ class process_data():
             self.T          = grammar[0]
             self.N          = grammar[1]
             self.no_match   = grammar[2]
+        else:
+            print           'No scenes grammar found'
+        g = scene-1
+        if g > 0:
+            print           'reading analysis data'
+            if g<10:            sc = '0000'+str(g)
+            elif g<100:         sc = '000'+str(g)
+            elif g<1000:        sc = '00'+str(g)
+            elif g<10000:       sc = '0'+str(g)
             analysis                    = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/analysis_"+sc+".p", "rb" ) )
             self.correct_commands       = analysis[0]
             self.wrong_commands         = analysis[1]
             self.all_valid_hypotheses   = analysis[2]
-        else:
-            print           'No scenes grammar found'
+            self.scenes_so_far          = analysis[3]
+            self.commands_so_far        = analysis[4]
+            # print analysis
 
     #--------------------------------------------------------------------------------------------------------#
     # read the sentences and data from file
@@ -1662,7 +1672,6 @@ class process_data():
         if 'motion' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
-                if scene != 9: continue
             #     self.valid_combination[scene] = {}
                 # get the words that have hypotheses and self.valid_configurationsare in the sentence
                 # phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
@@ -2508,9 +2517,9 @@ class process_data():
         file1.close()
 
 
-        pickle.dump( [self.correct_commands, self.wrong_commands, self.all_valid_hypotheses], open( "/home/omari/Datasets/robot_modified/pickle/analysis_"+sc+".p", "wb" ) )
+        pickle.dump( [self.correct_commands, self.wrong_commands, self.all_valid_hypotheses, self.scenes_so_far, self.commands_so_far], open( "/home/omari/Datasets/robot_modified/pickle/analysis_"+sc+".p", "wb" ) )
         if self.dropbox:
-            pickle.dump( [self.correct_commands, self.wrong_commands, self.all_valid_hypotheses], open( "/home/omari/Dropbox/robot_modified/pickle/analysis_"+sc+".p", "wb" ) )
+            pickle.dump( [self.correct_commands, self.wrong_commands, self.all_valid_hypotheses, self.scenes_so_far, self.commands_so_far], open( "/home/omari/Dropbox/robot_modified/pickle/analysis_"+sc+".p", "wb" ) )
             file2 = open("/home/omari/Dropbox/robot_modified/analysis/analysis_"+sc+".txt", "w")
             file2.write(analysis)
             file2.close()
