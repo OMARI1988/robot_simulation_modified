@@ -20,7 +20,8 @@ import pickle
 
 
 P = process_data()
-plot = 0
+plot = 0                                #
+simple = 1                              # simple graph structure for multi processing
 
 print           'reading object hypotheses'
 P.gmm_obj       = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "rb" ) )
@@ -35,7 +36,7 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pi
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,1001):
+  for scene in range(939,940):
     #slightly hard [10,]
     if scene in [891,892]: continue
     #ts = time.time()
@@ -86,7 +87,7 @@ for scan in range(1):
     #########################################################################################################
     #   Comparing language hypotheses to scene                                                              #
     #########################################################################################################
-    P._create_scene_graph()
+    P._create_scene_graph(simple)
     P._print_results()
     # if P.number_of_valid_hypotheses <= 50:
     P._get_all_valid_combinations()

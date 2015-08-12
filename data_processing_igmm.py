@@ -12,11 +12,7 @@ import colorsys
 
 import multiprocessing
 
-"""
-Focus 7bibi
-el pcfg, the words that you don't know yet, keep them as a terminal. and build relations between all the word in the sentence. Once you figure out a word that belong to a feature.
-Convert all the probabilities of that terminal the feature terminal .. ! this should work !
-"""
+
 #--------------------------------------------------------------------------------------------------------#
 # no 2 phrases are allowed to intersect in the same sentence
 def _intersection(subset, indices):
@@ -403,9 +399,10 @@ def calc(data):
     #--------------------------------------------------------------------------------------------------------#
     # This function gets all the objects in the scene with certain features NO RELATIONS (get target entitity)
     def _get_the_TE_from_scene(TE_results,TE_values,scene):
-        m_objects = list((n for n in scene if scene.node[n]['type1']=='mo'))
-        objects = list((n for n in scene if scene.node[n]['type1']=='o'))#
-        all_objects = m_objects+objects
+        # m_objects = list((n for n in scene if scene.node[n]['type1']=='mo'))
+        # objects = list((n for n in scene if scene.node[n]['type1']=='o'))#
+        # all_objects = m_objects+objects
+        all_objects = scene.nodes()
         features = TE_results[1]
         relations = TE_results[2]
         features_v = TE_values[1]
@@ -415,7 +412,7 @@ def calc(data):
             for obj in all_objects:
                 ok = 1
                 for feature,value in zip(features[0],features_v[0]):
-                    if np.sum(np.abs(np.asarray(scene.node[obj+'_'+feature]['value'])-np.asarray(value))) != 0:
+                    if np.sum(np.abs(np.asarray(scene.node[obj]['_'+feature])-np.asarray(value))) != 0:
                         ok = 0
                 if ok:  obj_pass.append(obj)
         return obj_pass
@@ -423,9 +420,10 @@ def calc(data):
     #--------------------------------------------------------------------------------------------------------#
     # This function gets all the objects in the scene with certain features NO RELATIONS (get target entitity)
     def _get_the_TV_from_scene(TV_results,TV_values,scene):
-        m_objects = list((n for n in scene if scene.node[n]['type1']=='mo'))
-        objects = list((n for n in scene if scene.node[n]['type1']=='o'))#
-        all_objects = m_objects+objects
+        # m_objects = list((n for n in scene if scene.node[n]['type1']=='mo'))
+        # objects = list((n for n in scene if scene.node[n]['type1']=='o'))#
+        # all_objects = m_objects+objects
+        all_objects = scene.nodes()
         features = TV_results[1]
         relations = TV_results[2]
         features_v = TV_values[1]
@@ -445,13 +443,13 @@ def calc(data):
             for obj in all_objects:
                 ok = 1
                 for feature,value in zip(features[0],features_v[0]):
-                    if np.sum(np.abs(np.asarray(scene.node[obj+'_'+feature]['value'])-np.asarray(value))) != 0:
+                    if np.sum(np.abs(np.asarray(scene.node[obj]['_'+feature])-np.asarray(value))) != 0:
                         ok = 0
                 if ok:  obj_pass.append(obj)
             for obj in obj_pass:
                 #NOTE: this will only work for over !
                 #NOTE: if you want to learn nearset its also here
-                loc = scene.node[obj+'_'+'location']['value']
+                loc = scene.node[obj]['_location']
                 loc[0] += relations_v[0][0][0]
                 loc[1] += relations_v[0][0][1]
                 #print loc
@@ -467,7 +465,7 @@ def calc(data):
                     for obj in all_objects:
                         ok = 1
                         for feature,value in zip(features[i],features_v[i]):
-                            if np.sum(np.abs(np.asarray(scene.node[obj+'_'+feature]['value'])-np.asarray(value))) != 0:
+                            if np.sum(np.abs(np.asarray(scene.node[obj]['_'+feature])-np.asarray(value))) != 0:
                                 ok = 0
                         if ok:  obj2.append(obj)
                     #print '---- object 2 is :', obj2
@@ -477,7 +475,7 @@ def calc(data):
                 for obj in all_objects:
                     ok = 1
                     for feature,value in zip(features[i-1],features_v[i-1]):
-                        if np.sum(np.abs(np.asarray(scene.node[obj+'_'+feature]['value'])-np.asarray(value))) != 0:
+                        if np.sum(np.abs(np.asarray(scene.node[obj]['_'+feature])-np.asarray(value))) != 0:
                             ok = 0
                     if ok:  obj1.append(obj)
                 #print '---- object 1 is :', obj1
@@ -486,7 +484,7 @@ def calc(data):
                 #print '>>>> the relation is  :',i,relations[i],relations_v[i]
                 for o2 in obj2:
                     for o1 in obj1:
-                        distance = np.asarray(scene.node[o1+'_location']['value'])-np.asarray(scene.node[o2+'_location']['value'])
+                        distance = np.asarray(scene.node[o1]['_location'])-np.asarray(scene.node[o2]['_location'])
                         if distance[0] == relations_v[i][0][0] and distance[1] == relations_v[i][0][1]:
                             obj2_bar.append(o1)
 
@@ -499,7 +497,7 @@ def calc(data):
                     break
             if len(obj2)==1:
                 #print 'The final object',obj2
-                loc = scene.node[obj2[0]+'_'+'location']['value']
+                loc = scene.node[obj2[0]]['_'+'location']
                 location_pass.append(loc)
 
         return location_pass
@@ -508,7 +506,7 @@ def calc(data):
     # match the final scene location
     def _match_final_scene(objects,target_feature,target_value,scene):
         match = 0
-        loc = scene.node[str(objects[0])+'_'+target_feature]['value']
+        loc = scene.node[str(objects[0])]['_'+target_feature]
         if np.sum(np.abs(np.asarray(loc)-np.asarray(target_value)))==0:
             match = 1
         return match
@@ -556,7 +554,9 @@ def calc(data):
     # initial
     subset = data[0]
     indices = data[1]
-    hyp_language_pass = data[2]
+    hyp_language_pass = {}
+    for i in data[2]:
+        hyp_language_pass[i.keys()[0]] = i[i.keys()[0]]
     total_motion = data[3]
     scene_description = data[4]
     all_scene_features = data[5]
@@ -573,7 +573,6 @@ def calc(data):
     for i in motion_words:
         if i in subset:
             motion_flag = 1
-
     results = [[]]
     hypotheses = []
     #---------------------------------------------------------------#
@@ -666,10 +665,11 @@ class process_data():
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
         self.p_obj_pass             = .7                        # for object
         self.p_relation_pass        = .8                        # for both relation and motion
-        self.pool = multiprocessing.Pool(30)
+        self.pool = multiprocessing.Pool(7)
 
         # Analysis
         self.correct_commands = {}
+        self.wrong_commands = {}
         self.commands_so_far = 0
         self.scenes_so_far = 0
         self.all_Sentences = ''
@@ -1674,7 +1674,8 @@ class process_data():
                             self.valid_combination[scene][L]    = []
                             self.valid_hypotheses[scene][L]     = []
                         print '>>',self.scene,'..',scene,count,L
-                        v1,v2 = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj,P[1]] for subset in itertools.combinations(phrases_with_hyp, L)]))
+
+                        v1,v2 = zip(*self.pool.map(calc, [[subset,self.indices[scene], [{word:self.hyp_language_pass[word]} for word in subset], self.all_total_motion[self.scene], self.S[scene], self.all_scene_features[self.scene], [self.G_i,self.G_f], scene,L,self.m_obj,P[1]] for subset in itertools.combinations(phrases_with_hyp, L)]))
 
                         for i in v1:
                             self.valid_combination[scene][L].append(i)
@@ -1759,50 +1760,15 @@ class process_data():
                                     values  = k1[4]
                                     for word,value in zip(words,values):
                                         feature = value[0]
-                                        if value[0] == 'motion':
-                                            if len(order)==2:
-                                                feature = value[0]+'_'+order[0]+order[1]
-                                            if len(order)==1:
-                                                feature = value[0]+'_'+order[0]
+                                        if feature == 'motion':
+                                            continue
                                         val = hypotheses[word][value[0]][value[1]]
-                                        if feature not in self.T['features']:
-                                            self.T['features'][feature] = {}
-                                            self.T['sum'][feature]      = 0.0
-                                        if len(word.split(' '))>1:
-                                            words = word.split(' ')
-                                            word = '_'+'_'.join(words)
-                                            if word not in self.T['features'][feature]:
-                                                self.T['features'][feature][word] = 0.0
-                                            self.T['features'][feature][word] += val
-                                            self.T['sum'][feature] += val
-
-                                            for w in words:
-                                                if w not in self.no_match['features']:
-                                                    self.no_match['features'][w] = {}
-                                                    self.no_match['sum'][w]      = 1.0
-                                                    self.no_match['features'][w][w] = 1.0
-
-                                            if word not in self.N:
-                                                self.N[word] = {}
-                                                self.N[word][' '.join(words)] = 1.0
-                                                self.N[word]['sum'] = 1.0
-
-                                            # if feature not in self.N:
-                                            #     self.N[feature] = {}
-                                            #     self.N[feature]['sum'] = 0.0
-                                            # if word not in self.N[feature]:
-                                            #     self.N[feature][word] = 0.0
-                                            # self.N[feature][word] += 1.0
-                                            # self.N[feature]['sum'] += 1.0
-                                        else:
-                                            if word not in self.T['features'][feature]:
-                                                self.T['features'][feature][word] = 0.0
-                                            self.T['features'][feature][word] += val
-                                            self.T['sum'][feature] += val
+                                        self._update_self_T(feature,word,val)
 
     #--------------------------------------------------------------------------------------------------------#
     def _update_nonterminals(self,):
         # there is a threshold in NLTK to drop a hypotheses 9.99500249875e-05 I think it;s 1e-4
+        hypotheses = self.hyp_language_pass
         entity = ['shape','color','location']
         relation = ['direction']
         sentence_connectors = []
@@ -1824,15 +1790,17 @@ class process_data():
                                     verb                    = k1[7]
                                     scene_description       = k1[8]
                                     part_of_sentence        = k1[9]
-                                    for i1,i2 in zip(subset,element):
-                                        if i2[0]=='motion' and i2[1]==verb:
-                                            verb_name = i1
+                                    for word,value in zip(subset,element):
+                                        if value[0]=='motion' and value[1]==verb:
+                                            verb_name = word
                                             if len(order)==2:
                                                 TETV_grammar = order[0]+'_'+order[1]
-                                                verb_grammar = i2[0]+'_'+order[0]+order[1]
+                                                verb_grammar = value[0]+'_'+order[0]+order[1]
                                             if len(order)==1:
                                                 TETV_grammar = order[0]
-                                                verb_grammar = i2[0]+'_'+order[0]
+                                                verb_grammar = value[0]+'_'+order[0]
+                                            val = hypotheses[word][value[0]][value[1]]
+                                            self._update_self_T(verb_grammar,verb_name,val)
                                     # print 'target E          :',TE
                                     # print 'target V          :',TV
                                     # print 'Parsed S          :',PS
@@ -1962,9 +1930,6 @@ class process_data():
                                                 if word[0] != '_':
                                                     self._update_self_no_match(word)
 
-
-
-
                                     #connecter_sentence
                                     if connecter_sentence != []:
                                         C = '_S_connect'
@@ -1983,7 +1948,6 @@ class process_data():
                                                 self.no_match['sum'][i]      = 1.0
                                                 self.no_match['features'][i][i] = 1.0
 
-
                                     #connecter
                                     if connecter != []:
                                         C = order[0]+order[1]+'_connect'
@@ -2001,6 +1965,36 @@ class process_data():
                                                 self.no_match['features'][i] = {}
                                                 self.no_match['sum'][i]      = 1.0
                                                 self.no_match['features'][i][i] = 1.0
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _update_self_T(self,feature,word,val):
+        if feature not in self.T['features']:
+            self.T['features'][feature] = {}
+            self.T['sum'][feature]      = 0.0
+        if len(word.split(' '))>1:
+            words = word.split(' ')
+            word = '_'+'_'.join(words)
+            if word not in self.T['features'][feature]:
+                self.T['features'][feature][word] = 0.0
+            self.T['features'][feature][word] += val
+            self.T['sum'][feature] += val
+
+            for w in words:
+                if w not in self.no_match['features']:
+                    self.no_match['features'][w] = {}
+                    self.no_match['sum'][w]      = 1.0
+                    self.no_match['features'][w][w] = 1.0
+
+            if word not in self.N:
+                self.N[word] = {}
+                self.N[word][' '.join(words)] = 1.0
+                self.N[word]['sum'] = 1.0
+
+        else:
+            if word not in self.T['features'][feature]:
+                self.T['features'][feature][word] = 0.0
+            self.T['features'][feature][word] += val
+            self.T['sum'][feature] += val
 
     #--------------------------------------------------------------------------------------------------------#
     def _update_self_N(self,T,Tbar):
@@ -2226,8 +2220,11 @@ class process_data():
         elif self.scene<10000:       sc = '0'+str(self.scene)
 
         file1 = open("/home/omari/Datasets/robot_modified/grammar/grammar_"+sc+".txt", "w")
+        file2 = open("/home/omari/Dropbox/robot_modified/grammar/grammar_"+sc+".txt", "w")
         file1.write(self.grammar)
+        file2.write(self.grammar)
         file1.close()
+        file2.close()
 
     #--------------------------------------------------------------------------------------------------------#
     def _print_results(self):
@@ -2252,7 +2249,7 @@ class process_data():
                         print("{0:.3f}".format( self.hyp_language_pass[word][f][value]))
 
     #--------------------------------------------------------------------------------------------------------#
-    def _create_scene_graph(self):
+    def _create_scene_graph(self,simple):
         # Creating the graph structure
         G = nx.Graph()
         # creating the object layer
@@ -2261,78 +2258,85 @@ class process_data():
         obj_count = 3.0                 # 1 is reserved for the moving object
         G_count = 1.0
         for I in [0,-1]:
-
-            for key in self.keys:
-                #print key,self.Data[key]['color']
-                if key == 'G':
-                    G.add_node(str(key),type1='G',position=(G_count,3))
-                else:
-                    if key == self.m_obj:
-                        G.add_node(str(key),type1='mo',position=(m_count,3))
+            if simple:
+                for key in self.keys:
+                    #print key,self.Data[key]['color']
+                    if key == 'G':
+                        pass
                     else:
-                        G.add_node(str(key),type1='o',position=(obj_count,3))
-                        obj_count+=1
-                    G.add_node(str(key)+'_color',type1='of',type2='color', value=self.Data[key]['color'],position=(m_count-.25,1));         #color
-                    G.add_node(str(key)+'_shape',type1='of',type2='shape', value=self.Data[key]['shape'],position=(m_count,1));         #shape
-                    x = self.Data[key]['x'][I]/7.0
-                    y = self.Data[key]['y'][I]/7.0
-                    G.add_node(str(key)+'_location',type1='of',type2='location', value=[x,y],position=(m_count+.25,1));         #location
-                    G.add_edge(str(key),str(key)+'_color')
-                    G.add_edge(str(key),str(key)+'_shape')
-                    G.add_edge(str(key),str(key)+'_location')
+                        x = self.Data[key]['x'][I]/7.0
+                        y = self.Data[key]['y'][I]/7.0
+                        if key == self.m_obj:
+                            G.add_node(str(key),type1='mo', _color=self.Data[key]['color'], _shape=self.Data[key]['shape'], _location=[x,y])
+                        else:
+                            G.add_node(str(key),type1='o', _color=self.Data[key]['color'], _shape=self.Data[key]['shape'], _location=[x,y])
+                        # G.add_node(str(key)+'_color',type1='of',type2='color', value=self.Data[key]['color']);         #color
+                        # G.add_node(str(key)+'_shape',type1='of',type2='shape', value=self.Data[key]['shape']);         #shape
+                        # x = self.Data[key]['x'][I]/7.0
+                        # y = self.Data[key]['y'][I]/7.0
+                        # G.add_node(str(key)+'_location',type1='of',type2='location', value=[x,y]);         #location
+                        # G.add_edge(str(key),str(key)+'_color')
+                        # G.add_edge(str(key),str(key)+'_shape')
+                        # G.add_edge(str(key),str(key)+'_location')
 
-            # creating the relation layer
-            counter = 0
-            for k1 in self.keys:
-                for k2 in self.keys:
-                    if k2 != k1 and k2 != 'G' and k1 != 'G':
-                        #if k1 == self.m_obj:
-                            G.add_node(str(k1)+'_'+str(k2),type1='r',position=(r_count,7.0))     # it's a directed node from k1 to k2
-                            G.add_edge(str(k1)+'_'+str(k2),str(k1))
-                            G.add_edge(str(k1)+'_'+str(k2),str(k2))
-                            #G.add_node(str(k1)+'_'+str(k2)+'_dist',type1='rf',position=(r_count-.15,5));         #distance
-                            #direction = [dirx_m[counter,distance],diry_m[counter,distance],dirz_m[counter,distance]]
-                            x1 = self.Data[k1]['x'][I]
-                            y1 = self.Data[k1]['y'][I]
-                            z1 = self.Data[k1]['z'][I]
-                            x2 = self.Data[k2]['x'][I]
-                            y2 = self.Data[k2]['y'][I]
-                            z2 = self.Data[k2]['z'][I]
-                            d = [x1-x2,y1-y2,z1-z2]
-                            if np.abs(sum(np.abs(d)))<=1.1:
-                                if d[0] != 0:   d[0] /= np.abs(d[0])
-                                if d[1] != 0:   d[1] /= np.abs(d[1])
-                                if d[2] != 0:   d[2] /= np.abs(d[2])
-                            else:
-                                d = [0,0,0]
+            else:
+                for key in self.keys:
+                    #print key,self.Data[key]['color']
+                    if key == 'G':
+                        G.add_node(str(key),type1='G',position=(G_count,3))
+                    else:
+                        if key == self.m_obj:
+                            G.add_node(str(key),type1='mo',position=(m_count,3))
+                        else:
+                            G.add_node(str(key),type1='o',position=(obj_count,3))
+                            obj_count+=1
+                        G.add_node(str(key)+'_color',type1='of',type2='color', value=self.Data[key]['color'],position=(m_count-.25,1));         #color
+                        G.add_node(str(key)+'_shape',type1='of',type2='shape', value=self.Data[key]['shape'],position=(m_count,1));         #shape
+                        x = self.Data[key]['x'][I]/7.0
+                        y = self.Data[key]['y'][I]/7.0
+                        G.add_node(str(key)+'_location',type1='of',type2='location', value=[x,y],position=(m_count+.25,1));         #location
+                        G.add_edge(str(key),str(key)+'_color')
+                        G.add_edge(str(key),str(key)+'_shape')
+                        G.add_edge(str(key),str(key)+'_location')
 
-                            G.add_node(str(k1)+'_'+str(k2)+'_dir',type1='rf',type2='direction',value=d,position=(r_count,5));                     #direction
-                            #G.add_node(str(k1)+'_'+str(k2)+'_mot',type1='rf',position=(r_count+.15,5));                     #motion
-                            #G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dist')
-                            G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dir')
-                            #G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_mot')
-                            counter += 1
-                            r_count += 1
+                # creating the relation layer
+                counter = 0
+                for k1 in self.keys:
+                    for k2 in self.keys:
+                        if k2 != k1 and k2 != 'G' and k1 != 'G':
+                            #if k1 == self.m_obj:
+                                G.add_node(str(k1)+'_'+str(k2),type1='r',position=(r_count,7.0))     # it's a directed node from k1 to k2
+                                G.add_edge(str(k1)+'_'+str(k2),str(k1))
+                                G.add_edge(str(k1)+'_'+str(k2),str(k2))
+                                #G.add_node(str(k1)+'_'+str(k2)+'_dist',type1='rf',position=(r_count-.15,5));         #distance
+                                #direction = [dirx_m[counter,distance],diry_m[counter,distance],dirz_m[counter,distance]]
+                                x1 = self.Data[k1]['x'][I]
+                                y1 = self.Data[k1]['y'][I]
+                                z1 = self.Data[k1]['z'][I]
+                                x2 = self.Data[k2]['x'][I]
+                                y2 = self.Data[k2]['y'][I]
+                                z2 = self.Data[k2]['z'][I]
+                                d = [x1-x2,y1-y2,z1-z2]
+                                if np.abs(sum(np.abs(d)))<=1.1:
+                                    if d[0] != 0:   d[0] /= np.abs(d[0])
+                                    if d[1] != 0:   d[1] /= np.abs(d[1])
+                                    if d[2] != 0:   d[2] /= np.abs(d[2])
+                                else:
+                                    d = [0,0,0]
 
-                """
-                    if k2 != k1 and k2 == 'G':
-                        G.add_node(str(k1)+'_'+str(k2),type1='r',position=(G_count+.5,7.0))     # it's a directed node from k1 to k2
-                        G.add_edge(str(k1)+'_'+str(k2),str(k1))
-                        G.add_edge(str(k1)+'_'+str(k2),str(k2))
-                        G.add_node(str(k1)+'_'+str(k2)+'_dist',type1='rf',position=(G_count+.5,5));         #distance
-                        #direction = [dirx_m[counter,distance],diry_m[counter,distance],dirz_m[counter,distance]]
-                        G.add_node(str(k1)+'_'+str(k2)+'_dir',type1='rf',position=(G_count+.5-.15,5));                     #direction
-                        G.add_node(str(k1)+'_'+str(k2)+'_mot',type1='rf',position=(G_count+.5+.15,5));                     #motion
-                        G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dist')
-                        G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dir')
-                        G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_mot')
-                """
+                                G.add_node(str(k1)+'_'+str(k2)+'_dir',type1='rf',type2='direction',value=d,position=(r_count,5));                     #direction
+                                #G.add_node(str(k1)+'_'+str(k2)+'_mot',type1='rf',position=(r_count+.15,5));                     #motion
+                                #G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dist')
+                                G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dir')
+                                #G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_mot')
+                                counter += 1
+                                r_count += 1
+
             if I == 0:          self.G_i = G.copy()
             if I == -1:         self.G_f = G.copy()
 
     #--------------------------------------------------------------------------------------------------------#
     def _analysis(self):
-
         for scene in self.valid_combination:
             for L in self.valid_combination[scene]:
                 for p in self.valid_combination[scene][L]:
@@ -2343,6 +2347,16 @@ class process_data():
                                     self.correct_commands[self.scene] = []
                                 if str(self.scene)+'-'+str(scene)+'-'+self.S[scene] not in self.correct_commands[self.scene]:
                                     self.correct_commands[self.scene].append(str(self.scene)+'-'+str(scene)+'-'+self.S[scene])
+        for s in self.S:
+            ok = 1
+            for i in self.correct_commands[self.scene]:
+                if self.S[s] == i.split('-')[-1]:
+                    ok = 0
+            if ok:
+                if self.scene not in self.wrong_commands:
+                    self.wrong_commands[self.scene] = []
+                if str(self.scene)+'-'+str(s)+'-'+self.S[scene] not in self.wrong_commands[self.scene]:
+                    self.wrong_commands[self.scene].append(str(self.scene)+'-'+str(scene)+'-'+self.S[scene])
 
         analysis = ''
         print '********** analysis ***********'
@@ -2384,11 +2398,21 @@ class process_data():
         file1.close()
         file2.close()
 
-        file1 = open("/home/omari/Datasets/robot_modified/hypotheses/all_commands.txt", "w")
-        file2 = open("/home/omari/Dropbox/robot_modified/hypotheses/all_commands.txt", "w")
+        file1 = open("/home/omari/Datasets/robot_modified/hypotheses/matched_commands.txt", "w")
+        file2 = open("/home/omari/Dropbox/robot_modified/hypotheses/matched_commands.txt", "w")
         scenes = sorted(self.correct_commands.keys())
         for s in scenes:
             for c in self.correct_commands[s]:
+                file1.write(c+'\n')
+                file2.write(c+'\n')
+        file1.close()
+        file2.close()
+
+        file1 = open("/home/omari/Datasets/robot_modified/hypotheses/failed_commands.txt", "w")
+        file2 = open("/home/omari/Dropbox/robot_modified/hypotheses/failed_commands.txt", "w")
+        scenes = sorted(self.wrong_commands.keys())
+        for s in scenes:
+            for c in self.wrong_commands[s]:
                 file1.write(c+'\n')
                 file2.write(c+'\n')
         file1.close()
