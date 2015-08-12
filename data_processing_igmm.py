@@ -218,11 +218,11 @@ def calc(data):
         TE_result,[s1,e1,r1],[s1_v,e1_v,r1_v] = _check_TE(a[:],a_val[:])
         TV_result,[s2,e2,r2],[s2_v,e2_v,r2_v] = _check_TV(b[:],b_val[:])
         if TE_result and TV_result:
-            Valid.append([['TE','TV'],[a,b],[s1,e1,r1],[s1_v,e1_v,r1_v],[s2,e2,r2],[s2_v,e2_v,r2_v]])
+            Valid.append([['PRE','POST'],[a,b],[s1,e1,r1],[s1_v,e1_v,r1_v],[s2,e2,r2],[s2_v,e2_v,r2_v]])
         # TE_result,[s1,e1,r1] = _check_TE(b)
         # TV_result,[s2,e2,r2] = _check_TV(a)
         # if TE_result and TV_result:
-        #     Valid.append([['TV','TE'],[a,b],[s1,e1,r1],[s2,e2,r2]])
+        #     Valid.append([['POST','PRE'],[a,b],[s1,e1,r1],[s2,e2,r2]])
         return Valid
 
     #--------------------------------------------------------------------------------------------------------#
@@ -232,11 +232,11 @@ def calc(data):
         # [[the order TV,TE or TE,TV].[the sentences a,b],[TE results],[TV results]]
         TE_result,[s1,e1,r1],[s1_v,e1_v,r1_v] = _check_TE(a[:],a_val[:])
         if TE_result:
-            Valid.append([['TE'],[a,''],[s1,e1,r1],[s1_v,e1_v,r1_v],[''],['']])
+            Valid.append([['PRE'],[a,''],[s1,e1,r1],[s1_v,e1_v,r1_v],[''],['']])
         # TE_result,[s1,e1,r1] = _check_TE(b)
         # TV_result,[s2,e2,r2] = _check_TV(a)
         # if TE_result and TV_result:
-        #     Valid.append([['TV','TE'],[a,b],[s1,e1,r1],[s2,e2,r2]])
+        #     Valid.append([['POST','PRE'],[a,b],[s1,e1,r1],[s2,e2,r2]])
         return Valid
 
     #--------------------------------------------------------------------------------------------------------#
@@ -246,11 +246,11 @@ def calc(data):
         # [[the order TV,TE or TE,TV].[the sentences a,b],[TE results],[TV results]]
         TV_result,[s2,e2,r2],[s2_v,e2_v,r2_v] = _check_TV(a[:],a_val[:])
         if TV_result:
-            Valid.append([['TV'],['',a],[''],[''],[s2,e2,r2],[s2_v,e2_v,r2_v]])
+            Valid.append([['POST'],['',a],[''],[''],[s2,e2,r2],[s2_v,e2_v,r2_v]])
         # TE_result,[s1,e1,r1] = _check_TE(b)
         # TV_result,[s2,e2,r2] = _check_TV(a)
         # if TE_result and TV_result:
-        #     Valid.append([['TV','TE'],[a,b],[s1,e1,r1],[s2,e2,r2]])
+        #     Valid.append([['POST','PRE'],[a,b],[s1,e1,r1],[s2,e2,r2]])
         return Valid
 
     #--------------------------------------------------------------------------------------------------------#
@@ -566,7 +566,7 @@ def calc(data):
     L = data[8]
     m_obj = data[9]
     motion_words = data[10]
-    print '>>>>>',subset
+    # print '>>>>>',subset
     #---------------------------------------------------------------#
     #test if the subset has a motion word
     motion_flag = 0
@@ -586,13 +586,13 @@ def calc(data):
             #---------------------------------------------------------------#
             # no 2 words are allowed to mean the same thing
             not_same, features = _not_same_func(element)
-            print '---',element
-            print '!!',not_same
+            # print '---',element
+            # print '!!',not_same
             if not_same:
                 #---------------------------------------------------------------#
                 # all features should be in the scene
                 feature_match, matched_features = _all_features_match(features,all_scene_features)
-                print '++',feature_match
+                # print '++',feature_match
                 if feature_match:
                     #---------------------------------------------------------------#
                     # does actions match ?   it should match 100%
@@ -619,7 +619,7 @@ class prettyfloat(float):
         return "%0.2f" % self
 
 class process_data():
-    def __init__(self):
+    def __init__(self,dropbox):
         self.dir1 = '/home/omari/Datasets/robot_modified/motion/scene'
         self.dir2 = '/home/omari/Datasets/robot_modified/scenes/'
         self.dir3 = '/home/omari/Datasets/robot_modified/graphs/scene'
@@ -677,6 +677,29 @@ class process_data():
         self.scenes_so_far = 0
         self.all_Sentences = ''
         self.all_valid_hypotheses = {}
+        self.dropbox = dropbox
+
+#--------------------------------------------------------------------------------------------------------#
+    def _read_grammar(self, scene, valid_scenes):
+        self.first_time = 0
+        g = []
+        for i in valid_scenes:
+            if i < scene:
+                g = i
+        if g != []:
+            if g<10:            sc = '0000'+str(g)
+            elif g<100:         sc = '000'+str(g)
+            elif g<1000:        sc = '00'+str(g)
+            elif g<10000:       sc = '0'+str(g)
+            print           'reading grammar rules'
+            grammar         = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/grammar_"+sc+".p", "rb" ) )
+            self.T          = grammar[0]
+            self.N          = grammar[1]
+            self.no_match   = grammar[2]
+        else:
+            print           'No scenes grammar found'
+
+
 
     #--------------------------------------------------------------------------------------------------------#
     # read the sentences and data from file
@@ -1637,7 +1660,7 @@ class process_data():
         if 'motion' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
-                if scene != 5: continue
+                if scene != 9: continue
             #     self.valid_combination[scene] = {}
                 # get the words that have hypotheses and self.valid_configurationsare in the sentence
                 # phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
@@ -1841,9 +1864,9 @@ class process_data():
                                         # this is valid only for two parts !
                                         if ba == 'after':
                                             if part_of_sentence == 0:
-                                                if order[0] == 'TE':
+                                                if order[0] == 'PRE':
                                                     TE,connecter_sentence = self._find_connecter_sentences(TE,ba,entity,relation,connecter_sentence)
-                                                if order[0] == 'TV':
+                                                if order[0] == 'POST':
                                                     TV,connecter_sentence = self._find_connecter_sentences(TV,ba,entity,relation,connecter_sentence)
                                                 if connecter_sentence != []:
                                                     self._update_self_N('_S','_S _S_connect _S')
@@ -1851,9 +1874,9 @@ class process_data():
                                                     self._update_self_N('_S','_S _S')
                                         if ba == 'before':
                                             if part_of_sentence == 1:
-                                                if order[0] == 'TE':
+                                                if order[0] == 'PRE':
                                                     TE,connecter = self._find_connecter_sentences(TE,ba,entity,relation,connecter_sentence)
-                                                if order[0] == 'TV':
+                                                if order[0] == 'POST':
                                                     TV,connecter = self._find_connecter_sentences(TV,ba,entity,relation,connecter_sentence)
 
 
@@ -1870,9 +1893,9 @@ class process_data():
 
                                         #---------------------------------#
                                         # TE = the _entity
-                                        T = 'TE'
+                                        T = 'PRE'
                                         self._update_self_N(T,TE_converted)
-                                        T = 'TV'
+                                        T = 'POST'
                                         self._update_self_N(T,TV_converted)
 
                                         #---------------------------------#
@@ -1900,11 +1923,11 @@ class process_data():
                                         self._update_self_N(TETV_grammar,S1)
 
                                     elif len(order)==1:
-                                        if order[0] == 'TE':
+                                        if order[0] == 'PRE':
                                             TE_converted,e, e_bar = self._TE_TV_conversion(TE)
                                             TE_converted = self._more_conversion(TE_converted[:],e_bar[:])
                                             #---------------------------------#
-                                            T = 'TE'
+                                            T = 'PRE'
                                             self._update_self_N(T,TE_converted)
                                             #---------------------------------#
                                             # _entity and _shape and _location
@@ -1917,11 +1940,11 @@ class process_data():
                                                 if word[0] != '_':
                                                     self._update_self_no_match(word)
 
-                                        if order[0] == 'TV':
+                                        if order[0] == 'POST':
                                             TV_converted,v, v_bar = self._TE_TV_conversion(TV)
                                             TV_converted = self._more_conversion(TV_converted[:],v_bar[:])
                                             #---------------------------------#
-                                            T = 'TV'
+                                            T = 'POST'
                                             self._update_self_N(T,TV_converted)
                                             #---------------------------------#
                                             # _entity and _shape and _location
@@ -2041,7 +2064,7 @@ class process_data():
     #--------------------------------------------------------------------------------------------------------#
     def _find_connecter(self,ba,order,TE,TV,entity,relation,connecter):
         if ba == 'after':
-            if order[0] == 'TE':
+            if order[0] == 'PRE':
                 for l in reversed(range(len(TE))):
                     if TE[l] in entity or TE[l] in relation:
                         break
@@ -2054,7 +2077,35 @@ class process_data():
                 TV_f = TV[l:len(TV)]
                 for l1 in TV[0:l]:
                     connecter.append(l1)
-            if order[0] == 'TV':
+            if order[0] == 'POST':
+                for l in reversed(range(len(TV))):
+                    if TV[l] in entity or TV[l] in relation:
+                        break
+                TV_f = TV[0:l+1]
+                for l1 in TV[l+1:len(TV)]:
+                    connecter.append(l1)
+                for l in range(len(TE)):
+                    if TE[l] in entity or TE[l] in relation:
+                        break
+                TE_f = TE[l:len(TE)]
+                for l1 in TE[0:l]:
+                    connecter.append(l1)
+
+        if ba == 'before':
+            if order[0] == 'PRE':
+                for l in reversed(range(len(TE))):
+                    if TE[l] in entity or TE[l] in relation:
+                        break
+                TE_f = TE[0:l+1]
+                for l1 in TE[l+1:len(TE)]:
+                    connecter.append(l1)
+                for l in range(len(TV)):
+                    if TV[l] in entity or TV[l] in relation:
+                        break
+                TV_f = TV[l:len(TV)]
+                for l1 in TV[0:l]:
+                    connecter.append(l1)
+            if order[0] == 'POST':
                 for l in reversed(range(len(TV))):
                     if TV[l] in entity or TV[l] in relation:
                         break
@@ -2224,14 +2275,19 @@ class process_data():
         elif self.scene<10000:       sc = '0'+str(self.scene)
 
         file1 = open("/home/omari/Datasets/robot_modified/grammar/grammar_"+sc+".txt", "w")
-        file2 = open("/home/omari/Dropbox/robot_modified/grammar/grammar_"+sc+".txt", "w")
-        file3 = open("/home/omari/Dropbox/robot_modified/hypotheses/grammar.txt", "w")
         file1.write(self.grammar)
-        file2.write(self.grammar)
-        file3.write(self.grammar)
         file1.close()
-        file2.close()
-        file3.close()
+        # store the grammar files
+        pickle.dump( [self.T, self.N, self.no_match], open( "/home/omari/Datasets/robot_modified/pickle/grammar_"+sc+".p", "wb" ) )
+        # if you want to store values on dropbox
+        if self.dropbox:
+            pickle.dump( [self.T, self.N, self.no_match], open( "/home/omari/Dropbox/robot_modified/pickle/grammar_"+sc+".p", "wb" ) )
+            file2 = open("/home/omari/Dropbox/robot_modified/grammar/grammar_"+sc+".txt", "w")
+            file3 = open("/home/omari/Dropbox/robot_modified/hypotheses/grammar.txt", "w")
+            file2.write(self.grammar)
+            file3.write(self.grammar)
+            file2.close()
+            file3.close()
 
     #--------------------------------------------------------------------------------------------------------#
     def _print_results(self):
@@ -2389,42 +2445,30 @@ class process_data():
         elif self.scene<10000:       sc = '0'+str(self.scene)
 
         file1 = open("/home/omari/Datasets/robot_modified/analysis/analysis_"+sc+".txt", "w")
-        file2 = open("/home/omari/Dropbox/robot_modified/analysis/analysis_"+sc+".txt", "w")
         file1.write(analysis)
-        file2.write(analysis)
         file1.close()
-        file2.close()
 
 
 
         file1 = open("/home/omari/Datasets/robot_modified/hypotheses/all_scenes.txt", "w")
-        file2 = open("/home/omari/Dropbox/robot_modified/hypotheses/all_scenes.txt", "w")
         scenes = sorted(self.correct_commands.keys())
         for s in scenes:
             file1.write(str(s)+'\n')
-            file2.write(str(s)+'\n')
         file1.close()
-        file2.close()
 
         file1 = open("/home/omari/Datasets/robot_modified/hypotheses/matched_commands.txt", "w")
-        file2 = open("/home/omari/Dropbox/robot_modified/hypotheses/matched_commands.txt", "w")
         scenes = sorted(self.correct_commands.keys())
         for s in scenes:
             for c in self.correct_commands[s]:
                 file1.write(c+'\n')
-                file2.write(c+'\n')
         file1.close()
-        file2.close()
 
         file1 = open("/home/omari/Datasets/robot_modified/hypotheses/failed_commands.txt", "w")
-        file2 = open("/home/omari/Dropbox/robot_modified/hypotheses/failed_commands.txt", "w")
         scenes = sorted(self.wrong_commands.keys())
         for s in scenes:
             for c in self.wrong_commands[s]:
                 file1.write(c+'\n')
-                file2.write(c+'\n')
         file1.close()
-        file2.close()
 
         for scene in self.valid_hypotheses:
             L = self.max_L[scene]
@@ -2447,7 +2491,6 @@ class process_data():
                                 self.all_valid_hypotheses[F[0]][word][tuple(F[1])] = 1
 
         file1 = open("/home/omari/Datasets/robot_modified/hypotheses/correct_hyp.txt", "w")
-        file2 = open("/home/omari/Dropbox/robot_modified/hypotheses/correct_hyp.txt", "w")
         for feature in self.all_valid_hypotheses:
             x = self.all_valid_hypotheses[feature]
             for word in self.all_valid_hypotheses[feature]:
@@ -2460,11 +2503,48 @@ class process_data():
                     line += str(val[0][-1])
                     line += '],'+str(self.all_valid_hypotheses[feature][word][val[0]])+'\n'
                     file1.write(line)
-                    file2.write(line)
         file1.close()
-        file2.close()
 
 
+        if self.dropbox:
+            file2 = open("/home/omari/Dropbox/robot_modified/analysis/analysis_"+sc+".txt", "w")
+            file2.write(analysis)
+            file2.close()
+
+            file2 = open("/home/omari/Dropbox/robot_modified/hypotheses/all_scenes.txt", "w")
+            scenes = sorted(self.correct_commands.keys())
+            for s in scenes:
+                file2.write(str(s)+'\n')
+            file2.close()
+
+            file2 = open("/home/omari/Dropbox/robot_modified/hypotheses/matched_commands.txt", "w")
+            scenes = sorted(self.correct_commands.keys())
+            for s in scenes:
+                for c in self.correct_commands[s]:
+                    file2.write(c+'\n')
+            file2.close()
+
+            file2 = open("/home/omari/Dropbox/robot_modified/hypotheses/failed_commands.txt", "w")
+            scenes = sorted(self.wrong_commands.keys())
+            for s in scenes:
+                for c in self.wrong_commands[s]:
+                    file2.write(c+'\n')
+            file2.close()
+
+            file2 = open("/home/omari/Dropbox/robot_modified/hypotheses/correct_hyp.txt", "w")
+            for feature in self.all_valid_hypotheses:
+                x = self.all_valid_hypotheses[feature]
+                for word in self.all_valid_hypotheses[feature]:
+                    x = self.all_valid_hypotheses[feature][word]
+                    sorted_values = sorted(x.items(), key=operator.itemgetter(1))
+                    for val in sorted_values:
+                        line = feature+','+word+',['
+                        for i in range(len(val[0])-1):
+                            line += str(val[0][i])+' '
+                        line += str(val[0][-1])
+                        line += '],'+str(self.all_valid_hypotheses[feature][word][val[0]])+'\n'
+                        file2.write(line)
+            file2.close()
 
 
     #--------------------------------------------------------------------------------------------------------#

@@ -6,22 +6,22 @@ from data_processing_igmm import *
 import time
 import pickle
 
-
-##############################################################################################################
-# TO DO (START FROM HERE)
-# I have checked sentences toll 12 check more and see what can be learned, or slightly hard to learn !
-# for some reason its slow, check why when you come back
-
-##############################################################################################################
-# Some good examples
+#########################################################################################################
+#   Some good examples
+#########################################################################################################
 # scene 939 sentence 6
 
-
-
-
-P = process_data()
+#########################################################################################################
+#   inital processing                                                                                   #
+#########################################################################################################
+file1 = open('/home/omari/Dropbox/robot_modified/hypotheses/all_scenes.txt', 'r')
+valid_scenes = [int(i.split('\n')[0]) for i in file1.readlines()]
 plot = 0                                #
 simple = 1                              # simple graph structure for multi processing
+dropbox = 0                             # update dropbox
+
+P = process_data(dropbox)
+P.first_time = 1
 
 print           'reading object hypotheses'
 P.gmm_obj       = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "rb" ) )
@@ -37,9 +37,11 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pi
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(16,17):
+  for scene in range(187,188):
+    if P.first_time:                P._read_grammar(scene,valid_scenes)
+    #if scene not in valid_scenes:   continue
     #slightly hard [10,]
-    if scene in [891,892]: continue
+    if scene in [891,892]:          continue
     #ts = time.time()
     #########################################################################################################
     #   Read sentences and scenes                                                                           #
