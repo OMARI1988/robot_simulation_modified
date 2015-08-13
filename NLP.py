@@ -348,7 +348,7 @@ def demo():
     demos = [('move the green sphere to the bottom left corner', learned_pcfg),
              ('move the green ball over the red block', learned_pcfg),
              ('take the green pyramid and put it in the top left corner', learned_pcfg),
-              ('move the pink triangle on top of the red square', learned_pcfg),
+              ('move the pink triangle on top of the black square', learned_pcfg),
               ('move the red cylinder and place it on top of the blue cylinder that is on top of a green cylinder', learned_pcfg),]
 
     # Ask the user which demo they want to use.

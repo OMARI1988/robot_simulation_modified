@@ -21,16 +21,16 @@ simple = 1                              # simple graph structure for multi proce
 dropbox = 1                             # update dropbox
 
 P = process_data(dropbox)
-P.first_time = 0
+P.first_time = 1
 
-# print           'reading object hypotheses'
-# P.gmm_obj       = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/gmm_obj_1000.p", "rb" ) )
-# print           'reading motion hypotheses'
-# P.hyp_motion    = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/hyp_motion_1000.p", "rb" ) )
-# print           'reading relation hypotheses'
-# P.hyp_relation  = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/hyp_relation_1000.p", "rb" ) )
-# print           'reading total motion'
-# P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/all_total_motion_1000.p", "rb" ) )
+print           'reading object hypotheses'
+P.gmm_obj       = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/gmm_obj_1000.p", "rb" ) )
+print           'reading motion hypotheses'
+P.hyp_motion    = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/hyp_motion_1000.p", "rb" ) )
+print           'reading relation hypotheses'
+P.hyp_relation  = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/hyp_relation_1000.p", "rb" ) )
+print           'reading total motion'
+P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/all_total_motion_1000.p", "rb" ) )
 
 for scan in range(1):
   print 'scan number :',scan
@@ -77,36 +77,36 @@ for scan in range(1):
     #########################################################################################################
     #   Testing hypotheses                                                                                  #
     #########################################################################################################
-    # P._test_relation_hyp()                          # self.hyp_relation_pass
-    # P._test_motion_hyp()                            # self.hyp_motion_pass
-    # P._test_obj_hyp()                               # self.hyp_language_pass > .7
-    # P._combine_language_hyp()                       # combine object, relations and motion hypotheses in one place.
-    # P._filter_hyp()                                 # filter hypotheses to include only .9 of the best hypothesis
-    # P._filter_phrases()                             # remove larger phrases (and small phrases commented) = self.hyp_language_pass
+    P._test_relation_hyp()                          # self.hyp_relation_pass
+    P._test_motion_hyp()                            # self.hyp_motion_pass
+    P._test_obj_hyp()                               # self.hyp_language_pass > .7
+    P._combine_language_hyp()                       # combine object, relations and motion hypotheses in one place.
+    P._filter_hyp()                                 # filter hypotheses to include only .9 of the best hypothesis
+    P._filter_phrases()                             # remove larger phrases (and small phrases commented) = self.hyp_language_pass
+
+    #########################################################################################################
+    #   Comparing language hypotheses to scene                                                              #
+    #########################################################################################################
+    P._create_scene_graph(simple)
+    P._print_results()
+    # if P.number_of_valid_hypotheses <= 50:
+    P._get_all_valid_combinations()
+    P._test_all_valid_combinations()
     #
     # #########################################################################################################
-    # #   Comparing language hypotheses to scene                                                              #
+    # #   Build the grammar                                                                                   #
     # #########################################################################################################
-    # P._create_scene_graph(simple)
-    # P._print_results()
-    # # if P.number_of_valid_hypotheses <= 50:
-    # P._get_all_valid_combinations()
-    # P._test_all_valid_combinations()
-    # #
-    # # #########################################################################################################
-    # # #   Build the grammar                                                                                   #
-    # # #########################################################################################################
-    # P._build_grammar()                               #
-    # P._analysis()
+    P._build_grammar()                               #
+    P._analysis()
     print '**================= end of scene '+str(P.scene)+' ===================**'
     print '\n\n\n'
 
-P._save_all_sentences()
-pickle.dump( P.gmm_obj, open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "wb" ) )
-pickle.dump( P.hyp_motion, open( "/home/omari/Datasets/robot_modified/pickle/hyp_motion_1000.p", "wb" ) )
-pickle.dump( P.hyp_relation, open( "/home/omari/Datasets/robot_modified/pickle/hyp_relation_1000.p", "wb" ) )
-pickle.dump( P.all_total_motion, open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "wb" ) )
-print 'finished saving'
+# P._save_all_sentences()
+# pickle.dump( P.gmm_obj, open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "wb" ) )
+# pickle.dump( P.hyp_motion, open( "/home/omari/Datasets/robot_modified/pickle/hyp_motion_1000.p", "wb" ) )
+# pickle.dump( P.hyp_relation, open( "/home/omari/Datasets/robot_modified/pickle/hyp_relation_1000.p", "wb" ) )
+# pickle.dump( P.all_total_motion, open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "wb" ) )
+# print 'finished saving'
 
 
 #print P.pcfg1

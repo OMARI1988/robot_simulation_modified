@@ -621,9 +621,9 @@ class prettyfloat(float):
 
 class process_data():
     def __init__(self,dropbox):
-        self.dir1 = '/home/omari/Datasets/robot_modified/motion/scene'
-        self.dir2 = '/home/omari/Datasets/robot_modified/scenes/'
-        self.dir3 = '/home/omari/Datasets/robot_modified/graphs/scene'
+        self.dir1 = '/home/omari/Dropbox/robot_modified/motion/scene'
+        self.dir2 = '/home/omari/Dropbox/robot_modified/scenes/'
+        self.dir3 = '/home/omari/Dropbox/robot_modified/graphs/scene'
 
         # initial language grammar
         self.N                      = {}                    # non-terminals
@@ -2226,14 +2226,15 @@ class process_data():
                 T.pop(-1)
             T.append(sub1[1])
 
-            print '>>>> 1sub',sub_category
-            print '>>>> 1val',sub_category_val
+            if c2 != []:
+                sub_category.append(sub1[0])
+                sent = sub1[0]+' '+' '.join(reversed(c2))
+                sub_category_val.append(sent)
+
             sub_category.append(sub1[1])
-            sent = sub1[1]+' '+' '.join(reversed(c1))+' '+sub1[0]+' '+' '.join(reversed(c2))
+            sent = sub1[1]+' '+' '.join(reversed(c1))+' '+sub1[0]
             sub_category_val.append(sent)
 
-            print '>>>> 2sub',sub_category
-            print '>>>> 2val',sub_category_val
 
             for word in c1:
                 self._update_self_no_match(word)
@@ -2244,8 +2245,6 @@ class process_data():
         # print sub_category
         # print sub_category_val
         for T1,T2 in zip(sub_category,sub_category_val):
-            print '>>>>>>>>>>>>>>>>>>>> T1',T1
-            print '>>>>>>>>>>>>>>>>>>>> T2',T2
             self._update_self_N(T1,T2)
         # print '--------'
         return ' '.join(T)
