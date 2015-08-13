@@ -45,6 +45,9 @@ for scan in range(1):
     #########################################################################################################
     P._read(scene)                                  # Objects, Graph, Sentences
     P._print_scentenses()
+    if len(P.G.nodes())>15:
+        P.a_lot_of_objects.append(scene)
+        continue
 
     #continue
     #########################################################################################################
@@ -101,12 +104,14 @@ for scan in range(1):
     print '**================= end of scene '+str(P.scene)+' ===================**'
     print '\n\n\n'
 
+print 'started saving'
 # P._save_all_sentences()
-# pickle.dump( P.gmm_obj, open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "wb" ) )
-# pickle.dump( P.hyp_motion, open( "/home/omari/Datasets/robot_modified/pickle/hyp_motion_1000.p", "wb" ) )
-# pickle.dump( P.hyp_relation, open( "/home/omari/Datasets/robot_modified/pickle/hyp_relation_1000.p", "wb" ) )
-# pickle.dump( P.all_total_motion, open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "wb" ) )
-# print 'finished saving'
+# pickle.dump( P.gmm_obj, open( "/home/omari/Dropbox/robot_modified/pickle/gmm_obj_1000.p", "wb" ) )
+# pickle.dump( P.hyp_motion, open( "/home/omari/Dropbox/robot_modified/pickle/hyp_motion_1000.p", "wb" ) )
+# pickle.dump( P.hyp_relation, open( "/home/omari/Dropbox/robot_modified/pickle/hyp_relation_1000.p", "wb" ) )
+# pickle.dump( P.all_total_motion, open( "/home/omari/Dropbox/robot_modified/pickle/all_total_motion_1000.p", "wb" ) )
+pickle.dump( P.a_lot_of_objects, open( "/home/omari/Dropbox/robot_modified/pickle/a_lot_of_objects.p", "wb" ) )
+print 'finished saving'
 
 
 #print P.pcfg1
@@ -122,32 +127,32 @@ for scan in range(1):
 #   self.touch_m_i      = a list of objects in contact with the moving object at time = 0                    #
 #   self.touch_m_f      = a list of objects in contact with the moving object at time = tf                   #
 #   self.dir_touch_m_i  = a list of directions between the objects that were in contact with the moving      #
-#                         object at t = 0
-#   self.dir_touch_m_f  = a list of directions between the objects that were in contact with the moving
-#                         object at t = tf
-#   self.locations_m_i  = a list of the initial locations of the moving object >> so far it has only 1
-#   self.locations_m_f  = a list of the final locations of the moving object >> sp far it has only 1
-#   self.transition['motion']   = a list of the frame number at which a transition occured in the
-#                                 relative motion for all objects
-#   self.transition['touch']    = a list of the frame number at which a transition occured in the
-#                                 relative touch for all objects
-#   self.transition['all']      = a list that contains all the frame number at which any transition
-#                                 has happened
-#   self.G_motion       = a graph that has edges as relative motion connection
-#   self.G_touch        = a graph that has edges as relative touch connections
-#   self.unique_colors          = a list contain all the unique colors
-#   self.unique_shapes          = a list contain all the unique shapes
-#   self.total_motion           = a dictionary that contains the possible motions and the number of each
-#                                 sub motion
-#   self.unique_motions         = a list contains all the unique motions
-#   self.hyp_language_pass      = a dictionery contains all the passed hypotheses from language
-#   P.gmm_M                     = a dictionery of all bic gmms for all features
-#   P.M                         = a dictionery for all M values of each gmm of each feature
-#   self.hyp_language_pass      = a dictionery of all valid hypotheses in language
-#   self.all_scene_features     = a dictionary that has all the scene features
-#   self.G_i                    = a graph for the first frame in the scene
-#   self.G_f                    = a graph for the final frame in the scene
-#
+#                         object at t = 0                                                                    #
+#   self.dir_touch_m_f  = a list of directions between the objects that were in contact with the moving      #
+#                         object at t = tf                                                                   #
+#   self.locations_m_i  = a list of the initial locations of the moving object >> so far it has only 1       #
+#   self.locations_m_f  = a list of the final locations of the moving object >> sp far it has only 1         #
+#   self.transition['motion']   = a list of the frame number at which a transition occured in the            #
+#                                 relative motion for all objects                                            #
+#   self.transition['touch']    = a list of the frame number at which a transition occured in the            #
+#                                 relative touch for all objects                                             #
+#   self.transition['all']      = a list that contains all the frame number at which any transition          #
+#                                 has happened                                                               #
+#   self.G_motion       = a graph that has edges as relative motion connection                               #
+#   self.G_touch        = a graph that has edges as relative touch connections                               #
+#   self.unique_colors          = a list contain all the unique colors                                       #
+#   self.unique_shapes          = a list contain all the unique shapes                                       #
+#   self.total_motion           = a dictionary that contains the possible motions and the number of each     #
+#                                 sub motion                                                                 #
+#   self.unique_motions         = a list contains all the unique motions                                     #
+#   self.hyp_language_pass      = a dictionery contains all the passed hypotheses from language              #
+#   P.gmm_M                     = a dictionery of all bic gmms for all features                              #
+#   P.M                         = a dictionery for all M values of each gmm of each feature                  #
+#   self.hyp_language_pass      = a dictionery of all valid hypotheses in language                           #
+#   self.all_scene_features     = a dictionary that has all the scene features                               #
+#   self.G_i                    = a graph for the first frame in the scene                                   #
+#   self.G_f                    = a graph for the final frame in the scene                                   #
+#                                                                                                            #
 ##############################################################################################################
 
 ##############################################################################################################

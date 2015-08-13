@@ -669,7 +669,7 @@ class process_data():
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
         self.p_obj_pass             = .7                        # for object
         self.p_relation_pass        = .8                        # for both relation and motion
-        self.pool = multiprocessing.Pool(1)
+        self.pool = multiprocessing.Pool(16)
 
         # Analysis
         self.correct_commands = {}
@@ -679,6 +679,7 @@ class process_data():
         self.all_Sentences = ''
         self.all_valid_hypotheses = {}
         self.dropbox = dropbox
+        self.a_lot_of_objects = []
 
 #--------------------------------------------------------------------------------------------------------#
     def _read_grammar(self, scene, valid_scenes):
