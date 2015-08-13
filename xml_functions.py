@@ -24,7 +24,7 @@ def read_data():
             Data[root.tag][sceneid][Id] = child.attrib['text']
         else:
             Data[root.tag][sceneid][Id] = child.attrib['text']
-            
+
     tree1 = ET.parse('/home/omari/Datasets/robot/treebank/comments.xml')
     root1 = tree1.getroot()
     Data['comments'] = {}
@@ -44,11 +44,11 @@ def read_data():
             if 'position' in c.attrib: Data['gripper'][Id] = map(int,c.attrib['position'].split(' '))
             for k in c:
                 Data['layouts'][Id][counter] = {}
-                Data['layouts'][Id][counter]['shape'] = k.tag
-                Data['layouts'][Id][counter]['color'] = k.attrib['color']
+                Data['layouts'][Id][counter]['F_SHAPE'] = k.tag
+                Data['layouts'][Id][counter]['F_HSV'] = k.attrib['color']
                 Data['layouts'][Id][counter]['position'] = map(int,k.attrib['position'].split(' '))
                 counter += 1
-           
+
     Data['scenes'] = {}
     tree = ET.parse('/home/omari/Datasets/robot/treebank/scenes.xml')
     root = tree.getroot()
@@ -66,7 +66,7 @@ def read_data():
         F_match = []
         for i in I.keys():
             for f in F.keys():
-                if I[i]['shape'] == F[f]['shape'] and I[i]['color'] == F[f]['color'] and I[i]['position'] == F[f]['position']:
+                if I[i]['F_SHAPE'] == F[f]['F_SHAPE'] and I[i]['F_HSV'] == F[f]['F_HSV'] and I[i]['position'] == F[f]['position']:
                     I_match.append(i)
                     F_match.append(f)
         for i in I.keys():
@@ -74,5 +74,3 @@ def read_data():
         for i in F.keys():
             if i not in F_match: Data['scenes'][Id]['F_move'] = i
     return Data
-        
-        

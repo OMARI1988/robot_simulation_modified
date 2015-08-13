@@ -41,6 +41,7 @@ class Robot():
         self.positions = {}
         # manage diroctories to store data and images
         self.image_dir = '/home/omari/Datasets/robot_modified/scenes/'
+        self.image_dir2 = '/home/omari/Dropbox/robot_modified/scenes/'
         if not os.path.isdir(self.image_dir):
 	        print 'please change the diroctory in extract_data.py'
 
@@ -129,31 +130,31 @@ class Robot():
 
         for obj in self.Data['layouts'][1000+I]:
             if e == 'cylinder':
-                if self.Data['layouts'][1000+I][obj]['shape']=='cube':
-                    self.Data['layouts'][1000+I][obj]['shape'] = 'cylinder'
+                if self.Data['layouts'][1000+I][obj]['F_SHAPE']=='cube':
+                    self.Data['layouts'][1000+I][obj]['F_SHAPE'] = 'cylinder'
 
             if d == 'sphere':
-                if self.Data['layouts'][1000+I][obj]['shape']=='prism':
-                    self.Data['layouts'][1000+I][obj]['shape'] = 'sphere'
+                if self.Data['layouts'][1000+I][obj]['F_SHAPE']=='prism':
+                    self.Data['layouts'][1000+I][obj]['F_SHAPE'] = 'sphere'
 
         for obj in self.Data['layouts'][1000+F]:
             if e == 'cylinder':
-                if self.Data['layouts'][1000+F][obj]['shape']=='cube':
-                    self.Data['layouts'][1000+F][obj]['shape'] = 'cylinder'
+                if self.Data['layouts'][1000+F][obj]['F_SHAPE']=='cube':
+                    self.Data['layouts'][1000+F][obj]['F_SHAPE'] = 'cylinder'
 
             if d == 'sphere':
-                if self.Data['layouts'][1000+F][obj]['shape']=='prism':
-                    self.Data['layouts'][1000+F][obj]['shape'] = 'sphere'
+                if self.Data['layouts'][1000+F][obj]['F_SHAPE']=='prism':
+                    self.Data['layouts'][1000+F][obj]['F_SHAPE'] = 'sphere'
 
 
         if c != 'nothing':
             for obj in self.Data['layouts'][1000+I]:
-                if self.Data['layouts'][1000+I][obj]['color']=='red':
-                    self.Data['layouts'][1000+I][obj]['color'] = c
+                if self.Data['layouts'][1000+I][obj]['F_HSV']=='red':
+                    self.Data['layouts'][1000+I][obj]['F_HSV'] = c
 
             for obj in self.Data['layouts'][1000+F]:
-                if self.Data['layouts'][1000+F][obj]['color']=='red':
-                    self.Data['layouts'][1000+F][obj]['color'] = c
+                if self.Data['layouts'][1000+F][obj]['F_HSV']=='red':
+                    self.Data['layouts'][1000+F][obj]['F_HSV'] = c
 
         # change gripper
         self.Data['gripper'][1000+I] = self.Data['gripper'][I]
@@ -193,24 +194,24 @@ class Robot():
             y = l1[obj]['position'][1]
             z = l1[obj]['position'][2]
             # finding the color
-            c = self._find_color(l1[obj]['color'])
+            c = self._find_color(l1[obj]['F_HSV'])
             # finding the shape1    TO SIMULATE SHAPE FEATURE VECTOR
-            s = self._find_shape(l1[obj]['shape'])
+            s = self._find_shape(l1[obj]['F_SHAPE'])
             # finding the shape
             #if self.scene%2 == 0:
-            if l1[obj]['shape'] == 'cube': self._cube(x,y,z*.9,c)
-            if l1[obj]['shape'] == 'prism': self._prism(x,y,z*.9,c)
+            if l1[obj]['F_SHAPE'] == 'cube': self._cube(x,y,z*.9,c)
+            if l1[obj]['F_SHAPE'] == 'prism': self._prism(x,y,z*.9,c)
             #if self.scene%2 == 1:
-            if l1[obj]['shape'] == 'cylinder': self._cylinder(x,y,z*.9,c)
-            if l1[obj]['shape'] == 'sphere': self._sphere(x,y,z*.9,c)
+            if l1[obj]['F_SHAPE'] == 'cylinder': self._cylinder(x,y,z*.9,c)
+            if l1[obj]['F_SHAPE'] == 'sphere': self._sphere(x,y,z*.9,c)
 
             # inilizing the position vector to be saved later
             self.positions[obj] = {}
             self.positions[obj]['x'] = [float(x)]
             self.positions[obj]['y'] = [float(y)]
             self.positions[obj]['z'] = [float(z)]
-            self.positions[obj]['color'] = c
-            self.positions[obj]['shape'] = s
+            self.positions[obj]['F_HSV'] = c
+            self.positions[obj]['F_SHAPE'] = s
 
     #-----------------------------------------------------------------------------------------------------#     find color
     def _find_color(self,a):
@@ -287,34 +288,34 @@ class Robot():
     #-----------------------------------------------------------------------------------------------------#     save motion
     def _save_motion(self):
         target = open('/home/omari/Datasets/robot_modified/motion/scene'+str(self.scene)+'.txt', 'w')
-        for i in self.sentences:
-            target.write('sentence:'+str(i)+'\n')
-            target.write(self.sentences[i][0]+':'+self.sentences[i][1]+'\n')
+        target2 = open('/home/omari/Dropbox/robot_modified/motion/scene'+str(self.scene)+'.txt', 'w')
+        for F in [target,target2]:
+            for i in self.sentences:
+                F.write('sentence:'+str(i)+'\n')
+                F.write(self.sentences[i][0]+':'+self.sentences[i][1]+'\n')
 
-        for key in self.positions:
-            target.write('object:'+str(key)+'\n')
-            target.write('x:')
-            for i in self.positions[key]['x']:
-                target.write("{:3.2f}".format(i)+',')
-            target.write("\n")
-            target.write('y:')
-            for i in self.positions[key]['y']:
-                target.write("{:3.2f}".format(i)+',')
-            target.write("\n")
-            target.write('z:')
-            for i in self.positions[key]['z']:
-                target.write("{:3.2f}".format(i)+',')
-            target.write("\n")
-            if key != 'gripper':
-                c = self.positions[key]['color']
-                s = self.positions[key]['shape']
-                target.write('color:'+str(c[0])+','+str(c[1])+','+str(c[2]))
-                target.write("\n")
-                target.write('shape:'+str(s))
-                target.write("\n")
-
-
-        target.close()
+            for key in self.positions:
+                F.write('object:'+str(key)+'\n')
+                F.write('x:')
+                for i in self.positions[key]['x']:
+                    F.write("{:3.2f}".format(i)+',')
+                F.write("\n")
+                F.write('y:')
+                for i in self.positions[key]['y']:
+                    F.write("{:3.2f}".format(i)+',')
+                F.write("\n")
+                F.write('z:')
+                for i in self.positions[key]['z']:
+                    F.write("{:3.2f}".format(i)+',')
+                F.write("\n")
+                if key != 'gripper':
+                    c = self.positions[key]['F_HSV']
+                    s = self.positions[key]['F_SHAPE']
+                    F.write('F_HSV:'+str(c[0])+','+str(c[1])+','+str(c[2]))
+                    F.write("\n")
+                    F.write('F_SHAPE:'+str(s))
+                    F.write("\n")
+            F.close()
 
     #-----------------------------------------------------------------------------------------------------#     clear scene
     def _clear_scene(self):
@@ -495,14 +496,14 @@ class Robot():
             forward=(self.chess_shift_x-10,self.chess_shift_y,-7),
             background=(1,1,1))
         self.label = label(pos=(10,10,10), text='Scene number : ',height=20,color=(0,0,0))
-        checkerboard = ( (0,1,0,1,0,1,0,1),
-				 (1,0,1,0,1,0,1,0),
-				 (0,1,0,1,0,1,0,1),
-				 (1,0,1,0,1,0,1,0),
-		 		 (0,1,0,1,0,1,0,1),
-				 (1,0,1,0,1,0,1,0),
-				 (0,1,0,1,0,1,0,1),
-				 (1,0,1,0,1,0,1,0) )
+        checkerboard = ( (.8,1,.8,1,.8,1,.8,1),
+				 (1,.8,1,.8,1,.8,1,.8),
+				 (.8,1,.8,1,.8,1,.8,1),
+				 (1,.8,1,.8,1,.8,1,.8),
+		 		 (.8,1,.8,1,.8,1,.8,1),
+				 (1,.8,1,.8,1,.8,1,.8),
+				 (.8,1,.8,1,.8,1,.8,1),
+				 (1,.8,1,.8,1,.8,1,.8) )
         tex = materials.texture(data=checkerboard,
             mapping="sign",
             interpolate=False)
@@ -615,10 +616,7 @@ class Robot():
         elif self.scene<100:    k = '00'+str(self.scene)
         elif self.scene<1000:   k = '0'+str(self.scene)
         img.SaveFile(self.image_dir+str(self.scene)+'/scene_'+k+'_frame_'+j+'.png', wx.BITMAP_TYPE_PNG)
-        #img.SaveFile(self.image_dir+self.scene+'_'+j+'.png', wx.BITMAP_TYPE_PNG)
-        #img1 = cv2.imread(self.image_dir+self.scene+'_'+j+'.png')
-        #cv2.imshow('test',img1)
-
+        img.SaveFile(self.image_dir2+str(self.scene)+'/scene_'+k+'_frame_'+j+'.png', wx.BITMAP_TYPE_PNG)
 
         print self.frame_number,'image saved..'
         self.frame_number+=1

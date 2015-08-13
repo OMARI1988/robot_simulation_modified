@@ -6,7 +6,7 @@ from robot_functions import *
 R = Robot()
 
 save = 0
-#save = 'save'		#saving image
+# save = 'save'		#saving image
 
 #scenes = [1,2,3,4,10,11,12,205,206,901,902]
 for scene in range(1,1001):

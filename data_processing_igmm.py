@@ -68,7 +68,7 @@ def calc(data):
         hyp_motion = {}
         motion_pass = 0
         for k,word in enumerate(subset):
-            if element[k][0] == 'motion':
+            if element[k][0] == 'CH_POS':
                 a = element[k][1]
                 if a not in hyp_motion:     hyp_motion[a] = len(indices[word])
                 else:                       hyp_motion[a] += len(indices[word])
@@ -85,7 +85,7 @@ def calc(data):
         feature_match = 1
         matched_features = {}
         for f1 in features:
-            if f1 == 'motion':
+            if f1 == 'CH_POS':
                 for k1 in range(len(features[f1])):
                     matched_features[features[f1][k1]] = features[f1][k1]
             for f2 in all_scene_features:
@@ -95,7 +95,7 @@ def calc(data):
                         for k2 in range(len(all_scene_features[f2])):
                             m1 = np.asarray(features[f1][k1])
                             m2 = np.asarray(all_scene_features[f2][k2])
-                            if f2=='location':  m2 /= 7.0
+                            if f2=='F_POS':  m2 /= 7.0
                             if _distance_test(m1,m2)<.09:
                                 passed = 1
                                 matched_features[features[f1][k1]] = all_scene_features[f2][k2]
@@ -133,7 +133,7 @@ def calc(data):
     #--------------------------------------------------------------------------------------------------------#
     # divide sentence with activities
     def _activity_domain(parsed_sentence, value_sentence, subset, element):
-        motion_ind = [i for i, x in enumerate(parsed_sentence) if x == 'motion']
+        motion_ind = [i for i, x in enumerate(parsed_sentence) if x == 'CH_POS']
         motion_ind2 = [0]
         for i in motion_ind:
             motion_ind2.append(i)
@@ -153,7 +153,7 @@ def calc(data):
 
             # verb_name = 'NONE'
             # for i1,i2 in zip(subset,element):
-            #     if i2[0]=='motion' and i2[1]==value_sentence[ind]:
+            #     if i2[0]=='CH_POS' and i2[1]==value_sentence[ind]:
             #         verb_name = i1
             #
             # verb_sentence[value_sentence[ind]] = verb_name
@@ -264,11 +264,11 @@ def calc(data):
             # MORE ENTITIES than RELATIONs
             if a-b == 1:                    # perfect case were entities are 1 more than relation
                 test_result = 1
-            ############# IF YOU WANT TO LEARN BETWEEN CHANGET THIS ! THIS DONT ALLOW 3 E and 1 R
+            ############# NOTE IF YOU WANT TO LEARN BETWEEN CHANGET THIS ! THIS DONT ALLOW 3 E and 1 R
             # elif a-b > 1:                   # Wrong with no special cases ex 3 e and 1 r
             #     test_result = 0
             # # MORE or EQUAL RELATIONS THAN ENTITIES
-            ############# IF YOU WANT TO LEARN ((PICK UP the [[green object, which the pyrimd]] is near it )) uncomment
+            ############# NOTE IF YOU WANT TO LEARN ((PICK UP the [[green object, which the pyrimd]] is near it )) uncomment
             # elif a-b<1:                     # there are more or equal relations, check if number of indivual entities can be more
             #     count = 0
             #     for i in e:
@@ -291,7 +291,7 @@ def calc(data):
             if a-b == 0:                    # perfect case were entities are equal to relations
                 test_result = 1
             elif b == 0 and a == 1:                  # there might be a special case if one of the entities is a location
-                if e[0][0]=='location':
+                if e[0][0]=='F_POS':
                     test_result = 1
         return test_result,[s,e,r],[s_val,e_val,r_val]
 
@@ -304,8 +304,8 @@ def calc(data):
         e_val = []
         r_val = []
         s_val = [[]]
-        entity = ['color','shape','location']
-        relation = ['direction']
+        entity = ['F_HSV','F_SHAPE','F_POS']
+        relation = ['F_DIR']
         to_remove = []
         for k,i in enumerate(a):
             if i not in entity and i not in relation:
@@ -378,7 +378,7 @@ def calc(data):
                                     location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i)
                                     if len(location)==1:
                                         #print 'the target location is:',location
-                                        match = _match_final_scene(objects,'location',location,scene_f)
+                                        match = _match_final_scene(objects,'F_POS',location,scene_f)
                                         #print match
                         if v == (0,1,):
                             objects = _get_the_TE_from_scene(TE_results[:],TE_values[:],scene_i)
@@ -390,7 +390,7 @@ def calc(data):
                             location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i)
                             if len(location)==1:
                                 #print 'the target location is:',location
-                                match = _match_final_scene([int(m_obj)],'location',location,scene_f)
+                                match = _match_final_scene([int(m_obj)],'F_POS',location,scene_f)
                                 #print match
 
                         activity_sentence[v][d]['valid_hypotheses'].append(match)
@@ -435,7 +435,7 @@ def calc(data):
         location_pass = []
         if relations == []:
             if len(features[0]) == 1:
-                if features[0][0] == 'location':
+                if features[0][0] == 'F_POS':
                     loc = np.asarray(features_v[0][0])/7.0
                     location_pass.append(loc)
         elif len(relations)==1 and len(features)==1:
@@ -449,7 +449,7 @@ def calc(data):
             for obj in obj_pass:
                 #NOTE: this will only work for over !
                 #NOTE: if you want to learn nearset its also here
-                loc = scene.node[obj]['_location']
+                loc = scene.node[obj]['_F_POS']
                 loc[0] += relations_v[0][0][0]
                 loc[1] += relations_v[0][0][1]
                 #print loc
@@ -484,7 +484,7 @@ def calc(data):
                 #print '>>>> the relation is  :',i,relations[i],relations_v[i]
                 for o2 in obj2:
                     for o1 in obj1:
-                        distance = np.asarray(scene.node[o1]['_location'])-np.asarray(scene.node[o2]['_location'])
+                        distance = np.asarray(scene.node[o1]['_F_POS'])-np.asarray(scene.node[o2]['_F_POS'])
                         if distance[0] == relations_v[i][0][0] and distance[1] == relations_v[i][0][1]:
                             obj2_bar.append(o1)
 
@@ -497,7 +497,7 @@ def calc(data):
                     break
             if len(obj2)==1:
                 #print 'The final object',obj2
-                loc = scene.node[obj2[0]]['_'+'location']
+                loc = scene.node[obj2[0]]['_'+'F_POS']
                 location_pass.append(loc)
 
         return location_pass
@@ -611,6 +611,7 @@ def calc(data):
                         results.append(_print_results(activity_sentence,scene_description,parsed_sentence,subset,element,matched_features,scene,L))
                         if results[-1] != []:
                             if [subset,element] not in hypotheses:  hypotheses.append([subset,element])
+
     return (results,),(hypotheses,)
 
 
@@ -668,7 +669,7 @@ class process_data():
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
         self.p_obj_pass             = .7                        # for object
         self.p_relation_pass        = .8                        # for both relation and motion
-        self.pool = multiprocessing.Pool(7)
+        self.pool = multiprocessing.Pool(1)
 
         # Analysis
         self.correct_commands = {}
@@ -973,12 +974,12 @@ class process_data():
         self.motion = [self.Data[self.m_obj]['motion'][0]]
         col = self.motion_all[:,0]
         self.transition = {}
-        self.transition['motion'] = [0]
+        self.transition['CH_POS'] = [0]
         self.transition['all'] = [0]
         for i in range(1,self.frames):
             if np.sum(np.abs(col-self.motion_all[:,i]))!=0:
                 col = self.motion_all[:,i]
-                self.transition['motion'].append(i)
+                self.transition['CH_POS'].append(i)
                 self.transition['all'].append(i)
                 self.motion.append(self.Data[self.m_obj]['motion'][i])
         # comput the transition intervals for touch
@@ -994,7 +995,7 @@ class process_data():
     #--------------------------------------------------------------------------------------------------------#
     # group touch and motion objects
     def _grouping(self):
-        self.G_motion = self._grouping_template(self.transition['motion'],self.motion_all)
+        self.G_motion = self._grouping_template(self.transition['CH_POS'],self.motion_all)
         self.G_touch = self._grouping_template(self.transition['touch'],self.touch_all)
 
     #-------------------------------------------------#
@@ -1026,9 +1027,9 @@ class process_data():
         self.unique_shapes = []
         for i in self.Data:
             if i != 'G':
-                c = self.Data[i]['color']
+                c = self.Data[i]['F_HSV']
                 C = (c[0],c[1],c[2])
-                s = self.Data[i]['shape']
+                s = self.Data[i]['F_SHAPE']
                 if C not in self.unique_colors: self.unique_colors.append(C)
                 if s not in self.unique_shapes: self.unique_shapes.append(s)
 
@@ -1084,7 +1085,7 @@ class process_data():
             for i in self.Data:
                 if i != 'G':
                     for k in range(50):
-                        c = self.Data[i]['color']
+                        c = self.Data[i]['F_HSV']
                         r = np.random.normal(0, .005, 3)
                         #c += r
                         hsv = colorsys.rgb_to_hsv(c[0], c[1], c[2])
@@ -1101,7 +1102,7 @@ class process_data():
                         x,y,z = self.hsv2xyz(h,s,v)
                         C = (x[0],y[0],z[0])
                         #print c,[h,s,v],C
-                        s = self.Data[i]['shape']
+                        s = self.Data[i]['F_SHAPE']
                         r = np.random.normal(0, .03, 1)
                         s += r[0]
                         if s<0:      s+=2*np.abs(r[0])
@@ -1159,9 +1160,9 @@ class process_data():
         gmm_c = self._bic_gmm(unique_colors,plot)
         gmm_s = self._bic_gmm(unique_shapes,plot)
         gmm_l = self._bic_gmm(unique_locations,plot)
-        self.gmm_M['color'] = copy.deepcopy(gmm_c)
-        self.gmm_M['shape'] = copy.deepcopy(gmm_s)
-        self.gmm_M['location'] = copy.deepcopy(gmm_l)
+        self.gmm_M['F_HSV'] = copy.deepcopy(gmm_c)
+        self.gmm_M['F_SHAPE'] = copy.deepcopy(gmm_s)
+        self.gmm_M['F_POS'] = copy.deepcopy(gmm_l)
 
     #-------------------------------------------------------------------------------------#
     def hsv2xyz(self,H, S, V):
@@ -1339,12 +1340,12 @@ class process_data():
                 if word not in self.hyp_relation:
                     self.hyp_relation[word] = {}
                     self.hyp_relation[word]['count'] = 0
-                    self.hyp_relation[word]['direction'] = {}
+                    self.hyp_relation[word]['F_DIR'] = {}
                 # if self.unique_direction != []:
                 self.hyp_relation[word]['count'] += 1
                 for direction in self.unique_direction:
-                    if direction not in self.hyp_relation[word]['direction']:   self.hyp_relation[word]['direction'][direction] = 1
-                    else: self.hyp_relation[word]['direction'][direction] += 1
+                    if direction not in self.hyp_relation[word]['F_DIR']:   self.hyp_relation[word]['F_DIR'][direction] = 1
+                    else: self.hyp_relation[word]['F_DIR'][direction] += 1
 
     #--------------------------------------------------------------------------------------------------------#
     # NOTE: this one has a hack, please make sure to clear it.
@@ -1358,21 +1359,21 @@ class process_data():
                 if word not in self.hyp_motion:
                     self.hyp_motion[word] = {}
                     self.hyp_motion[word]['count'] = 0
-                    self.hyp_motion[word]['motion'] = {}
+                    self.hyp_motion[word]['CH_POS'] = {}
                 if not_ok:              continue
                 if self.unique_motions != []:         self.hyp_motion[word]['count'] += 1
                 for motion in self.unique_motions:
-                    if motion not in self.hyp_motion[word]['motion']:
-                        self.hyp_motion[word]['motion'][motion] = 1
-                    else: self.hyp_motion[word]['motion'][motion] += 1
+                    if motion not in self.hyp_motion[word]['CH_POS']:
+                        self.hyp_motion[word]['CH_POS'][motion] = 1
+                    else: self.hyp_motion[word]['CH_POS'][motion] += 1
 
     #--------------------------------------------------------------------------------------------------------#
     def _save_all_features(self):
         self.all_scene_features[self.scene] = {}
-        self.all_scene_features[self.scene]['color'] = self.unique_colors
-        self.all_scene_features[self.scene]['shape'] = self.unique_shapes
-        self.all_scene_features[self.scene]['direction'] = self.unique_direction
-        self.all_scene_features[self.scene]['location'] = self.unique_locations
+        self.all_scene_features[self.scene]['F_HSV'] = self.unique_colors
+        self.all_scene_features[self.scene]['F_SHAPE'] = self.unique_shapes
+        self.all_scene_features[self.scene]['F_DIR'] = self.unique_direction
+        self.all_scene_features[self.scene]['F_POS'] = self.unique_locations
 
     #--------------------------------------------------------------------------------------------------------#
     def _test_relation_hyp(self):
@@ -1493,7 +1494,7 @@ class process_data():
 
             # find all hypotheses that are within .9 of maximum hyp
             for f in self.hyp_language_pass[word]:
-                if f != 'possibilities' and f!= 'location':
+                if f != 'possibilities' and f!= 'F_POS':
                     for key in self.hyp_language_pass[word][f].keys():
                         if self.hyp_language_pass[word][f][key]<.9*max_hyp:         keys_remove.append([f,key])
             for A in keys_remove:
@@ -1537,9 +1538,9 @@ class process_data():
                                     # case 2 if N == 0 I should keep everything
                                     # case 3 if N < 1  I should remove phrase
                                     if N == 1:
-                                        if feature == 'motion' or feature == 'direction' or feature == 'color':
+                                        if feature == 'CH_POS' or feature == 'F_DIR' or feature == 'F_HSV':
                                             for key in matching:
-                                                if key in ['red','green','blue','gray','grey','cyan','purple','black','pink'] and feature == 'color':
+                                                if key in ['red','green','blue','gray','grey','cyan','purple','black','pink'] and feature == 'F_HSV':
                                                     continue
                                                 if key not in phrases_to_remove:            phrases_to_remove[key] = {}
                                                 if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
@@ -1604,7 +1605,7 @@ class process_data():
         valid_motions = {}
         for word in self.hyp_language_pass:
             for f in self.hyp_language_pass[word]:
-                if f == 'motion':
+                if f == 'CH_POS':
                     for value in self.hyp_language_pass[word][f]:
                         if word not in valid_motions:
                             valid_motions[word] = [value]
@@ -1613,7 +1614,7 @@ class process_data():
         # get all valid subsets
         self.valid_configurations = {}
         valid_configurations = {}
-        if 'motion' in self.hyp_all_features:
+        if 'CH_POS' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
                 valid_configurations[scene] = []
@@ -1669,7 +1670,7 @@ class process_data():
         # test the hypotheses sentence by sentence
         self.valid_combination = {}
         self.valid_hypotheses = {}
-        if 'motion' in self.hyp_all_features:
+        if 'CH_POS' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
             #     self.valid_combination[scene] = {}
@@ -1689,17 +1690,20 @@ class process_data():
                     #                 self.correct_commands[self.scene].append(scene)
 
                     # single core processing
-                    # self.valid_combination[scene][L] = []
-                    # for subset in itertools.combinations(phrases_with_hyp, L):
-                    #     out1 = calc([subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj])
-                    #     self.valid_combination[scene][L].append(out1)
-                    #     for p in out1:
-                    #         for p2 in p:
-                    #             if p2 != []:
-                    #                 if self.scene not in self.correct_commands:
-                    #                     self.correct_commands[self.scene] = []
-                    #                 if scene not in self.correct_commands[self.scene]:
-                    #                     self.correct_commands[self.scene].append(scene)
+                # self.valid_combination[scene] = {}
+                # self.valid_hypotheses[scene] = {}
+                # for count,P in enumerate(self.valid_configurations[scene]):
+                #     phrases_with_hyp = P[0]
+                #     for L in range(2,np.min([len(phrases_with_hyp)+1,self.maximum_hyp_in_sentence+1])):#
+                #         if L not in self.valid_combination[scene]:
+                #             self.valid_combination[scene][L]    = []
+                #             self.valid_hypotheses[scene][L]     = []
+                #         print '>>',self.scene,'..',scene,count,L
+                #
+                #         for subset in itertools.combinations(phrases_with_hyp, L):
+                #             # print '>>>>>>>',subset
+                #             v1,v2 = calc([subset, self.indices[scene], [{word:self.hyp_language_pass[word]} for word in subset], self.all_total_motion[self.scene], self.S[scene], self.all_scene_features[self.scene], [self.G_i,self.G_f], scene,L,self.m_obj,P[1]])
+
 
                 self.valid_combination[scene] = {}
                 self.valid_hypotheses[scene] = {}
@@ -1798,7 +1802,7 @@ class process_data():
                                     values  = k1[4]
                                     for word,value in zip(words,values):
                                         feature = value[0]
-                                        if feature == 'motion':
+                                        if feature == 'CH_POS':
                                             continue
                                         val = hypotheses[word][value[0]][value[1]]
                                         self._update_self_T(feature,word,val)
@@ -1807,8 +1811,8 @@ class process_data():
     def _update_nonterminals(self,):
         # there is a threshold in NLTK to drop a hypotheses 9.99500249875e-05 I think it;s 1e-4
         hypotheses = self.hyp_language_pass
-        entity = ['shape','color','location']
-        relation = ['direction']
+        entity = ['F_SHAPE','F_HSV','F_POS']
+        relation = ['F_DIR']
         sentence_connectors = []
         for scene in self.valid_combination:
             L = self.max_L[scene]
@@ -1829,7 +1833,7 @@ class process_data():
                                     scene_description       = k1[8]
                                     part_of_sentence        = k1[9]
                                     for word,value in zip(subset,element):
-                                        if value[0]=='motion' and value[1]==verb:
+                                        if value[0]=='CH_POS' and value[1]==verb:
                                             verb_name = word
                                             if len(order)==2:
                                                 TETV_grammar = order[0]+'_'+order[1]
@@ -2133,8 +2137,8 @@ class process_data():
 
     #--------------------------------------------------------------------------------------------------------#
     def _TE_TV_conversion(self,T):
-        entity = ['shape','color','location']
-        relation = ['direction']
+        entity = ['F_SHAPE','F_HSV','F_POS']
+        relation = ['F_DIR']
         s = [[]]
         s_bar = []
         final_T = []
@@ -2143,7 +2147,7 @@ class process_data():
                 if s[-1] == []:
                     s[-1] = [word]
                     if word in entity:
-                        if word == 'location':
+                        if word == 'F_POS':
                             final_T.append('_'+word)
                             s_bar.append('_'+word)
                         else:
@@ -2334,28 +2338,28 @@ class process_data():
         for I in [0,-1]:
             if simple:
                 for key in self.keys:
-                    #print key,self.Data[key]['color']
+                    #print key,self.Data[key]['F_HSV']
                     if key == 'G':
                         pass
                     else:
                         x = self.Data[key]['x'][I]/7.0
                         y = self.Data[key]['y'][I]/7.0
                         if key == self.m_obj:
-                            G.add_node(str(key),type1='mo', _color=self.Data[key]['color'], _shape=self.Data[key]['shape'], _location=[x,y])
+                            G.add_node(str(key),type1='mo', _F_HSV=self.Data[key]['F_HSV'], _F_SHAPE=self.Data[key]['F_SHAPE'], _F_POS=[x,y])
                         else:
-                            G.add_node(str(key),type1='o', _color=self.Data[key]['color'], _shape=self.Data[key]['shape'], _location=[x,y])
-                        # G.add_node(str(key)+'_color',type1='of',type2='color', value=self.Data[key]['color']);         #color
-                        # G.add_node(str(key)+'_shape',type1='of',type2='shape', value=self.Data[key]['shape']);         #shape
+                            G.add_node(str(key),type1='o', _F_HSV=self.Data[key]['F_HSV'], _F_SHAPE=self.Data[key]['F_SHAPE'], _F_POS=[x,y])
+                        # G.add_node(str(key)+'_F_HSV',type1='of',type2='F_HSV', value=self.Data[key]['F_HSV']);         #color
+                        # G.add_node(str(key)+'_F_SHAPE',type1='of',type2='F_SHAPE', value=self.Data[key]['F_SHAPE']);         #shape
                         # x = self.Data[key]['x'][I]/7.0
                         # y = self.Data[key]['y'][I]/7.0
-                        # G.add_node(str(key)+'_location',type1='of',type2='location', value=[x,y]);         #location
-                        # G.add_edge(str(key),str(key)+'_color')
-                        # G.add_edge(str(key),str(key)+'_shape')
-                        # G.add_edge(str(key),str(key)+'_location')
+                        # G.add_node(str(key)+'_F_POS',type1='of',type2='F_POS', value=[x,y]);         #location
+                        # G.add_edge(str(key),str(key)+'_F_HSV')
+                        # G.add_edge(str(key),str(key)+'_F_SHAPE')
+                        # G.add_edge(str(key),str(key)+'_F_POS')
 
             else:
                 for key in self.keys:
-                    #print key,self.Data[key]['color']
+                    #print key,self.Data[key]['F_HSV']
                     if key == 'G':
                         G.add_node(str(key),type1='G',position=(G_count,3))
                     else:
@@ -2364,14 +2368,14 @@ class process_data():
                         else:
                             G.add_node(str(key),type1='o',position=(obj_count,3))
                             obj_count+=1
-                        G.add_node(str(key)+'_color',type1='of',type2='color', value=self.Data[key]['color'],position=(m_count-.25,1));         #color
-                        G.add_node(str(key)+'_shape',type1='of',type2='shape', value=self.Data[key]['shape'],position=(m_count,1));         #shape
+                        G.add_node(str(key)+'_F_HSV',type1='of',type2='F_HSV', value=self.Data[key]['F_HSV'],position=(m_count-.25,1));         #color
+                        G.add_node(str(key)+'_F_SHAPE',type1='of',type2='F_SHAPE', value=self.Data[key]['F_SHAPE'],position=(m_count,1));         #shape
                         x = self.Data[key]['x'][I]/7.0
                         y = self.Data[key]['y'][I]/7.0
-                        G.add_node(str(key)+'_location',type1='of',type2='location', value=[x,y],position=(m_count+.25,1));         #location
-                        G.add_edge(str(key),str(key)+'_color')
-                        G.add_edge(str(key),str(key)+'_shape')
-                        G.add_edge(str(key),str(key)+'_location')
+                        G.add_node(str(key)+'_F_POS',type1='of',type2='F_POS', value=[x,y],position=(m_count+.25,1));         #location
+                        G.add_edge(str(key),str(key)+'_F_HSV')
+                        G.add_edge(str(key),str(key)+'_F_SHAPE')
+                        G.add_edge(str(key),str(key)+'_F_POS')
 
                 # creating the relation layer
                 counter = 0
@@ -2398,7 +2402,7 @@ class process_data():
                                 else:
                                     d = [0,0,0]
 
-                                G.add_node(str(k1)+'_'+str(k2)+'_dir',type1='rf',type2='direction',value=d,position=(r_count,5));                     #direction
+                                G.add_node(str(k1)+'_'+str(k2)+'_dir',type1='rf',type2='F_DIR',value=d,position=(r_count,5));                     #direction
                                 #G.add_node(str(k1)+'_'+str(k2)+'_mot',type1='rf',position=(r_count+.15,5));                     #motion
                                 #G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dist')
                                 G.add_edge(str(k1)+'_'+str(k2),str(k1)+'_'+str(k2)+'_dir')
@@ -2570,8 +2574,8 @@ class process_data():
                 plt.sca(self.ax[sub,feature])
                 print 'plotting graph : '+str(sub+1)+' from '+str(len(self.transition['all']))
                 if feature == 0:
-                    if T not in self.transition['motion']:
-                        for i in self.transition['motion']:
+                    if T not in self.transition['CH_POS']:
+                        for i in self.transition['CH_POS']:
                             if i<T: t=i
                     else: t=T
                     G=self.G_motion[t]['graph']
@@ -2605,7 +2609,7 @@ class process_data():
                 if feature == 0:
                     self.ax[sub,feature].set_ylabel('frame : '+str(T))
                     if sub == 0:
-                        self.ax[sub,feature].set_title('motion')
+                        self.ax[sub,feature].set_title('CH_POS')
                 if feature == 2:
                     self.ax[sub,feature].set_ylabel('frame : '+str(T))
                     if sub == 0:
@@ -2624,8 +2628,8 @@ class process_data():
                 G = self._create_moving_obj_graph()
                 # Creating the group effect
                 if feature == 1:
-                    if T not in self.transition['motion']:
-                        for i in self.transition['motion']:
+                    if T not in self.transition['CH_POS']:
+                        for i in self.transition['CH_POS']:
                             if i<T: t=i
                     else: t=T
                     G_group = self.G_motion[t]['groups']
@@ -2667,7 +2671,7 @@ class process_data():
                 if feature == 1:
                     self.ax[sub,feature].set_ylabel('frame : '+str(T))
                     if sub == 0:
-                        self.ax[sub,feature].set_title('motion')
+                        self.ax[sub,feature].set_title('CH_POS')
 
                 if feature == 3:
                     self.ax[sub,feature].set_ylabel('frame : '+str(T))

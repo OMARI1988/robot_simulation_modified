@@ -24,16 +24,13 @@ P = process_data(dropbox)
 P.first_time = 1
 
 print           'reading object hypotheses'
-P.gmm_obj       = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/gmm_obj_1000.p", "rb" ) )
+P.gmm_obj       = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/gmm_obj_1000.p", "rb" ) )
 print           'reading motion hypotheses'
-P.hyp_motion    = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/hyp_motion_1000.p", "rb" ) )
+P.hyp_motion    = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/hyp_motion_1000.p", "rb" ) )
 print           'reading relation hypotheses'
-P.hyp_relation  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/hyp_relation_1000.p", "rb" ) )
+P.hyp_relation  = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/hyp_relation_1000.p", "rb" ) )
 print           'reading total motion'
-P.all_total_motion  = pickle.load( open( "/home/omari/Datasets/robot_modified/pickle/all_total_motion_1000.p", "rb" ) )
-
-# TO DO
-# Scene 16 and 17
+P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/all_total_motion_1000.p", "rb" ) )
 
 for scan in range(1):
   print 'scan number :',scan
