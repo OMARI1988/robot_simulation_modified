@@ -96,7 +96,7 @@ def calc(data):
                             m1 = np.asarray(features[f1][k1])
                             m2 = np.asarray(all_scene_features[f2][k2])
                             if f2=='F_POS':  m2 /= 7.0
-                            if _distance_test(m1,m2)<.09:
+                            if _distance_test(m1,m2)<.1:
                                 passed = 1
                                 matched_features[features[f1][k1]] = all_scene_features[f2][k2]
                         if not passed:                                  feature_match = 0
@@ -1540,7 +1540,7 @@ class process_data():
                                     if N == 1:
                                         if feature == 'CH_POS' or feature == 'F_DIR' or feature == 'F_HSV':
                                             for key in matching:
-                                                if key in ['red','green','blue','gray','grey','cyan','purple','black','pink'] and feature == 'F_HSV':
+                                                if key in ['red','green','blue','gray','grey','cyan','purple','black','pink','magenta','white'] and feature == 'F_HSV':
                                                     continue
                                                 if key not in phrases_to_remove:            phrases_to_remove[key] = {}
                                                 if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
@@ -1930,7 +1930,7 @@ class process_data():
                                         for word in TV_converted.split(' '):
                                             if word[0] != '_':
                                                 self._update_self_no_match(word)
-
+                                        #---------------------------------#
                                         if connecter != []:
                                             S1 = order[0]+' '+order[0]+order[1]+'_connect'+' '+order[1]
                                         else:
@@ -2204,37 +2204,48 @@ class process_data():
     def _more_conversion(self,sentence,T_bar):
         special_words = T_bar
         T = sentence.split(' ')
-        # print '>>>>>',T
-        # print '>>>>>',T_bar
         sub_category = []
         sub_category_val = []
         connecter = []
         for i in range(len(T_bar)-1):
             sub1 = []
             c1 = []
+            c2 = []
             for count,word in enumerate(reversed(T)):
                 if word in special_words:
                     # print '>> s word',word
                     sub1.append(word)
                 else:
                     if sub1 != []:
-                        # print '>> connect',word
                         c1.append(word)
+                    if sub1 == []:
+                        c2.append(word)
                 if len(sub1) == 2:
                     break
             for i in range(count+1):
                 T.pop(-1)
             T.append(sub1[1])
+
+            print '>>>> 1sub',sub_category
+            print '>>>> 1val',sub_category_val
             sub_category.append(sub1[1])
-            sent = sub1[1]+' '+' '.join(reversed(c1))+' '+sub1[0]
+            sent = sub1[1]+' '+' '.join(reversed(c1))+' '+sub1[0]+' '+' '.join(reversed(c2))
             sub_category_val.append(sent)
 
+            print '>>>> 2sub',sub_category
+            print '>>>> 2val',sub_category_val
+
             for word in c1:
+                self._update_self_no_match(word)
+
+            for word in c2:
                 self._update_self_no_match(word)
 
         # print sub_category
         # print sub_category_val
         for T1,T2 in zip(sub_category,sub_category_val):
+            print '>>>>>>>>>>>>>>>>>>>> T1',T1
+            print '>>>>>>>>>>>>>>>>>>>> T2',T2
             self._update_self_N(T1,T2)
         # print '--------'
         return ' '.join(T)
