@@ -45,9 +45,9 @@ for scan in range(1):
     #########################################################################################################
     P._read(scene)                                  # Objects, Graph, Sentences
     P._print_scentenses()
-    if len(P.G.nodes())>15:
-        P.a_lot_of_objects.append(scene)
-        continue
+    # if len(P.G.nodes())>15:
+    #     P.a_lot_of_objects.append(scene)
+    #     continue
 
     #continue
     #########################################################################################################

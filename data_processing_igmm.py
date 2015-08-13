@@ -370,6 +370,7 @@ def calc(data):
                         TV_results = i[4]
                         TV_values = i[5]
 
+                        # print '>>',v,d
                         if v == (0,1,0,):
                             objects = _get_the_TE_from_scene(TE_results[:],TE_values[:],scene_i)
                             if len(objects)==1:
@@ -388,6 +389,7 @@ def calc(data):
 
                         if v == (1,0,):
                             location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i)
+                            # print '>>',location
                             if len(location)==1:
                                 #print 'the target location is:',location
                                 match = _match_final_scene([int(m_obj)],'F_POS',location,scene_f)
@@ -455,42 +457,46 @@ def calc(data):
                 #print loc
                 location_pass.append(loc)
         elif len(relations) == len(features):
+
             obj1 = []
             obj2 = []
             obj2_bar = []
             for i in range(len(features)-1,0,-1):
+                # print i
                 # Get the base object in the relation
                 if obj2 == []:
-                    #print '>>>> the 2nd object is:',i,features[i],features_v[i]
+                    # print '>>>> the 2nd object is:',i,features[i],features_v[i]
                     for obj in all_objects:
                         ok = 1
                         for feature,value in zip(features[i],features_v[i]):
                             if np.sum(np.abs(np.asarray(scene.node[obj]['_'+feature])-np.asarray(value))) != 0:
                                 ok = 0
                         if ok:  obj2.append(obj)
-                    #print '---- object 2 is :', obj2
+                    # print '---- object 2 is :', obj2
 
                 # Get the main object in the relation
-                #print '>>>> the 1st object is:',i-1,features[i-1],features_v[i-1]
+                # print '>>>> the 1st object is:',i-1,features[i-1],features_v[i-1]
                 for obj in all_objects:
                     ok = 1
                     for feature,value in zip(features[i-1],features_v[i-1]):
                         if np.sum(np.abs(np.asarray(scene.node[obj]['_'+feature])-np.asarray(value))) != 0:
                             ok = 0
                     if ok:  obj1.append(obj)
-                #print '---- object 1 is :', obj1
+                # print '---- object 1 is :', obj1
 
                 # See if the relation is valid between the main object and the base object
-                #print '>>>> the relation is  :',i,relations[i],relations_v[i]
+                # print '>>>> the relation is  :',i,relations[i],relations_v[i]
                 for o2 in obj2:
                     for o1 in obj1:
+                        # print o1,o2
                         distance = np.asarray(scene.node[o1]['_F_POS'])-np.asarray(scene.node[o2]['_F_POS'])
+
                         if distance[0] == relations_v[i][0][0] and distance[1] == relations_v[i][0][1]:
                             obj2_bar.append(o1)
-
+                # print '>>>>> obj2 bar',obj2_bar
                 # There are some objects that achive this relation
                 if obj2_bar != []:
-                    obj2 = obj2_bar
+                    obj2 = obj2_bar[:]
                     obj1 = []
                 #None of the objects achive this relation !
                 else:
@@ -598,6 +604,7 @@ def calc(data):
                     # does actions match ?   it should match 100%
                     motion_pass = _motion_match(subset,element,indices,total_motion)
                     if motion_pass:
+                        # print '>>',motion_pass
                         #---------------------------------------------------------------#
                         # parse the sentence
                         parsed_sentence, value_sentence = _parse_sentence(scene_description,indices,subset,element,matched_features)
@@ -669,7 +676,7 @@ class process_data():
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
         self.p_obj_pass             = .7                        # for object
         self.p_relation_pass        = .8                        # for both relation and motion
-        self.pool = multiprocessing.Pool(16)
+        self.pool = multiprocessing.Pool(4)
 
         # Analysis
         self.correct_commands = {}
@@ -1627,33 +1634,36 @@ class process_data():
                     if not no_intersection:
                         intersection_not_valid.append(subset)
                 # print intersection_not_valid
-                # print '>>>>', phrases_with_hyp
-                valid = [[phrases_with_hyp[0]]]
-                for word1 in phrases_with_hyp[1:]:
-                    problem = {}
-                    for v in range(len(valid)):
-                        ok = 1
-                        for word2 in valid[v]:
-                            for subset in intersection_not_valid:
-                                if word1 in subset and word2 in subset:
-                                    ok = 0
-                                    if v not in problem:            problem[v] = {}
-                                    if word1 not in problem[v]:     problem[v][word1]=[]
-                                    problem[v][word1].append(word2)
-                        if ok:
-                            valid[v].append(word1)
-                    for v in problem:
-                        _valid = valid[v][:]
-                        for w1 in problem[v]:
-                            #print _valid,'remove this',problem[v][w1],'and add this',[w1]
-                            for i in problem[v][w1]:
-                                _valid.remove(i)
-                            _valid.append(w1)
+
+                if phrases_with_hyp != []:
+                    valid = [[phrases_with_hyp[0]]]
+                    for word1 in phrases_with_hyp[1:]:
+                        problem = {}
+                        for v in range(len(valid)):
                             ok = 1
-                            for v2 in valid:
-                                if set(_valid) <= set(v2): ok = 0
+                            for word2 in valid[v]:
+                                for subset in intersection_not_valid:
+                                    if word1 in subset and word2 in subset:
+                                        ok = 0
+                                        if v not in problem:            problem[v] = {}
+                                        if word1 not in problem[v]:     problem[v][word1]=[]
+                                        problem[v][word1].append(word2)
                             if ok:
-                                valid.append(_valid)
+                                valid[v].append(word1)
+                        for v in problem:
+                            _valid = valid[v][:]
+                            for w1 in problem[v]:
+                                #print _valid,'remove this',problem[v][w1],'and add this',[w1]
+                                for i in problem[v][w1]:
+                                    _valid.remove(i)
+                                _valid.append(w1)
+                                ok = 1
+                                for v2 in valid:
+                                    if set(_valid) <= set(v2): ok = 0
+                                if ok:
+                                    valid.append(_valid)
+                else:
+                    valid = []
                 valid_configurations[scene] = valid
 
         for scene in valid_configurations:
@@ -1674,6 +1684,7 @@ class process_data():
         if 'CH_POS' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
+                # if scene != 2:  continue
             #     self.valid_combination[scene] = {}
                 # get the words that have hypotheses and self.valid_configurationsare in the sentence
                 # phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
@@ -1710,7 +1721,7 @@ class process_data():
                 self.valid_hypotheses[scene] = {}
                 # Test
                 for count,P in enumerate(self.valid_configurations[scene]):
-                    # if count < 112: continue
+                    # if count != 112: continue
                     phrases_with_hyp = P[0]
                     for L in range(2,np.min([len(phrases_with_hyp)+1,self.maximum_hyp_in_sentence+1])):#
                         if L not in self.valid_combination[scene]:
