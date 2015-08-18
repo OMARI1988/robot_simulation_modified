@@ -776,7 +776,7 @@ class process_data():
     # check to see if we can learn the sentence before we even process it
     def _check_for_words_we_cant_learn(self):
         remove_list = []
-        bad_words = ['tower','nearest','closest','furthest','edge','between']
+        bad_words = ['tower','nearest','closest','furthest','edge','between','sorrounded']
         for i in self.S:
             print i,self.S[i]
             sent = self.S[i].split(' ')
@@ -2308,16 +2308,18 @@ class process_data():
         for feature in self.no_match['features']:
             for hyp in self.no_match['features'][feature]:
                 val = self.no_match['features'][feature][hyp]
-                self.grammar += feature+" -> '"+hyp+"' ["+str(val/self.no_match['sum'][feature])+"]"+'\n'
+                if val/self.no_match['sum'][feature] > 1e-4:
+                    self.grammar += feature+" -> '"+hyp+"' ["+str(val/self.no_match['sum'][feature])+"]"+'\n'
 
         # Terminals
         for feature in self.T['features']:
             for hyp in self.T['features'][feature]:
                 val = self.T['features'][feature][hyp]
-                if hyp[0] == '_':
-                    self.grammar += feature+" -> "+hyp+" ["+str(val/self.T['sum'][feature])+"]"+'\n'
-                else:
-                    self.grammar += feature+" -> '"+hyp+"' ["+str(val/self.T['sum'][feature])+"]"+'\n'
+                if val/self.T['sum'][feature] > 1e-4:
+                    if hyp[0] == '_':
+                        self.grammar += feature+" -> "+hyp+" ["+str(val/self.T['sum'][feature])+"]"+'\n'
+                    else:
+                        self.grammar += feature+" -> '"+hyp+"' ["+str(val/self.T['sum'][feature])+"]"+'\n'
 
         # PCFG
         if self.grammar != '':
