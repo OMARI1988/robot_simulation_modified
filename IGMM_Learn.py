@@ -18,10 +18,10 @@ file1 = open('/home/omari/Dropbox/robot_modified/hypotheses/all_scenes.txt', 'r'
 valid_scenes = [int(i.split('\n')[0]) for i in file1.readlines()]
 plot = 0                                #
 simple = 1                              # simple graph structure for multi processing
-dropbox = 1                             # update dropbox
+dropbox = 0                             # update dropbox
 
 P = process_data(dropbox)
-P.first_time = 1
+P.first_time = 0
 
 print           'reading object hypotheses'
 P.gmm_obj       = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/gmm_obj_1000.p", "rb" ) )
@@ -34,7 +34,7 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/pic
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,1001):
+  for scene in range(939,1001):
     if P.first_time:                P._read_grammar(scene,valid_scenes)
     #if scene not in valid_scenes:   continue
     #slightly hard [10,]

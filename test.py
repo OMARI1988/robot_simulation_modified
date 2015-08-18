@@ -1,7 +1,7 @@
 from multiprocessing import Process
 import multiprocessing
 
-def func1():
+def func1(t):
   print 'func1: starting'
   for i in xrange(1000000000):	  pass
   print 'func1: finishing'
@@ -28,5 +28,5 @@ def calc(t):
 if __name__ == '__main__':
 	#runInParallel(func1, func1, func1, func1, func1, func1)
 	pool = multiprocessing.Pool(6)
-	out1 = zip(*pool.map(calc, [[1,1,1],[1,2,2],[3,3,3]]))
+	out1 = zip(*pool.map(func1, [[1,1,1],[1,2,2],[3,3,3]]))
 	print out1

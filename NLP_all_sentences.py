@@ -360,7 +360,7 @@ def demo():
     #     print('Bad sentence number')
     #     return
 
-    max_scene = 61
+    max_scene = 300
 
     if max_scene<10:            sc = '0000'+str(max_scene)
     elif max_scene<100:         sc = '000'+str(max_scene)
@@ -383,6 +383,7 @@ def demo():
         scene = line.split('\n')[0].split('-')[0]
         sent_num = line.split('\n')[0].split('-')[1]
         print(line)
+        if scene == '239' and sent_num == '0':  continue 
 
 
         # Tokenize the sentence.

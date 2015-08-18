@@ -15,6 +15,7 @@ from nltk.parse.api import ParserI
 from nltk import PCFG
 
 g = 'grammar_00061.txt'
+g = 'grammar_00232.txt'
 file1 = open('/home/omari/Datasets/robot_modified/grammar/'+g, 'r')
 grammar = ''
 g1 = [i for i in file1.readlines()]
@@ -349,7 +350,8 @@ def demo():
              ('move the green ball over the red block', learned_pcfg),
              ('take the green pyramid and put it in the top left corner', learned_pcfg),
               ('move the pink triangle on top of the black square', learned_pcfg),
-              ('move the red cylinder and place it on top of the blue cylinder that is on top of a green cylinder', learned_pcfg),]
+              ('move the red block and place it on top of the blue block that is on top of a green block', learned_pcfg),
+              ('move the green block on top of the blue block', learned_pcfg)]
 
     # Ask the user which demo they want to use.
     print()
