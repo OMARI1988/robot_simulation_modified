@@ -676,7 +676,7 @@ class process_data():
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
         self.p_obj_pass             = .7                        # for object
         self.p_relation_pass        = .8                        # for both relation and motion
-        self.pool = multiprocessing.Pool(4)
+        self.pool = multiprocessing.Pool(12)
 
         # Analysis
         self.correct_commands = {}
@@ -771,6 +771,23 @@ class process_data():
             self.all_Sentences += str(count)+'-'+self.S[i]+'\n'
         print '====-----------------------------------------------------------------===='
         self.all_Sentences += '====-----------------------------------------------------------------====\n'
+
+    #----------------------------------------------------------------copy----------------------------------------#
+    # check to see if we can learn the sentence before we even process it
+    def _check_for_words_we_cant_learn(self):
+        remove_list = []
+        bad_words = ['tower','nearest','closest','furthest','edge','between']
+        for i in self.S:
+            print i,self.S[i]
+            sent = self.S[i].split(' ')
+            ok = 1
+            for word in bad_words:
+                if word in sent:
+                    ok = 0
+            if not ok:
+                remove_list.append(i)
+        for i in remove_list:
+            self.S.pop(i,None)
 
     #--------------------------------------------------------------------------------------------------------#
     # print sentences on terminal
@@ -1721,9 +1738,10 @@ class process_data():
                 self.valid_hypotheses[scene] = {}
                 # Test
                 for count,P in enumerate(self.valid_configurations[scene]):
-                    # if count != 112: continue
+                    # if count != 18: continue    # Note remove
                     phrases_with_hyp = P[0]
                     for L in range(2,np.min([len(phrases_with_hyp)+1,self.maximum_hyp_in_sentence+1])):#
+                        # if L != 7: continue     # Note remove
                         if L not in self.valid_combination[scene]:
                             self.valid_combination[scene][L]    = []
                             self.valid_hypotheses[scene][L]     = []
@@ -2304,7 +2322,7 @@ class process_data():
         # PCFG
         if self.grammar != '':
             self.pcfg1 = PCFG.fromstring(self.grammar)
-            print self.pcfg1
+            #print self.pcfg1
 
         if self.scene<10:            sc = '0000'+str(self.scene)
         elif self.scene<100:         sc = '000'+str(self.scene)

@@ -10,6 +10,7 @@ import pickle
 #   Some good examples
 #########################################################################################################
 # scene 939 sentence 6
+# phisical constraint can be sueful in scene 422, sentence 3
 
 #########################################################################################################
 #   inital processing                                                                                   #
@@ -34,7 +35,11 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/pic
 
 for scan in range(1):
   print 'scan number :',scan
+<<<<<<< HEAD
   for scene in range(939,1001):
+=======
+  for scene in range(423,1001):
+>>>>>>> e2a3a65b6b731a6589c63fb6630475d5b4a61605
     if P.first_time:                P._read_grammar(scene,valid_scenes)
     #if scene not in valid_scenes:   continue
     #slightly hard [10,]
@@ -44,16 +49,17 @@ for scan in range(1):
     #   Read sentences and scenes                                                                           #
     #########################################################################################################
     P._read(scene)                                  # Objects, Graph, Sentences
+    P._check_for_words_we_cant_learn()
     P._print_scentenses()
+    # if len(P.S) != 0:
+    #     print '>>> NO Sentences'
     # if len(P.G.nodes())>15:
     #     P.a_lot_of_objects.append(scene)
     #     continue
 
-    #continue
     #########################################################################################################
     #  Process scenes                                                                                       #
     #########################################################################################################
-
     P._fix_data()                                   # correction to Data removing 20 and 40
     P._find_unique_words()                          # find the unique words in every valid sentence = P.words
     P._compute_features_for_all()                   # = self.touch_all, self.motion_all
