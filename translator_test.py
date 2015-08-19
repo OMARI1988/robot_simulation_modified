@@ -27,10 +27,13 @@ gs = goslate.Goslate()
 f = codecs.open('/home/omari/Dropbox/robot_modified/languages/test.txt','w','utf8')
 sentence = ''
 test = ['move the red block and place it on top of the blue block that is on top of a green block','move the blue ball so that it is on top of the black cube in the back left corner']
+test = ['pick','place','put','pick up','put down','move','shift','drop','take','remove']
 for test1 in test:
     sentence += test1+'\n'
     sentence += gs.translate(test1, 'ar')+'\n'
-    sentence += gs.translate(test1, 'zh')+'\n'
-    sentence += gs.translate(test1, 'fr')+'\n'+'\n'
+    # sentence += gs.translate(test1, 'it')+'\n'
+    # sentence += gs.translate(test1, 'es')+'\n'
+    # sentence += gs.translate(test1, 'ch')+'\n'
+    # sentence += gs.translate(test1, 'fr')+'\n'+'\n'
 f.write(sentence)  # Stored on disk as UTF-8
 f.close()
