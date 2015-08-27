@@ -1568,7 +1568,7 @@ class process_data():
                                     if N == 1:
                                         if feature == 'CH_POS' or feature == 'F_DIR' or feature == 'F_HSV':
                                             for key in matching:
-                                                if key in ['red','green','blue','gray','grey','cyan','purple','black','pink','magenta','white'] and feature == 'F_HSV':
+                                                if key in ['الحمراء','الخضراء','الزرقاء','الرماديه','الرمادية','السماوي','أرجواني','أسود','وردي','أرجواني','أبيض'] and feature == 'F_HSV':
                                                     continue
                                                 if key not in phrases_to_remove:            phrases_to_remove[key] = {}
                                                 if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
@@ -2324,10 +2324,13 @@ class process_data():
                     else:
                         self.grammar += feature+" -> '"+hyp+"' ["+str(val/self.T['sum'][feature])+"]"+'\n'
 
+        print self.grammar
+        print unicode(self.grammar,encoding='UTF-8')
         # PCFG
         if self.grammar != '':
-            self.pcfg1 = PCFG.fromstring(self.grammar)
-            #print self.pcfg1
+            # self.pcfg1 = PCFG.fromstring(unicode(self.grammar,encoding='UTF-8'),encoding='UTF-8')
+            self.pcfg1 = PCFG.fromstring(self.grammar,encoding='UTF-8')
+            print self.pcfg1
 
         if self.scene<10:            sc = '0000'+str(self.scene)
         elif self.scene<100:         sc = '000'+str(self.scene)
