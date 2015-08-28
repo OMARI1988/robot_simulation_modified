@@ -2325,8 +2325,8 @@ class process_data():
                         self.grammar += feature+" -> '"+hyp+"' ["+str(val/self.T['sum'][feature])+"]"+'\n'
 
         # PCFG
-        if self.grammar != '':
-            self.pcfg1 = PCFG.fromstring(self.grammar)
+        # if self.grammar != '':
+        #     self.pcfg1 = PCFG.fromstring(self.grammar)
             #print self.pcfg1
 
         if self.scene<10:            sc = '0000'+str(self.scene)
