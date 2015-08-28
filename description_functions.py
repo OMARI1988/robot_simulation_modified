@@ -8,6 +8,7 @@ import cv2
 import pyscreenshot as ImageGrab
 # http://www.anninaruest.com/pie/2014/07/inverse-kinematics-and-the-m100rak/
 from random import randint
+import operator
 
 class Robot():
     #-----------------------------------------------------------------------------------------------------#     initial
@@ -15,9 +16,8 @@ class Robot():
         self._initilize_values()
         self.all_sentences_count = 1
         self.draw_scene()
-        self.draw_robot()
+        # self.draw_robot()
         self.Data = read_data()
-
 
     #-----------------------------------------------------------------------------------------------------#     initial
     def _initilize_values(self):
@@ -39,6 +39,7 @@ class Robot():
         self.object_shape = {}
         self.words = []
         self.positions = {}
+        self.positions_f = {}
         # manage diroctories to store data and images
         self.image_dir = '/home/omari/Datasets/robot_modified/scenes/'
         self.image_dir2 = '/home/omari/Dropbox/robot_modified/EN/scenes/'
@@ -71,7 +72,7 @@ class Robot():
         self.Data['commands'][self.scene] = S
 
     #-----------------------------------------------------------------------------------------------------#     change data
-    def _change_data(self):
+    def _change_data(self,a1,a2,a3):
 
         def _change(words,key):
             for i,word in enumerate(words):
@@ -89,9 +90,9 @@ class Robot():
         change_boxes = ['cubes','boxes','blocks','slabs','parallelipipeds','bricks','squares']
         change_boxes_to = ['cylinders','cans','drums','drums','cans','cans','cans']
 
-        a1 = randint(0,1)
-        a2 = randint(0,1)
-        a3 = randint(0,1)
+        # a1 = randint(0,1)
+        # a2 = randint(0,1)
+        # a3 = randint(0,1)
         c='nothing'
         d='nothing'
         e='nothing'
@@ -182,7 +183,7 @@ class Robot():
     #-----------------------------------------------------------------------------------------------------#     initilize scene
     def _initialize_scene(self):
         self._add_objects_to_scene()
-        self._initialize_robot()
+        # self._initialize_robot()
         self._update_scene_number()
 
     #-----------------------------------------------------------------------------------------------------#     add objects to scene
@@ -198,10 +199,8 @@ class Robot():
             # finding the shape1    TO SIMULATE SHAPE FEATURE VECTOR
             s = self._find_shape(l1[obj]['F_SHAPE'])
             # finding the shape
-            #if self.scene%2 == 0:
             if l1[obj]['F_SHAPE'] == 'cube': self._cube(x,y,z*.9,c)
             if l1[obj]['F_SHAPE'] == 'prism': self._prism(x,y,z*.9,c)
-            #if self.scene%2 == 1:
             if l1[obj]['F_SHAPE'] == 'cylinder': self._cylinder(x,y,z*.9,c)
             if l1[obj]['F_SHAPE'] == 'sphere': self._sphere(x,y,z*.9,c)
 
@@ -212,6 +211,347 @@ class Robot():
             self.positions[obj]['z'] = [float(z)]
             self.positions[obj]['F_HSV'] = c
             self.positions[obj]['F_SHAPE'] = s
+
+        l1 = self.Data['layouts'][self.Data['scenes'][self.scene]['final']]   # initial layput
+        for obj in l1:
+            x = l1[obj]['position'][0]
+            y = l1[obj]['position'][1]
+            z = l1[obj]['position'][2]
+            # finding the color
+            c = self._find_color(l1[obj]['F_HSV'])
+            # finding the shape1    TO SIMULATE SHAPE FEATURE VECTOR
+            s = self._find_shape(l1[obj]['F_SHAPE'])
+            # finding the shape
+            # if l1[obj]['F_SHAPE'] == 'cube': self._cube(x,y,z*.9,c)
+            # if l1[obj]['F_SHAPE'] == 'prism': self._prism(x,y,z*.9,c)
+            # if l1[obj]['F_SHAPE'] == 'cylinder': self._cylinder(x,y,z*.9,c)
+            # if l1[obj]['F_SHAPE'] == 'sphere': self._sphere(x,y,z*.9,c)
+
+            # inilizing the position vector to be saved later
+            self.positions_f[obj] = {}
+            self.positions_f[obj]['x'] = [float(x)]
+            self.positions_f[obj]['y'] = [float(y)]
+            self.positions_f[obj]['z'] = [float(z)]
+            self.positions_f[obj]['F_HSV'] = c
+            self.positions_f[obj]['F_SHAPE'] = s
+
+    #-----------------------------------------------------------------------------------------------------#     add objects to scene
+    def _sum_of_all_hypotheses(self):
+        self.all_valid_hypotheses['sum'] = {}
+        for f in self.all_valid_hypotheses:
+            if f != 'sum':
+                sum1 = 0.0
+                for k in self.all_valid_hypotheses[f]:
+                    for j in self.all_valid_hypotheses[f][k]:
+                        sum1 += self.all_valid_hypotheses[f][k][j]
+                self.all_valid_hypotheses['sum'][f]=sum1
+
+    #-----------------------------------------------------------------------------------------------------#     add objects to scene
+    def _draw_the_arrow(self):
+        I = self.Data['scenes'][self.scene]['I_move']
+        F = self.Data['scenes'][self.scene]['F_move']
+        x1 = self.positions[I]['x'][0]
+        y1 = self.positions[I]['y'][0]
+        z1 = self.positions[I]['z'][0]
+        x2 = self.positions_f[F]['x'][0]
+        y2 = self.positions_f[F]['y'][0]
+        z2 = self.positions_f[F]['z'][0]
+        dist = np.sqrt( (x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2  )
+        A = arrow(pos=(x1+self.chess_shift_x-3.5,y1+self.chess_shift_y-3.5,z1+.25),axis=(x2-x1,y2-y1,z2-z1),length=dist,shaftwidth=.15,color=color.red)
+
+    #-----------------------------------------------------------------------------------------------------#     add objects to scene
+    def _get_unique_features(self):
+        I = self.Data['scenes'][self.scene]['I_move']
+        F = self.Data['scenes'][self.scene]['F_move']
+
+        #initial scene
+        # check to see if single feature is enough
+        self._single_feature(I,self.positions)
+        self._single_feature_f(F,self.positions_f)
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _single_feature(self,I,positions):
+        x1 = positions[I]['x'][0]
+        y1 = positions[I]['y'][0]
+        z1 = positions[I]['z'][0]
+        self.u_pos = []
+        self.u_hsv = []
+        self.u_shp = []
+
+        self.u_pos_name = []
+        self.u_hsv_name = []
+        self.u_shp_name = []
+
+        self.u_pos_value = []
+        self.u_hsv_value = []
+        self.u_shp_value = []
+        #check position
+        use_pos = 0
+        for p in self.all_valid_hypotheses['F_POS']:
+            for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
+                m1 = np.asarray([x1/7.0,y1/7.0])
+                m2 = np.asarray(list(p1))
+                # print m1,m2
+                if self._distance_test(m1,m2)<.25:
+                    use_pos = 1
+
+        if use_pos:
+            self.u_pos.append(m1)
+
+        for obj in positions:
+            use_color = 1
+            use_shape = 1
+            if obj != I:
+                #check color
+                m1 = np.asarray(list(positions[I]['F_HSV']))
+                m2 = np.asarray(list(positions[obj]['F_HSV']))
+                if self._distance_test(m1,m2)<.25:
+                    use_color = 0
+                #check shape
+                m1 = np.asarray(list([positions[I]['F_SHAPE']]))
+                m2 = np.asarray(list([positions[obj]['F_SHAPE']]))
+                if self._distance_test(m1,m2)<.25:
+                    use_shape = 0
+
+        if use_color:
+            self.u_hsv.append(np.asarray(list(positions[I]['F_HSV'])))
+            for c in self.all_valid_hypotheses['F_HSV']:
+                for c1 in self.all_valid_hypotheses['F_HSV'][c].keys():
+                    m1 = np.asarray(list(positions[I]['F_HSV']))
+                    m2 = np.asarray(list(c1))
+                    if self._distance_test(m1,m2)<.25:
+                        self.u_hsv_name.append(c)
+                        print self.all_valid_hypotheses['F_HSV'].keys()
+                        self.u_hsv_value.append(self.all_valid_hypotheses['F_HSV'][c][c1]/self.all_valid_hypotheses['sum']['F_HSV'])
+        if use_shape:
+            self.u_shp.append(np.asarray(list([positions[I]['F_SHAPE']])))
+            for s in self.all_valid_hypotheses['F_SHAPE']:
+                for s1 in self.all_valid_hypotheses['F_SHAPE'][s].keys():
+                    m1 = np.asarray(list([positions[I]['F_SHAPE']]))
+                    m2 = np.asarray(list([s1]))
+                    if self._distance_test(m1,m2)<.25:
+                        self.u_shp_name.append(s)
+                        self.u_shp_value.append(self.all_valid_hypotheses['F_SHAPE'][s][s1]/self.all_valid_hypotheses['sum']['F_SHAPE'])
+
+
+        print self.u_pos,self.u_hsv,self.u_shp
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _single_feature_f(self,I,positions):
+        x1 = positions[I]['x'][0]
+        y1 = positions[I]['y'][0]
+        z1 = positions[I]['z'][0]
+        self.u_pos_f = []
+        self.u_hsv_f = []
+        self.u_shp_f = []
+        #check position
+        use_pos = 0
+        for p in self.all_valid_hypotheses['F_POS']:
+            for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
+                m1 = np.asarray([x1/7.0,y1/7.0])
+                m2 = np.asarray(list(p1))
+                # print m1,m2
+                if self._distance_test(m1,m2)<.25:
+                    use_pos = 1
+
+        if use_pos:
+            self.u_pos_f.append(m1)
+
+        print self.u_pos_f
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _distance_test(self,m1,m2):
+        return np.sqrt(np.sum((m1-m2)**2))/np.sqrt(len(m1))
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _generate_all_sentences(self):
+        print '--------------------------- Generating all sentences'
+        all_sentences = {}
+        # general sentence structure
+        # self.motion = [0,1]
+        for S in self.N['S']:
+            if S != 'sum':
+                # first kind of sentences
+                if self.motion == [0,1,0]:
+                    conditions = ['PREPOST','PRE','POST']
+                    if 'PRE_POST' in S.split(' '):
+                        all_sentences[S] = self.N['S'][S]/self.N['S']['sum']
+                    if '_S' in S.split(' '):
+                        all_sentences['CH_POS_PRE PRE _S_connect CH_POS_POST POST'] = self.N['S'][S]/self.N['S']['sum']
+
+                # pick up kind of sentences
+                if self.motion == [0,1]:
+                    conditions = ['PRE']
+                    if 'PRE' in S.split(' '):
+                        all_sentences[S] = self.N['S'][S]/self.N['S']['sum']
+
+                # put down kind of sentences
+                if self.motion == [1,0]:
+                    conditions = ['POST']
+                    if 'POST' in S.split(' '):
+                        all_sentences[S] = self.N['S'][S]/self.N['S']['sum']
+
+        # Verbs
+        print '--------------------------- Updating verbs'
+        for condition in conditions:
+            new_sentences = {}
+            for S in all_sentences:
+                V1 = all_sentences[S]
+                S = S.split(' ')
+                changed = 0
+                for count,part in enumerate(S):
+                    if 'CH_' in part and condition in part:
+                        changed = 1
+                        for i in self.T['features'][part]:
+                            S[count] = i
+                            new_sentences[' '.join(S[:])] = V1*self.T['features'][part][i]/self.T['sum'][part]
+                if not changed:
+                    new_sentences[' '.join(S[:])] = V1
+            all_sentences = new_sentences.copy()
+
+        # Conditions
+        print '--------------------------- Updating conditions'
+        for condition in ['PRE_POST','PRE','POST']:
+            new_sentences = {}
+            for S in all_sentences:
+                V1 = all_sentences[S]
+                S = S.split(' ')
+                changed = 0
+                for count,part in enumerate(S):
+                    if condition == part:
+                        changed = 1
+                        for i in self.N[part]:
+                            if i != 'sum':
+                                # print '>>>>>>>',i
+                                S[count] = i
+                                # print '>>>>>>>',' '.join(S[:])
+                                # print '>>>>>>>',V1
+                                # print self.N[part][i]
+                                # print self.N[part]
+
+                                new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']
+                if not changed:
+                    new_sentences[' '.join(S[:])] = V1
+            all_sentences = new_sentences.copy()
+
+        # connections
+        print '--------------------------- Updating connections'
+        for condition in ['connect']:
+            new_sentences = {}
+            for S in all_sentences:
+                V1 = all_sentences[S]
+                S = S.split(' ')
+                changed = 0
+                for count,part in enumerate(S):
+                    if condition in part:
+                        changed = 1
+                        for i in self.N[part]:
+                            if i != 'sum':
+                                S[count] = i
+                                new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']
+                if not changed:
+                    new_sentences[' '.join(S[:])] = V1
+            all_sentences = new_sentences.copy()
+
+        # _pick_up in self.N
+        print '--------------------------- Updating non_terminals'
+        new_sentences = {}
+        for S in all_sentences:
+            V1 = all_sentences[S]
+            S = S.split(' ')
+            changed = 0
+            for count,part in enumerate(S):
+                if part in self.N:
+                    if part not in ['_entity','_relation','_F_POS','_Direction']:
+                        for i in self.N[part]:
+                            if i != 'sum':
+                                S[count] = i
+                                new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']
+            if not changed:
+                new_sentences[' '.join(S[:])] = V1
+        all_sentences = new_sentences.copy()
+
+        if self.motion == [0,1,0]:
+            # update the E
+            print '--------------------------- Updating Entity'
+            new_sentences = {}
+            for S in all_sentences:
+                V1 = all_sentences[S]
+                S = S.split(' ')
+                changed = 0
+                for count,part in enumerate(S):
+                    if '_' in part:
+                        # if its single feature
+                        if  self.u_pos!=[] or self.u_hsv!=[] or self.u_shp!=[]:
+                            ok_features = []
+                            if self.u_pos!=[]:      ok_features.append('F_POS')
+                            if self.u_hsv!=[]:      ok_features.append('F_HSV')
+                            if self.u_shp!=[]:      ok_features.append('F_SHAPE')
+                            if part == '_entity':
+                                for i in self.N[part]:
+                                    if i != 'sum' and '_entity' not in i:
+                                        for j in ok_features:
+                                            if j in i:
+                                                print '>>>',i
+                                                for s,sv in zip(self.u_shp_name, self.u_shp_value):
+                                                    for c,cv in zip(self.u_hsv_name, self.u_hsv_value):
+                                                        val = 1
+                                                        # print '>>',s,c
+                                                        # entity = ''
+                                                        changed = 1
+                                                        i2 = i[:]
+                                                        i2 = i2.split(' ')
+                                                        for ccc,k in enumerate(i2):
+                                                            if k == 'F_HSV':
+                                                                i2[ccc] = c
+                                                                val *= cv
+                                                            if k == 'F_SHAPE':
+                                                                i2[ccc] = s
+                                                                val *= sv
+                                                            # print '>>>>',i2,val
+                                                                # print i,self.N[part][i]/self.N[part]['sum']
+                                                        S[count] = ' '.join(i2)
+                                                        new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']*val
+                        break
+                if not changed:
+                    new_sentences[' '.join(S[:])] = V1
+            all_sentences = new_sentences.copy()
+
+
+            # update the FV
+            print '--------------------------- Updating FV'
+            new_sentences = {}
+            for S in all_sentences:
+                V1 = all_sentences[S]
+                S = S.split(' ')
+                changed = 0
+                for count,part in enumerate(S):
+                    if '_' in part:
+                        # if its a location
+                        if self.u_pos_f != []:
+                            if part == '_F_POS':
+                                changed = 1
+                                for p in self.all_valid_hypotheses['F_POS']:
+                                    for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
+                                        m1 = self.u_pos_f
+                                        m2 = np.asarray(list(p1))
+                                        if self._distance_test(m1,m2)<.25:
+                                            S[count] = p
+                                            new_sentences[' '.join(S[:])] = V1/self._distance_test(m1,m2)
+                        # if its a relation
+                if not changed:
+                    new_sentences[' '.join(S[:])] = V1
+            all_sentences = new_sentences.copy()
+
+        print 
+        print '==----------------- All sentences ---------------=='
+        print
+        sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+        for count,i in enumerate(reversed(sorted_x)):
+            print i
+            if count>100: break
+
+        # print self.all_valid_hypotheses
 
     #-----------------------------------------------------------------------------------------------------#     find color
     def _find_color(self,a):
@@ -254,36 +594,40 @@ class Robot():
 
     #-----------------------------------------------------------------------------------------------------#     move robot
     def _move_robot(self,save):
-        l1 = self.Data['layouts'][self.Data['scenes'][self.scene]['initial']]   # initial layput
-        l2 = self.Data['layouts'][self.Data['scenes'][self.scene]['final']]     # final layput
+        l1 = self.Data['layouts'][self.Data['scenes'][self.scene]['initial']]   # initial layout
+        l2 = self.Data['layouts'][self.Data['scenes'][self.scene]['final']]     # final layout
         I = self.Data['scenes'][self.scene]['I_move']
         F = self.Data['scenes'][self.scene]['F_move']
+        self.motion = []
         if I != []:
             # move the robot alone
             initial_position = self.Data['gripper'][self.Data['scenes'][self.scene]['initial']]
             final_position = l1[I]['position']
             if final_position != initial_position:
-                a1,a2,a3 = self._inverse_kinematics(final_position[0],final_position[1],final_position[2])
-                self.rotate_robot(-a1,-a2,-a3,save)
-            if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'cube':
-                z_offset = +.22
-            if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'sphere':
-                z_offset = +.22
-            if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'cylinder':
-                z_offset = -.18
-            if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'prism':
-                z_offset = -.18
+                self.motion.append(0)
+            #     a1,a2,a3 = self._inverse_kinematics(final_position[0],final_position[1],final_position[2])
+            #     self.rotate_robot(-a1,-a2,-a3,save)
+            # if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'cube':
+            #     z_offset = +.22
+            # if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'sphere':
+            #     z_offset = +.22
+            # if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'cylinder':
+            #     z_offset = -.18
+            # if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'prism':
+            #     z_offset = -.18
             # move the robot and the object
             initial_position = final_position
             final_position = l2[F]['position']
             if final_position != initial_position:
-                self.rotate_robot_with_object(initial_position, final_position, z_offset, save)
+                self.motion.append(1)
+            #     self.rotate_robot_with_object(initial_position, final_position, z_offset, save)
             # move the robot and the object down
             initial_position = final_position
             final_position = self.Data['gripper'][self.Data['scenes'][self.scene]['final']]
             if final_position != initial_position:
-                a1,a2,a3 = self._inverse_kinematics(final_position[0],final_position[1],final_position[2])
-                self.rotate_robot(-a1,-a2,-a3,save)
+                self.motion.append(0)
+            #     a1,a2,a3 = self._inverse_kinematics(final_position[0],final_position[1],final_position[2])
+            #     self.rotate_robot(-a1,-a2,-a3,save)
 
     #-----------------------------------------------------------------------------------------------------#     save motion
     def _save_motion(self):

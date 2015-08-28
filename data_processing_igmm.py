@@ -628,9 +628,7 @@ class prettyfloat(float):
 
 class process_data():
     def __init__(self,dropbox):
-        self.dir1 = '/home/omari/Dropbox/robot_modified/motion/scene'
-        self.dir2 = '/home/omari/Dropbox/robot_modified/scenes/'
-        self.dir3 = '/home/omari/Dropbox/robot_modified/graphs/scene'
+        self.dir1 = '/home/omari/Dropbox/robot_modified/EN/motion/scene'
 
         # initial language grammar
         self.N                      = {}                    # non-terminals
@@ -701,7 +699,7 @@ class process_data():
             elif g<1000:        sc = '00'+str(g)
             elif g<10000:       sc = '0'+str(g)
             print           'reading grammar rules'
-            grammar         = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/grammar_"+sc+".p", "rb" ) )
+            grammar         = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/grammar_"+sc+".p", "rb" ) )
             self.T          = grammar[0]
             self.N          = grammar[1]
             self.no_match   = grammar[2]
@@ -714,7 +712,7 @@ class process_data():
             elif g<100:         sc = '000'+str(g)
             elif g<1000:        sc = '00'+str(g)
             elif g<10000:       sc = '0'+str(g)
-            analysis                    = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/analysis_"+sc+".p", "rb" ) )
+            analysis                    = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/analysis_"+sc+".p", "rb" ) )
             self.correct_commands       = analysis[0]
             self.wrong_commands         = analysis[1]
             self.all_valid_hypotheses   = analysis[2]
