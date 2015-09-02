@@ -35,7 +35,7 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/AR/
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,200):
+  for scene in range(192,1001):
     if P.first_time:                P._read_grammar(scene,valid_scenes)
     if scene not in valid_scenes:   continue
     #slightly hard [10,]
