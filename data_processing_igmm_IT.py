@@ -1,3 +1,7 @@
+#!/usr/bin/python
+# -*- coding: iso-8859-15 -*-
+import os, sys
+
 import numpy as np
 import networkx as nx
 import itertools
@@ -628,7 +632,7 @@ class prettyfloat(float):
 
 class process_data():
     def __init__(self,dropbox):
-        self.dir1 = '/home/omari/Dropbox/robot_modified/EN/motion/scene'
+        self.dir1 = '/home/omari/Dropbox/robot_modified/IT/motion/scene'
 
         # initial language grammar
         self.N                      = {}                    # non-terminals
@@ -699,7 +703,7 @@ class process_data():
             elif g<1000:        sc = '00'+str(g)
             elif g<10000:       sc = '0'+str(g)
             print           'reading grammar rules'
-            grammar         = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/grammar_"+sc+".p", "rb" ) )
+            grammar         = pickle.load( open( "/home/omari/Dropbox/robot_modified/IT/pickle/grammar_"+sc+".p", "rb" ) )
             self.T          = grammar[0]
             self.N          = grammar[1]
             self.no_match   = grammar[2]
@@ -712,7 +716,7 @@ class process_data():
             elif g<100:         sc = '000'+str(g)
             elif g<1000:        sc = '00'+str(g)
             elif g<10000:       sc = '0'+str(g)
-            analysis                    = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/analysis_"+sc+".p", "rb" ) )
+            analysis                    = pickle.load( open( "/home/omari/Dropbox/robot_modified/IT/pickle/analysis_"+sc+".p", "rb" ) )
             self.correct_commands       = analysis[0]
             self.wrong_commands         = analysis[1]
             self.all_valid_hypotheses   = analysis[2]
@@ -790,7 +794,7 @@ class process_data():
     #--------------------------------------------------------------------------------------------------------#
     # print sentences on terminal
     def _save_all_sentences(self):
-        file1 = open("/home/omari/Datasets/robot_modified/sentences.txt", "w")
+        file1 = open("/home/omari/Dropbox/robot_modified/sentences.txt", "w")
         file1.write(self.all_Sentences)
         file1.close()
 
@@ -1214,7 +1218,7 @@ class process_data():
         if plot:
             plot_data(X, best_gmm, bic, k, self.cv_types,0, 1)
             plt.show()
-            plt.savefig("/home/omari/Datasets/robot_modified/clusters/" + str(len(X[0])) + "-" + str(self.scene) +".png")
+            # plt.savefig("/home/omari/Datasets/robot_modified/clusters/" + str(len(X[0])) + "-" + str(self.scene) +".png")
 
         for i, (mean, covar) in enumerate(zip(best_gmm.means_, best_gmm._get_covars())):
             gmm1[i] = {}
@@ -1377,8 +1381,9 @@ class process_data():
             for word in self.phrases[s]:
                 not_ok = 1
                 for w in word.split(' '):
-                    if w in ['pick','place','put','up','down','pick up','put down','grab','add','move','put','shift','drop','take','remove','release','position','collect','lift','hold','select','displace']:
-                        not_ok = 0
+                    for b_word in ['scegliere','luogo','mettere','su','raccogliere','raccogliete','cada','sollevare','giù','metti giù','mossa','spostamento','cadere','prendere','prendete','rimuovere','rilasciare','posizionare']:
+                        if unicode(w,encoding='UTF-8') == unicode(b_word,encoding='UTF-8'):
+                            not_ok = 0
                 if word not in self.hyp_motion:
                     self.hyp_motion[word] = {}
                     self.hyp_motion[word]['count'] = 0
@@ -1563,7 +1568,7 @@ class process_data():
                                     if N == 1:
                                         if feature == 'CH_POS' or feature == 'F_DIR' or feature == 'F_HSV':
                                             for key in matching:
-                                                if key in ['red','green','blue','gray','grey','cyan','purple','black','pink','magenta','white'] and feature == 'F_HSV':
+                                                if key in ['rosso','verde','blu','grigio','ciano','porpora','nero','rosa','magenta','bianco'] and feature == 'F_HSV':
                                                     continue
                                                 if key not in phrases_to_remove:            phrases_to_remove[key] = {}
                                                 if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
@@ -2320,8 +2325,8 @@ class process_data():
                         self.grammar += feature+" -> '"+hyp+"' ["+str(val/self.T['sum'][feature])+"]"+'\n'
 
         # PCFG
-        if self.grammar != '':
-            self.pcfg1 = PCFG.fromstring(self.grammar)
+        # if self.grammar != '':
+        #     self.pcfg1 = PCFG.fromstring(self.grammar)
             #print self.pcfg1
 
         if self.scene<10:            sc = '0000'+str(self.scene)
@@ -2329,16 +2334,16 @@ class process_data():
         elif self.scene<1000:        sc = '00'+str(self.scene)
         elif self.scene<10000:       sc = '0'+str(self.scene)
 
-        file1 = open("/home/omari/Datasets/robot_modified/grammar/grammar_"+sc+".txt", "w")
-        file1.write(self.grammar)
-        file1.close()
+        # file1 = open("/home/omari/Datasets/robot_modified/grammar/grammar_"+sc+".txt", "w")
+        # file1.write(self.grammar)
+        # file1.close()
         # store the grammar files
-        pickle.dump( [self.T, self.N, self.no_match], open( "/home/omari/Datasets/robot_modified/pickle/grammar_"+sc+".p", "wb" ) )
+        # pickle.dump( [self.T, self.N, self.no_match], open( "/home/omari/Datasets/robot_modified/pickle/grammar_"+sc+".p", "wb" ) )
         # if you want to store values on dropbox
         if self.dropbox:
-            pickle.dump( [self.T, self.N, self.no_match], open( "/home/omari/Dropbox/robot_modified/EN/pickle/grammar_"+sc+".p", "wb" ) )
-            file2 = open("/home/omari/Dropbox/robot_modified/EN/grammar/grammar_"+sc+".txt", "w")
-            file3 = open("/home/omari/Dropbox/robot_modified/EN/hypotheses/grammar.txt", "w")
+            pickle.dump( [self.T, self.N, self.no_match], open( "/home/omari/Dropbox/robot_modified/IT/pickle/grammar_"+sc+".p", "wb" ) )
+            file2 = open("/home/omari/Dropbox/robot_modified/IT/grammar/grammar_"+sc+".txt", "w")
+            file3 = open("/home/omari/Dropbox/robot_modified/IT/hypotheses/grammar.txt", "w")
             file2.write(self.grammar)
             file3.write(self.grammar)
             file2.close()
@@ -2499,31 +2504,31 @@ class process_data():
         elif self.scene<1000:        sc = '00'+str(self.scene)
         elif self.scene<10000:       sc = '0'+str(self.scene)
 
-        file1 = open("/home/omari/Datasets/robot_modified/analysis/analysis_"+sc+".txt", "w")
-        file1.write(analysis)
-        file1.close()
+        # file1 = open("/home/omari/Datasets/robot_modified/IT/analysis/analysis_"+sc+".txt", "w")
+        # file1.write(analysis)
+        # file1.close()
 
 
 
-        file1 = open("/home/omari/Datasets/robot_modified/hypotheses/all_scenes.txt", "w")
-        scenes = sorted(self.correct_commands.keys())
-        for s in scenes:
-            file1.write(str(s)+'\n')
-        file1.close()
-
-        file1 = open("/home/omari/Datasets/robot_modified/hypotheses/matched_commands.txt", "w")
-        scenes = sorted(self.correct_commands.keys())
-        for s in scenes:
-            for c in self.correct_commands[s]:
-                file1.write(c+'\n')
-        file1.close()
-
-        file1 = open("/home/omari/Datasets/robot_modified/hypotheses/failed_commands.txt", "w")
-        scenes = sorted(self.wrong_commands.keys())
-        for s in scenes:
-            for c in self.wrong_commands[s]:
-                file1.write(c+'\n')
-        file1.close()
+        # file1 = open("/home/omari/Datasets/robot_modified/IT/hypotheses/all_scenes.txt", "w")
+        # scenes = sorted(self.correct_commands.keys())
+        # for s in scenes:
+        #     file1.write(str(s)+'\n')
+        # file1.close()
+        #
+        # file1 = open("/home/omari/Datasets/robot_modified/IT/hypotheses/matched_commands.txt", "w")
+        # scenes = sorted(self.correct_commands.keys())
+        # for s in scenes:
+        #     for c in self.correct_commands[s]:
+        #         file1.write(c+'\n')
+        # file1.close()
+        #
+        # file1 = open("/home/omari/Datasets/robot_modified/IT/hypotheses/failed_commands.txt", "w")
+        # scenes = sorted(self.wrong_commands.keys())
+        # for s in scenes:
+        #     for c in self.wrong_commands[s]:
+        #         file1.write(c+'\n')
+        # file1.close()
 
         for scene in self.valid_hypotheses:
             L = self.max_L[scene]
@@ -2545,50 +2550,50 @@ class process_data():
                             if no_match:
                                 self.all_valid_hypotheses[F[0]][word][tuple(F[1])] = 1
 
-        file1 = open("/home/omari/Datasets/robot_modified/hypotheses/correct_hyp.txt", "w")
-        for feature in self.all_valid_hypotheses:
-            x = self.all_valid_hypotheses[feature]
-            for word in self.all_valid_hypotheses[feature]:
-                x = self.all_valid_hypotheses[feature][word]
-                sorted_values = sorted(x.items(), key=operator.itemgetter(1))
-                for val in sorted_values:
-                    line = feature+','+word+',['
-                    for i in range(len(val[0])-1):
-                        line += str(val[0][i])+' '
-                    line += str(val[0][-1])
-                    line += '],'+str(self.all_valid_hypotheses[feature][word][val[0]])+'\n'
-                    file1.write(line)
-        file1.close()
+        # file1 = open("/home/omari/Datasets/robot_modified/IT/hypotheses/correct_hyp.txt", "w")
+        # for feature in self.all_valid_hypotheses:
+        #     x = self.all_valid_hypotheses[feature]
+        #     for word in self.all_valid_hypotheses[feature]:
+        #         x = self.all_valid_hypotheses[feature][word]
+        #         sorted_values = sorted(x.items(), key=operator.itemgetter(1))
+        #         for val in sorted_values:
+        #             line = feature+','+word+',['
+        #             for i in range(len(val[0])-1):
+        #                 line += str(val[0][i])+' '
+        #             line += str(val[0][-1])
+        #             line += '],'+str(self.all_valid_hypotheses[feature][word][val[0]])+'\n'
+        #             file1.write(line)
+        # file1.close()
 
 
-        pickle.dump( [self.correct_commands, self.wrong_commands, self.all_valid_hypotheses, self.scenes_so_far, self.commands_so_far], open( "/home/omari/Datasets/robot_modified/pickle/analysis_"+sc+".p", "wb" ) )
+        # pickle.dump( [self.correct_commands, self.wrong_commands, self.all_valid_hypotheses, self.scenes_so_far, self.commands_so_far], open( "/home/omari/Datasets/robot_modified/IT/pickle/analysis_"+sc+".p", "wb" ) )
         if self.dropbox:
-            pickle.dump( [self.correct_commands, self.wrong_commands, self.all_valid_hypotheses, self.scenes_so_far, self.commands_so_far], open( "/home/omari/Dropbox/robot_modified/EN/pickle/analysis_"+sc+".p", "wb" ) )
-            file2 = open("/home/omari/Dropbox/robot_modified/EN/analysis/analysis_"+sc+".txt", "w")
+            pickle.dump( [self.correct_commands, self.wrong_commands, self.all_valid_hypotheses, self.scenes_so_far, self.commands_so_far], open( "/home/omari/Dropbox/robot_modified/IT/pickle/analysis_"+sc+".p", "wb" ) )
+            file2 = open("/home/omari/Dropbox/robot_modified/IT/analysis/analysis_"+sc+".txt", "w")
             file2.write(analysis)
             file2.close()
 
-            file2 = open("/home/omari/Dropbox/robot_modified/EN/hypotheses/all_scenes.txt", "w")
+            file2 = open("/home/omari/Dropbox/robot_modified/IT/hypotheses/all_scenes.txt", "w")
             scenes = sorted(self.correct_commands.keys())
             for s in scenes:
                 file2.write(str(s)+'\n')
             file2.close()
 
-            file2 = open("/home/omari/Dropbox/robot_modified/EN/hypotheses/matched_commands.txt", "w")
+            file2 = open("/home/omari/Dropbox/robot_modified/IT/hypotheses/matched_commands.txt", "w")
             scenes = sorted(self.correct_commands.keys())
             for s in scenes:
                 for c in self.correct_commands[s]:
                     file2.write(c+'\n')
             file2.close()
 
-            file2 = open("/home/omari/Dropbox/robot_modified/EN/hypotheses/failed_commands.txt", "w")
+            file2 = open("/home/omari/Dropbox/robot_modified/IT/hypotheses/failed_commands.txt", "w")
             scenes = sorted(self.wrong_commands.keys())
             for s in scenes:
                 for c in self.wrong_commands[s]:
                     file2.write(c+'\n')
             file2.close()
 
-            file2 = open("/home/omari/Dropbox/robot_modified/EN/hypotheses/correct_hyp.txt", "w")
+            file2 = open("/home/omari/Dropbox/robot_modified/IT/hypotheses/correct_hyp.txt", "w")
             for feature in self.all_valid_hypotheses:
                 x = self.all_valid_hypotheses[feature]
                 for word in self.all_valid_hypotheses[feature]:

@@ -15,7 +15,7 @@ import pickle
 #########################################################################################################
 #   inital processing                                                                                   #
 #########################################################################################################
-file1 = open('/home/omari/Dropbox/robot_modified/hypotheses/all_scenes.txt', 'r')
+file1 = open('/home/omari/Dropbox/robot_modified/EN/hypotheses/all_scenes.txt', 'r')
 valid_scenes = [int(i.split('\n')[0]) for i in file1.readlines()]
 plot = 0                                #
 simple = 1                              # simple graph structure for multi processing
@@ -25,17 +25,17 @@ P = process_data(dropbox)
 P.first_time = 1
 
 print           'reading object hypotheses'
-P.gmm_obj       = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/gmm_obj_1000.p", "rb" ) )
+P.gmm_obj       = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/gmm_obj_1000.p", "rb" ) )
 print           'reading motion hypotheses'
-P.hyp_motion    = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/hyp_motion_1000.p", "rb" ) )
+P.hyp_motion    = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/hyp_motion_1000.p", "rb" ) )
 print           'reading relation hypotheses'
-P.hyp_relation  = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/hyp_relation_1000.p", "rb" ) )
+P.hyp_relation  = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/hyp_relation_1000.p", "rb" ) )
 print           'reading total motion'
-P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/pickle/all_total_motion_1000.p", "rb" ) )
+P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/all_total_motion_1000.p", "rb" ) )
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(468,1001):
+  for scene in range(944,1001):
     if P.first_time:                P._read_grammar(scene,valid_scenes)
     #if scene not in valid_scenes:   continue
     #slightly hard [10,]
@@ -106,14 +106,14 @@ for scan in range(1):
     print '**================= end of scene '+str(P.scene)+' ===================**'
     print '\n\n\n'
 
-print 'started saving'
+# print 'started saving'
 # P._save_all_sentences()
-# pickle.dump( P.gmm_obj, open( "/home/omari/Dropbox/robot_modified/pickle/gmm_obj_1000.p", "wb" ) )
-# pickle.dump( P.hyp_motion, open( "/home/omari/Dropbox/robot_modified/pickle/hyp_motion_1000.p", "wb" ) )
-# pickle.dump( P.hyp_relation, open( "/home/omari/Dropbox/robot_modified/pickle/hyp_relation_1000.p", "wb" ) )
-# pickle.dump( P.all_total_motion, open( "/home/omari/Dropbox/robot_modified/pickle/all_total_motion_1000.p", "wb" ) )
-pickle.dump( P.a_lot_of_objects, open( "/home/omari/Dropbox/robot_modified/pickle/a_lot_of_objects.p", "wb" ) )
-print 'finished saving'
+# pickle.dump( P.gmm_obj, open( "/home/omari/Dropbox/robot_modified/EN/pickle/gmm_obj_1000.p", "wb" ) )
+# pickle.dump( P.hyp_motion, open( "/home/omari/Dropbox/robot_modified/EN/pickle/hyp_motion_1000.p", "wb" ) )
+# pickle.dump( P.hyp_relation, open( "/home/omari/Dropbox/robot_modified/EN/pickle/hyp_relation_1000.p", "wb" ) )
+# pickle.dump( P.all_total_motion, open( "/home/omari/Dropbox/robot_modified/EN/pickle/all_total_motion_1000.p", "wb" ) )
+# pickle.dump( P.a_lot_of_objects, open( "/home/omari/Dropbox/robot_modified/EN/pickle/a_lot_of_objects.p", "wb" ) )
+# print 'finished saving'
 
 
 #print P.pcfg1
