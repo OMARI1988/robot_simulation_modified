@@ -1377,7 +1377,8 @@ class process_data():
             for word in self.phrases[s]:
                 not_ok = 1
                 for w in word.split(' '):
-                    if w in ['pick','place','put','up','down','pick up','put down','grab','add','move','put','shift','drop','take','remove','release','position','collect','lift','hold','select','displace']:
+                    if w in ['pick','place','put','up','down','pick up','put down','grab','add','move','put','shift','drop','take','remove','release','position','collect','lift','hold','select','displace','stack',
+                    'lift','complete','make','keep','grab','try','grip','drag','add','change','stack','replace']:
                         not_ok = 0
                 if word not in self.hyp_motion:
                     self.hyp_motion[word] = {}

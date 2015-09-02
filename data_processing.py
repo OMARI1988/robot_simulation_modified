@@ -11,9 +11,7 @@ import copy
 
 class process_data():
     def __init__(self):
-        self.dir1 = '/home/omari/Datasets/robot_modified/motion/scene'
-        self.dir2 = '/home/omari/Datasets/robot_modified/scenes/'
-        self.dir3 = '/home/omari/Datasets/robot_modified/graphs/scene'
+        self.dir1 = '/home/omari/Dropbox/robot_modified/AR/motion_AR/scene'
 
         # initial language
         self.N                      = {}                    # non-terminals

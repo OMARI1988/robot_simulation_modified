@@ -15,7 +15,7 @@ for scan in range(1):
     P._find_unique_words()                          # find the unique words in every valid sentence = P.words
     #P._compute_features_for_all()                   # = self.touch_all, self.motion_all
     #P._compute_features_for_moving_object()         # = self.touch_m_i, self.touch_m_f, self.dir_touch_m_i, self.dir_touch_m_f, self.locations_m_i, self.locations_m_f
-    print P.all_words
+    # print P.all_words
     #########################################################################################################
     #   I will start with relations (only direction) between the moving object and other objects that are   #
     #   in contact with it.                                                                                 #
@@ -53,6 +53,10 @@ for scan in range(1):
 
 
     print '**================= end of scene ===================**'
+
+file3 = open("/home/omari/Dropbox/robot_modified/AR/hypotheses/all_words.txt", "w")
+file3.write((' ').join(P.all_words))
+file3.close()
 #print P.pcfg1
 #for word in P.hyp_language_pass:
 #    print word,P.hyp_language_pass[word]['all']

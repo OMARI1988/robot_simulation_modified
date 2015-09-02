@@ -33,9 +33,14 @@ P.hyp_relation  = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pick
 print           'reading total motion'
 P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/all_total_motion_1000.p", "rb" ) )
 
+print P.hyp_relation['right']
+print P.hyp_relation['left']
+print P.hyp_relation['front']
+print P.hyp_relation['back']
+print tttt
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(944,1001):
+  for scene in range(1,1001):
     if P.first_time:                P._read_grammar(scene,valid_scenes)
     #if scene not in valid_scenes:   continue
     #slightly hard [10,]
