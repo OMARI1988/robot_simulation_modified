@@ -7,7 +7,7 @@ from data_processing import *
 P = process_data()
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,1001):
+  for scene in range(1,100):
     if scene in [891,892]: continue
     P._read(scene)                                  # Objects, Graph, Sentences
     P._print_scentenses()
@@ -54,9 +54,16 @@ for scan in range(1):
 
     print '**================= end of scene ===================**'
 
-file3 = open("/home/omari/Dropbox/robot_modified/AR/hypotheses/all_words.txt", "w")
+file3 = open("/home/omari/Dropbox/robot_modified/EN/hypotheses/all_words.txt", "w")
 file3.write((' ').join(P.all_words))
 file3.close()
+
+
+file3 = open("/home/omari/Dropbox/robot_modified/EN/hypotheses/all_commands.txt", "w")
+for i in P.all_sentences:
+    file3.write(i+'\n')
+file3.close()
+
 #print P.pcfg1
 #for word in P.hyp_language_pass:
 #    print word,P.hyp_language_pass[word]['all']

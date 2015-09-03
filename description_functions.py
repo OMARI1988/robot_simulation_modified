@@ -492,7 +492,7 @@ class Robot():
                                     if i != 'sum' and '_entity' not in i:
                                         for j in ok_features:
                                             if j in i:
-                                                print '>>>',i
+                                                # print '>>>',i
                                                 for s,sv in zip(self.u_shp_name, self.u_shp_value):
                                                     for c,cv in zip(self.u_hsv_name, self.u_hsv_value):
                                                         val = 1
@@ -543,13 +543,21 @@ class Robot():
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
 
-        print 
+        print
         print '==----------------- All sentences ---------------=='
         print
         sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+        counter = 0
         for count,i in enumerate(reversed(sorted_x)):
-            print i
-            if count>100: break
+            words =  i[0].split(' ')
+            ok = 1
+            for j in range(len(words)-1):
+                if words[j] == words[j+1]:
+                    ok = 0
+            if ok:
+                counter += 1
+                print ' '.join(words),':',i[1]
+            if counter>10: break
 
         # print self.all_valid_hypotheses
 

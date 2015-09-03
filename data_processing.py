@@ -11,7 +11,7 @@ import copy
 
 class process_data():
     def __init__(self):
-        self.dir1 = '/home/omari/Dropbox/robot_modified/AR/motion_AR/scene'
+        self.dir1 = '/home/omari/Dropbox/robot_modified/IT/motion/scene'
 
         # initial language
         self.N                      = {}                    # non-terminals
@@ -43,6 +43,7 @@ class process_data():
         self.p_obj_pass             = .7                        # for object
         self.p_relation_pass        = .92                       # for both relation and motion
         self.all_words = []
+        self.all_sentences = []
     #--------------------------------------------------------------------------------------------------------#
     def _read(self,scene):
         self.scene = scene
@@ -99,6 +100,7 @@ class process_data():
     def _print_scentenses(self):
         for count,i in enumerate(self.S):
             print count,'-',self.S[i]
+            self.all_sentences.append(str(self.scene)+'-'+str(i)+'-'+self.S[i])
         print '--------------------------'
 
     #--------------------------------------------------------------------------------------------------------#

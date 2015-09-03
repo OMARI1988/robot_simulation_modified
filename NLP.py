@@ -14,9 +14,9 @@ from nltk.compat import python_2_unicode_compatible
 from nltk.parse.api import ParserI
 from nltk import PCFG
 
-g = 'grammar_00061.txt'
-g = 'grammar_00232.txt'
-file1 = open('/home/omari/Datasets/robot_modified/grammar/'+g, 'r')
+# g = 'grammar_00061.txt'
+g = 'grammar_01000.txt'
+file1 = open('/home/omari/Dropbox/robot_modified/EN/grammar/'+g, 'r')
 grammar = ''
 g1 = [i for i in file1.readlines()]
 for i in g1:
@@ -346,7 +346,7 @@ def demo():
     from nltk.grammar import toy_pcfg1, toy_pcfg2
 
     # Define two demos.  Each demo has a sentence and a grammar.
-    demos = [('move the green sphere to the bottom left corner', learned_pcfg),
+    demos = [('pick up the prism placed on the green can and move it on the red can placed on the yellow can', learned_pcfg),
              ('move the green ball over the red block', learned_pcfg),
              ('take the green pyramid and put it in the top left corner', learned_pcfg),
               ('move the pink triangle on top of the black square', learned_pcfg),

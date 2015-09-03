@@ -1381,8 +1381,7 @@ class process_data():
             for word in self.phrases[s]:
                 not_ok = 1
                 for w in word.split(' '):
-                    for b_word in ['muovere','passare','spostare','sollevare','prendete','spostarlo','metterlo','spastarla','scegliere','luogo','mettere','su','raccogliere','raccogliete','cada','sollevare','giù','metti giù','mossa','spostamento','cadere','prendere','prendete',
-                    'inserirlo','immettere','mettete','ha','messo','prelevare','collocare','devono','rimuovere','rilasciare','posizionare']:
+                    for b_word in ['muovere', 'rimuovere', 'mettere', 'passare', 'spostare', 'prendere', 'sollevare', 'posizionare', 'raccogliere', 'sposta', 'rilasciare', 'eliminare', 'tenere', 'collocare', 'dalla', 'posizionarlo', 'posizionarla', 'abbassare', 'si sposta', 'si', 'spostarla' ,'spostarlo', 'metterlo', 'metterla', 'posizionarla', 'muoversi' ,'raccoglierlo', 'raccoglierla']:
                         if unicode(w,encoding='UTF-8') == unicode(b_word,encoding='UTF-8'):
                             not_ok = 0
                 if word not in self.hyp_motion:
