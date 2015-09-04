@@ -321,7 +321,7 @@ class Robot():
                     m2 = np.asarray(list(c1))
                     if self._distance_test(m1,m2)<.25:
                         self.u_hsv_name.append(c)
-                        print self.all_valid_hypotheses['F_HSV'].keys()
+                        # print self.all_valid_hypotheses['F_HSV'].keys()
                         self.u_hsv_value.append(self.all_valid_hypotheses['F_HSV'][c][c1]/self.all_valid_hypotheses['sum']['F_HSV'])
         if use_shape:
             self.u_shp.append(np.asarray(list([positions[I]['F_SHAPE']])))
@@ -334,7 +334,7 @@ class Robot():
                         self.u_shp_value.append(self.all_valid_hypotheses['F_SHAPE'][s][s1]/self.all_valid_hypotheses['sum']['F_SHAPE'])
 
 
-        print self.u_pos,self.u_hsv,self.u_shp
+        # print self.u_pos,self.u_hsv,self.u_shp
 
     #--------------------------------------------------------------------------------------------------------#
     def _single_feature_f(self,I,positions):
@@ -357,7 +357,7 @@ class Robot():
         if use_pos:
             self.u_pos_f.append(m1)
 
-        print self.u_pos_f
+        # print self.u_pos_f
 
     #--------------------------------------------------------------------------------------------------------#
     def _distance_test(self,m1,m2):
@@ -365,6 +365,7 @@ class Robot():
 
     #--------------------------------------------------------------------------------------------------------#
     def _generate_all_sentences(self):
+        max_num_of_sentences = 10
         print '--------------------------- Generating all sentences'
         all_sentences = {}
         # general sentence structure
@@ -408,6 +409,13 @@ class Robot():
                 if not changed:
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
+        sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+
+        if len(sorted_x)>max_num_of_sentences:
+            all_sentences = {}
+            for count,s in enumerate(reversed(sorted_x)):
+                all_sentences[s[0]] = s[1]
+                if count == max_num_of_sentences:    break
 
         # Conditions
         print '--------------------------- Updating conditions'
@@ -434,6 +442,16 @@ class Robot():
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
 
+        sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+        if len(sorted_x)>max_num_of_sentences:
+            all_sentences = {}
+            for count,s in enumerate(reversed(sorted_x)):
+                all_sentences[s[0]] = s[1]
+                if count == max_num_of_sentences:    break
+        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+        # print sorted_x
+        # print tttt
+
         # connections
         print '--------------------------- Updating connections'
         for condition in ['connect']:
@@ -452,6 +470,16 @@ class Robot():
                 if not changed:
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
+
+        sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+        if len(sorted_x)>max_num_of_sentences:
+            all_sentences = {}
+            for count,s in enumerate(reversed(sorted_x)):
+                all_sentences[s[0]] = s[1]
+                if count == max_num_of_sentences:    break
+        sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+        print sorted_x
+        print tttt
 
         # _pick_up in self.N
         print '--------------------------- Updating non_terminals'

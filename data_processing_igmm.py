@@ -354,7 +354,7 @@ def calc(data):
 
     #--------------------------------------------------------------------------------------------------------#
     # check verb sentences with for relations and entities
-    def _match_scene_to_hypotheses(activity_sentence,scene_i,scene_f,m_obj):
+    def _match_scene_to_hypotheses(activity_sentence,scene_i,scene_f,m_obj,printtt):
         match = {}
         for v in activity_sentence:
             for d in activity_sentence[v]:
@@ -369,14 +369,20 @@ def calc(data):
                         TE_values = i[3]
                         TV_results = i[4]
                         TV_values = i[5]
-
-                        # print '>>',v,d
+                        if printtt:
+                            print '>>',v,d
                         if v == (0,1,0,):
                             objects = _get_the_TE_from_scene(TE_results[:],TE_values[:],scene_i)
+                            if printtt:
+                                print 'objects >>',objects
                             if len(objects)==1:
                                 if int(objects[0])==int(m_obj):
+                                    if printtt:
+                                        print '>> the moving object is correct'
                                     #print 'the object is:',objects
-                                    location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i)
+                                    location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i,printtt)
+                                    if printtt:
+                                        print 'location >>',location
                                     if len(location)==1:
                                         #print 'the target location is:',location
                                         match = _match_final_scene(objects,'F_POS',location,scene_f)
@@ -388,7 +394,7 @@ def calc(data):
                                     match = 1
 
                         if v == (1,0,):
-                            location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i)
+                            location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i,printtt)
                             # print '>>',location
                             if len(location)==1:
                                 #print 'the target location is:',location
@@ -421,7 +427,7 @@ def calc(data):
 
     #--------------------------------------------------------------------------------------------------------#
     # This function gets all the objects in the scene with certain features NO RELATIONS (get target entitity)
-    def _get_the_TV_from_scene(TV_results,TV_values,scene):
+    def _get_the_TV_from_scene(TV_results,TV_values,scene,printtt):
         # m_objects = list((n for n in scene if scene.node[n]['type1']=='mo'))
         # objects = list((n for n in scene if scene.node[n]['type1']=='o'))#
         # all_objects = m_objects+objects
@@ -430,21 +436,35 @@ def calc(data):
         relations = TV_results[2]
         features_v = TV_values[1]
         relations_v = TV_values[2]
-        # print '---',features
-        # print '---',features_v
-        # print '---',relations
-        # print '---',relations_v
+        if printtt:
+            print '---',features
+            print '---',features_v
+            print '---',relations
+            print '---',relations_v
+            print 'len---',len(relations),len(features)
+
+        count = 0
+        for i,j in zip(features,features_v):
+            count2 = 0
+            for i1,j1 in zip(i,j):
+                if i1 == 'F_POS':
+                    features_v[count][count2] = (features_v[count][count2][0]/7.0,features_v[count][count2][1]/7.0,)
+                    if printtt:
+                        print i1,j1,features_v[count][count2]
+                count2 += 1
+            count += 1
         location_pass = []
         if relations == []:
             if len(features[0]) == 1:
                 if features[0][0] == 'F_POS':
-                    loc = np.asarray(features_v[0][0])/7.0
+                    loc = np.asarray(features_v[0][0])
                     location_pass.append(loc)
         elif len(relations)==1 and len(features)==1:
             obj_pass = []
             for obj in all_objects:
                 ok = 1
                 for feature,value in zip(features[0],features_v[0]):
+
                     if np.sum(np.abs(np.asarray(scene.node[obj]['_'+feature])-np.asarray(value))) != 0:
                         ok = 0
                 if ok:  obj_pass.append(obj)
@@ -572,7 +592,10 @@ def calc(data):
     L = data[8]
     m_obj = data[9]
     motion_words = data[10]
-    # print '>>>>>',subset
+    printtt = 0
+    # if subset ==  ('blue', 'move', 'back left', 'cube', 'ball', 'on top of', 'black',):
+    #     printtt = 1
+    #     print '>>>>>',subset
     #---------------------------------------------------------------#
     #test if the subset has a motion word
     motion_flag = 0
@@ -592,17 +615,21 @@ def calc(data):
             #---------------------------------------------------------------#
             # no 2 words are allowed to mean the same thing
             not_same, features = _not_same_func(element)
-            # print '---',element
-            # print '!!',not_same
+            if printtt:
+                print '---',element
+                print '!!',not_same
             if not_same:
                 #---------------------------------------------------------------#
                 # all features should be in the scene
                 feature_match, matched_features = _all_features_match(features,all_scene_features)
-                # print '++',feature_match
+                if printtt:
+                    print '++',feature_match
                 if feature_match:
                     #---------------------------------------------------------------#
                     # does actions match ?   it should match 100%
                     motion_pass = _motion_match(subset,element,indices,total_motion)
+                    if printtt:
+                        print '--',motion_pass
                     if motion_pass:
                         # print '>>',motion_pass
                         #---------------------------------------------------------------#
@@ -613,8 +640,9 @@ def calc(data):
                         activity_sentence = _activity_domain(parsed_sentence, value_sentence, subset, element)
                         activity_sentence = _divide_into_TE_and_TV(activity_sentence)
                         # print subset
-                        # print activity_sentence
-                        activity_sentence = _match_scene_to_hypotheses(activity_sentence,graph_i,graph_f,m_obj)
+                        if printtt:
+                            print activity_sentence
+                        activity_sentence = _match_scene_to_hypotheses(activity_sentence,graph_i,graph_f,m_obj,printtt)
                         results.append(_print_results(activity_sentence,scene_description,parsed_sentence,subset,element,matched_features,scene,L))
                         if results[-1] != []:
                             if [subset,element] not in hypotheses:  hypotheses.append([subset,element])
@@ -1700,7 +1728,7 @@ class process_data():
         if 'CH_POS' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
-                # if scene != 2:  continue
+                # if scene != 1:  continue
             #     self.valid_combination[scene] = {}
                 # get the words that have hypotheses and self.valid_configurationsare in the sentence
                 # phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
@@ -1732,12 +1760,12 @@ class process_data():
                 #             # print '>>>>>>>',subset
                 #             v1,v2 = calc([subset, self.indices[scene], [{word:self.hyp_language_pass[word]} for word in subset], self.all_total_motion[self.scene], self.S[scene], self.all_scene_features[self.scene], [self.G_i,self.G_f], scene,L,self.m_obj,P[1]])
 
-
+# ('blue', 'move', 'back left', 'cube', 'ball', 'on top of', 'black')
                 self.valid_combination[scene] = {}
                 self.valid_hypotheses[scene] = {}
                 # Test
                 for count,P in enumerate(self.valid_configurations[scene]):
-                    # if count != 18: continue    # Note remove
+                    # if count != 12: continue    # Note remove
                     phrases_with_hyp = P[0]
                     for L in range(2,np.min([len(phrases_with_hyp)+1,self.maximum_hyp_in_sentence+1])):#
                         # if L != 7: continue     # Note remove
