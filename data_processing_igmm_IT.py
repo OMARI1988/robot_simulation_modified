@@ -689,6 +689,7 @@ class process_data():
         self.all_valid_hypotheses = {}
         self.dropbox = dropbox
         self.a_lot_of_objects = []
+        self.all_scenes_with_no_commands = 0
 
 #--------------------------------------------------------------------------------------------------------#
     def _read_grammar(self, scene, valid_scenes):
@@ -726,6 +727,20 @@ class process_data():
 
     #--------------------------------------------------------------------------------------------------------#
     # read the sentences and data from file
+    def _read_Eriss_commands(self):
+        self.Eriss_commands = {}
+        file_Eris = open('/home/omari/Dropbox/robot_modified/IT/all_commands_it_edited.txt', 'r')
+        for line in file_Eris:
+            line = line.split('\n')[0]
+            line = line.split('-')
+            if line[0] not in self.Eriss_commands:
+                self.Eriss_commands[line[0]] = {}
+            if line[1] not in self.Eriss_commands[line[0]]:
+                self.Eriss_commands[line[0]][line[1]] = line[2]
+
+
+    #--------------------------------------------------------------------------------------------------------#
+    # read the sentences and data from file
     def _read(self,scene):
         self.scenes_so_far += 1
         self.scene = scene
@@ -743,10 +758,14 @@ class process_data():
             if line.split(':')[0] == 'object' and line.split(':')[1]=='gripper':    gripper.append(count+1)
         # reading sentences
         self.S = {}
-        for count,s in enumerate(sentences):
-            if data[s].split(':')[0] == 'GOOD':
+        if str(self.scene) in self.Eriss_commands:
+            for count,s in enumerate(self.Eriss_commands[str(self.scene)]):
+                # if data[s].split(':')[0] == 'GOOD':
                 self.commands_so_far += 1
-                self.S[count] = (data[s].split(':')[1]).lower()
+                self.S[count] = self.Eriss_commands[str(self.scene)][s]
+        else:
+            self.all_scenes_with_no_commands +=1
+
         # reading Data of objects
         self.Data = {}
         for count,o in enumerate(objects):
@@ -778,7 +797,7 @@ class process_data():
     # check to see if we can learn the sentence before we even process it
     def _check_for_words_we_cant_learn(self):
         remove_list = []
-        bad_words = ['tower','nearest','closest','furthest','edge','between','sorrounded']
+        bad_words = ['torre','vicino','fra','mucchio','pila']
         for i in self.S:
             print i,self.S[i]
             sent = self.S[i].split(' ')
