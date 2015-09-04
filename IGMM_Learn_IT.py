@@ -21,7 +21,10 @@ plot = 0                                #
 simple = 1                              # simple graph structure for multi processing
 dropbox = 1                             # update dropbox
 
+
+
 P = process_data(dropbox)
+P._read_Eriss_commands()
 P.first_time = 1
 #
 print           'reading object hypotheses'
@@ -37,7 +40,6 @@ for scan in range(1):
   print 'scan number :',scan
   for scene in range(1,1001):
     if P.first_time:                P._read_grammar(scene,valid_scenes)
-    if scene not in valid_scenes:   continue
     #slightly hard [10,]
     if scene in [891,892]:          continue
     #ts = time.time()
@@ -46,7 +48,7 @@ for scan in range(1):
     #########################################################################################################
     P._read(scene)                                  # Objects, Graph, Sentences
     # this is just for checking
-    # P._check_for_words_we_cant_learn()
+    P._check_for_words_we_cant_learn()
     P._print_scentenses()
 
     # if len(P.S) != 0:
@@ -80,9 +82,11 @@ for scan in range(1):
     P._build_motion_hyp()                           # keepps track of motion and words      P.hyp_motion
     P._save_all_features()                          # put all scene features in a single dict self.all_scene_features
 
-    #########################################################################################################
+    # if scene not in valid_scenes:   continue
+
+    # ########################################################################################################
     #   Testing hypotheses                                                                                  #
-    #########################################################################################################
+    # ########################################################################################################
     P._test_relation_hyp()                          # self.hyp_relation_pass
     P._test_motion_hyp()                            # self.hyp_motion_pass
     P._test_obj_hyp()                               # self.hyp_language_pass > .7
@@ -117,7 +121,7 @@ for scan in range(1):
 # pickle.dump( P.a_lot_of_objects, open( "/home/omari/Dropbox/robot_modified/IT/pickle/a_lot_of_objects.p", "wb" ) )
 # print 'finished saving'
 
-
+print '>>>>',P.all_scenes_with_no_commands
 #print P.pcfg1
 #for word in P.hyp_language_pass:
 #    print word,P.hyp_language_pass[word]['all']
