@@ -218,7 +218,7 @@ def calc(data):
         TE_result,[s1,e1,r1],[s1_v,e1_v,r1_v] = _check_TE(a[:],a_val[:])
         TV_result,[s2,e2,r2],[s2_v,e2_v,r2_v] = _check_TV(b[:],b_val[:])
         if TE_result and TV_result:
-            Valid.append([['PRE','POST'],[a,b],[s1,e1,r1],[s1_v,e1_v,r1_v],[s2,e2,r2],[s2_v,e2_v,r2_v]])
+            Valid.append([['E2','FV2'],[a,b],[s1,e1,r1],[s1_v,e1_v,r1_v],[s2,e2,r2],[s2_v,e2_v,r2_v]])
         # TE_result,[s1,e1,r1] = _check_TE(b)
         # TV_result,[s2,e2,r2] = _check_TV(a)
         # if TE_result and TV_result:
@@ -232,7 +232,7 @@ def calc(data):
         # [[the order TV,TE or TE,TV].[the sentences a,b],[TE results],[TV results]]
         TE_result,[s1,e1,r1],[s1_v,e1_v,r1_v] = _check_TE(a[:],a_val[:])
         if TE_result:
-            Valid.append([['PRE'],[a,''],[s1,e1,r1],[s1_v,e1_v,r1_v],[''],['']])
+            Valid.append([['E1'],[a,''],[s1,e1,r1],[s1_v,e1_v,r1_v],[''],['']])
         # TE_result,[s1,e1,r1] = _check_TE(b)
         # TV_result,[s2,e2,r2] = _check_TV(a)
         # if TE_result and TV_result:
@@ -246,7 +246,7 @@ def calc(data):
         # [[the order TV,TE or TE,TV].[the sentences a,b],[TE results],[TV results]]
         TV_result,[s2,e2,r2],[s2_v,e2_v,r2_v] = _check_TV(a[:],a_val[:])
         if TV_result:
-            Valid.append([['POST'],['',a],[''],[''],[s2,e2,r2],[s2_v,e2_v,r2_v]])
+            Valid.append([['FV1'],['',a],[''],[''],[s2,e2,r2],[s2_v,e2_v,r2_v]])
         # TE_result,[s1,e1,r1] = _check_TE(b)
         # TV_result,[s2,e2,r2] = _check_TV(a)
         # if TE_result and TV_result:
@@ -1898,6 +1898,7 @@ class process_data():
                                             if len(order)==1:
                                                 TETV_grammar = order[0]
                                                 verb_grammar = value[0]+'_'+order[0]
+                                            print TETV_grammar
                                             val = hypotheses[word][value[0]][value[1]]
                                             self._update_self_T(verb_grammar,verb_name,val)
                                     # print 'target E          :',TE
@@ -1936,9 +1937,9 @@ class process_data():
                                         # this is valid only for two parts !
                                         if ba == 'after':
                                             if part_of_sentence == 0:
-                                                if order[0] == 'PRE':
+                                                if order[0] == 'E1':
                                                     TE,connecter_sentence = self._find_connecter_sentences(TE,ba,entity,relation,connecter_sentence)
-                                                if order[0] == 'POST':
+                                                if order[0] == 'FV1':
                                                     TV,connecter_sentence = self._find_connecter_sentences(TV,ba,entity,relation,connecter_sentence)
                                                 if connecter_sentence != []:
                                                     self._update_self_N('_S','_S _S_connect _S')
@@ -1946,9 +1947,9 @@ class process_data():
                                                     self._update_self_N('_S','_S _S')
                                         if ba == 'before':
                                             if part_of_sentence == 1:
-                                                if order[0] == 'PRE':
+                                                if order[0] == 'E1':
                                                     TE,connecter = self._find_connecter_sentences(TE,ba,entity,relation,connecter_sentence)
-                                                if order[0] == 'POST':
+                                                if order[0] == 'FV1':
                                                     TV,connecter = self._find_connecter_sentences(TV,ba,entity,relation,connecter_sentence)
 
 
@@ -1965,9 +1966,9 @@ class process_data():
 
                                         #---------------------------------#
                                         # TE = the _entity
-                                        T = 'PRE'
+                                        T = 'E2'
                                         self._update_self_N(T,TE_converted)
-                                        T = 'POST'
+                                        T = 'FV2'
                                         self._update_self_N(T,TV_converted)
 
                                         #---------------------------------#
@@ -1995,11 +1996,11 @@ class process_data():
                                         self._update_self_N(TETV_grammar,S1)
 
                                     elif len(order)==1:
-                                        if order[0] == 'PRE':
+                                        if order[0] == 'E1':
                                             TE_converted,e, e_bar = self._TE_TV_conversion(TE)
                                             TE_converted = self._more_conversion(TE_converted[:],e_bar[:])
                                             #---------------------------------#
-                                            T = 'PRE'
+                                            T = 'E1'
                                             self._update_self_N(T,TE_converted)
                                             #---------------------------------#
                                             # _entity and _shape and _location
@@ -2012,11 +2013,11 @@ class process_data():
                                                 if word[0] != '_':
                                                     self._update_self_no_match(word)
 
-                                        if order[0] == 'POST':
+                                        if order[0] == 'FV1':
                                             TV_converted,v, v_bar = self._TE_TV_conversion(TV)
                                             TV_converted = self._more_conversion(TV_converted[:],v_bar[:])
                                             #---------------------------------#
-                                            T = 'POST'
+                                            T = 'FV1'
                                             self._update_self_N(T,TV_converted)
                                             #---------------------------------#
                                             # _entity and _shape and _location
@@ -2136,7 +2137,7 @@ class process_data():
     #--------------------------------------------------------------------------------------------------------#
     def _find_connecter(self,ba,order,TE,TV,entity,relation,connecter):
         if ba == 'after':
-            if order[0] == 'PRE':
+            if order[0] == 'E2':
                 for l in reversed(range(len(TE))):
                     if TE[l] in entity or TE[l] in relation:
                         break
@@ -2149,7 +2150,7 @@ class process_data():
                 TV_f = TV[l:len(TV)]
                 for l1 in TV[0:l]:
                     connecter.append(l1)
-            if order[0] == 'POST':
+            if order[0] == 'FV2':
                 for l in reversed(range(len(TV))):
                     if TV[l] in entity or TV[l] in relation:
                         break
@@ -2164,7 +2165,7 @@ class process_data():
                     connecter.append(l1)
 
         if ba == 'before':
-            if order[0] == 'PRE':
+            if order[0] == 'E2':
                 for l in reversed(range(len(TE))):
                     if TE[l] in entity or TE[l] in relation:
                         break
@@ -2177,7 +2178,7 @@ class process_data():
                 TV_f = TV[l:len(TV)]
                 for l1 in TV[0:l]:
                     connecter.append(l1)
-            if order[0] == 'POST':
+            if order[0] == 'FV2':
                 for l in reversed(range(len(TV))):
                     if TV[l] in entity or TV[l] in relation:
                         break

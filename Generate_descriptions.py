@@ -11,7 +11,7 @@ file1 = open('/home/omari/Dropbox/robot_modified/EN/hypotheses/all_scenes.txt', 
 valid_scenes = [int(i.split('\n')[0]) for i in file1.readlines()]
 
 # scenes
-grammar_scene = 1000
+grammar_scene = 7
 scene = 1
 
 #change data
