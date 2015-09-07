@@ -208,6 +208,10 @@ def calc(data):
                         x = _check_TV_main(s1,s2)
                         if x != []:
                             activity_sentence[v][d]['valid_configurations'].append(x)
+                        for L in range(1,len(s1)):
+                            x = _check_TE_TV(s1[0:L],s1[L:len(s1)],s2[0:L],s2[L:len(s2)])
+                            if x != []:
+                                activity_sentence[v][d]['valid_configurations'].append(x)
         return activity_sentence
 
     #--------------------------------------------------------------------------------------------------------#
@@ -395,9 +399,9 @@ def calc(data):
 
                         if v == (1,0,):
                             location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i,printtt)
-                            # print '>>',location
+                            # print '>>>',location
                             if len(location)==1:
-                                #print 'the target location is:',location
+                                print '--------------the target location is:',location
                                 match = _match_final_scene([int(m_obj)],'F_POS',location,scene_f)
                                 #print match
 
@@ -693,7 +697,7 @@ class process_data():
         self.n_word                 = 3
         self.step                   = 3
         self.all_words              = []
-        self.maximum_hyp_in_sentence = 7
+        self.maximum_hyp_in_sentence = 8
 
         #gmm
         self.gmm_obj                = {}
@@ -1532,6 +1536,9 @@ class process_data():
                         if len(B[word][f]) > 1:
                             C = copy.deepcopy(B[word][f])
                             maxval = max(C.iteritems(), key=operator.itemgetter(1))[1]
+                            # if f == 'CH_POS':
+                            #     keys = [k for k,v in C.items() if v>.5*maxval]
+                            # else:
                             keys = [k for k,v in C.items() if v>.9*maxval]
                             A[word][f] = {}
                             for key in keys:
@@ -1540,6 +1547,8 @@ class process_data():
                         else:
                             A[word][f] = copy.deepcopy(B[word][f])
                             A[word]['possibilities'] += 1
+        # print self.hyp_all_features['place']
+        # print tttt
 
     #--------------------------------------------------------------------------------------------------------#
     # NOTE: this will pass all hypotheses that are .7 of maximum value expect location
@@ -1737,7 +1746,7 @@ class process_data():
         if 'CH_POS' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
-                # if scene != 1:  continue
+                if scene != 6:  continue
             #     self.valid_combination[scene] = {}
                 # get the words that have hypotheses and self.valid_configurationsare in the sentence
                 # phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
@@ -1774,10 +1783,10 @@ class process_data():
                 self.valid_hypotheses[scene] = {}
                 # Test
                 for count,P in enumerate(self.valid_configurations[scene]):
-                    # if count != 8: continue    # Note remove
+                    # if count != 0: continue    # Note remove
                     phrases_with_hyp = P[0]
                     for L in range(2,np.min([len(phrases_with_hyp)+1,self.maximum_hyp_in_sentence+1])):#
-                        # if L != 7: continue     # Note remove
+                        if L != 8: continue     # Note remove
                         if L not in self.valid_combination[scene]:
                             self.valid_combination[scene][L]    = []
                             self.valid_hypotheses[scene][L]     = []
@@ -1907,7 +1916,7 @@ class process_data():
                                             if len(order)==1:
                                                 TETV_grammar = order[0]
                                                 verb_grammar = value[0]+'_'+order[0]
-                                            print TETV_grammar
+                                            #print TETV_grammar
                                             val = hypotheses[word][value[0]][value[1]]
                                             self._update_self_T(verb_grammar,verb_name,val)
                                     # print 'target E          :',TE
@@ -2423,6 +2432,7 @@ class process_data():
                     else:
                         x = self.Data[key]['x'][I]/7.0
                         y = self.Data[key]['y'][I]/7.0
+                        z = self.Data[key]['z'][I]
                         if key == self.m_obj:
                             G.add_node(str(key),type1='mo', _F_HSV=self.Data[key]['F_HSV'], _F_SHAPE=self.Data[key]['F_SHAPE'], _F_POS=[x,y])
                         else:

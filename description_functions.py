@@ -365,8 +365,8 @@ class Robot():
 
     #--------------------------------------------------------------------------------------------------------#
     def _generate_all_sentences(self):
-        max_num_of_sentences = 5
-        max_num_in_each_sentences = 10
+        # max_num_of_sentences = 500
+        # max_num_in_each_sentences = 100
         print '--------------------------- Generating all sentences'
         all_sentences = {}
         # general sentence structure
@@ -411,219 +411,213 @@ class Robot():
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
 
-        sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-        all_sentences_with_verbs = all_sentences.copy()
-        if len(sorted_x)>max_num_of_sentences:
-            # all_sentences = {}
-            all_sentences_with_verbs = {}
-            for count,s in enumerate(reversed(sorted_x)):
-                # all_sentences[s[0]] = s[1]
-                all_sentences_with_verbs[s[0]] = s[1]
-                if count == max_num_of_sentences:    break
+        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+        # all_sentences_with_verbs = all_sentences.copy()
+        # if len(sorted_x)>max_num_of_sentences:
+        #     # all_sentences = {}
+        #     all_sentences_with_verbs = {}
+        #     for count,s in enumerate(reversed(sorted_x)):
+        #         # all_sentences[s[0]] = s[1]
+        #         all_sentences_with_verbs[s[0]] = s[1]
+        #         if count == max_num_of_sentences:    break
 
 
 
-        for sss in all_sentences_with_verbs:
-            all_sentences = {}
-            all_sentences[sss] = all_sentences_with_verbs[sss]
+        # for sss in all_sentences_with_verbs:
+        #     all_sentences = {}
+        #     all_sentences[sss] = all_sentences_with_verbs[sss]
 
 
-            # Conditions
-            print '--------------------------- Updating conditions'
-            for condition in ['E2_FV2','E2','FV2','E1','FV1']:
-                new_sentences = {}
-                for S in all_sentences:
-                    V1 = all_sentences[S]
-                    S = S.split(' ')
-                    changed = 0
-                    for count,part in enumerate(S):
-                        if condition == part:
-                            changed = 1
-                            for i in self.N[part]:
-                                if i != 'sum':
-                                    # print '>>>>>>>',i
-                                    S[count] = i
-                                    # print '>>>>>>>',' '.join(S[:])
-                                    # print '>>>>>>>',V1
-                                    # print self.N[part][i]
-                                    # print self.N[part]
-
-                                    new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']
-                                    print part,V1*self.N[part][i]/self.N[part]['sum']
-                    if not changed:
-                        new_sentences[' '.join(S[:])] = V1
-                all_sentences = new_sentences.copy()
-
-            sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-            if len(sorted_x)>max_num_in_each_sentences:
-                all_sentences = {}
-                for count,s in enumerate(reversed(sorted_x)):
-                    all_sentences[s[0]] = s[1]
-                    if count == max_num_in_each_sentences:    break
-            # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-            # print sorted_x
-            # print tttt
-
-            # connections
-            print '--------------------------- Updating connections'
-            for condition in ['connect']:
-                new_sentences = {}
-                for S in all_sentences:
-                    V1 = all_sentences[S]
-                    S = S.split(' ')
-                    changed = 0
-                    for count,part in enumerate(S):
-                        if condition in part:
-                            changed = 1
-                            for i in self.N[part]:
-                                if i != 'sum':
-                                    S[count] = i
-                                    new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']
-                    if not changed:
-                        new_sentences[' '.join(S[:])] = V1
-                all_sentences = new_sentences.copy()
-
-            sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-            if len(sorted_x)>max_num_in_each_sentences:
-                all_sentences = {}
-                for count,s in enumerate(reversed(sorted_x)):
-                    all_sentences[s[0]] = s[1]
-                    if count == max_num_in_each_sentences:    break
-            # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-            # print sorted_x
-            # print tttt
-
-            # _pick_up in self.N
-            print '--------------------------- Updating non_terminals'
+        # Conditions
+        print '--------------------------- Updating conditions'
+        for condition in ['E2_FV2','E2','FV2','E1','FV1']:
             new_sentences = {}
             for S in all_sentences:
                 V1 = all_sentences[S]
                 S = S.split(' ')
                 changed = 0
                 for count,part in enumerate(S):
-                    if part in self.N:
-                        if part not in ['_entity','_relation','_F_POS','_Direction']:
-                            for i in self.N[part]:
-                                if i != 'sum':
-                                    S[count] = i
-                                    new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']
+                    if condition == part:
+                        changed = 1
+                        for i in self.N[part]:
+                            if i != 'sum':
+                                # print '>>>>>>>',i
+                                S[count] = i
+                                # print '>>>>>>>',' '.join(S[:])
+                                # print '>>>>>>>',V1
+                                # print self.N[part][i]
+                                # print self.N[part]
+
+                                new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']
+                                # print part,V1*self.N[part][i]/self.N[part]['sum']
                 if not changed:
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
-            sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-            if len(sorted_x)>max_num_in_each_sentences:
-                all_sentences = {}
-                for count,s in enumerate(reversed(sorted_x)):
-                    all_sentences[s[0]] = s[1]
-                    if count == max_num_in_each_sentences:    break
+
+        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+        # if len(sorted_x)>max_num_in_each_sentences:
+        #     all_sentences = {}
+        #     for count,s in enumerate(reversed(sorted_x)):
+        #         all_sentences[s[0]] = s[1]
+        #         if count == max_num_in_each_sentences:    break
+        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+        # print sorted_x
+        # print tttt
+
+        # connections
+        print '--------------------------- Updating connections'
+        for condition in ['connect']:
+            new_sentences = {}
+            for S in all_sentences:
+                V1 = all_sentences[S]
+                S = S.split(' ')
+                changed = 0
+                for count,part in enumerate(S):
+                    if condition in part:
+                        changed = 1
+                        for i in self.N[part]:
+                            if i != 'sum':
+                                S[count] = i
+                                new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']
+                if not changed:
+                    new_sentences[' '.join(S[:])] = V1
+            all_sentences = new_sentences.copy()
+
+        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+        # if len(sorted_x)>max_num_in_each_sentences:
+        #     all_sentences = {}
+        #     for count,s in enumerate(reversed(sorted_x)):
+        #         all_sentences[s[0]] = s[1]
+        #         if count == max_num_in_each_sentences:    break
+        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+        # print sorted_x
+        # print tttt
+
+        # _pick_up in self.N
+        print '--------------------------- Updating non_terminals'
+        new_sentences = {}
+        for S in all_sentences:
+            V1 = all_sentences[S]
+            S = S.split(' ')
+            changed = 0
+            for count,part in enumerate(S):
+                if part in self.N:
+                    if part not in ['_entity','_relation','_F_POS','_Direction']:
+                        for i in self.N[part]:
+                            if i != 'sum':
+                                S[count] = i
+                                new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']
+            if not changed:
+                new_sentences[' '.join(S[:])] = V1
+        all_sentences = new_sentences.copy()
+        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+        # if len(sorted_x)>max_num_in_each_sentences:
+        #     all_sentences = {}
+        #     for count,s in enumerate(reversed(sorted_x)):
+        #         all_sentences[s[0]] = s[1]
+        #         if count == max_num_in_each_sentences:    break
+        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+        # print sorted_x
+        # print tttt
+
+
+        if self.motion == [0,1,0]:
+            # update the E
+            print '--------------------------- Updating Entity'
+            new_sentences = {}
+            for S in all_sentences:
+                V1 = all_sentences[S]
+                S = S.split(' ')
+                changed = 0
+                for count,part in enumerate(S):
+                    if '_' in part:
+                        # if its single feature
+                        if  self.u_pos!=[] or self.u_hsv!=[] or self.u_shp!=[]:
+                            ok_features = []
+                            if self.u_pos!=[]:      ok_features.append('F_POS')
+                            if self.u_hsv!=[]:      ok_features.append('F_HSV')
+                            if self.u_shp!=[]:      ok_features.append('F_SHAPE')
+                            if part == '_entity':
+                                print part
+                                for i in self.N[part]:
+                                    if i != 'sum' and '_entity' not in i:
+                                        # print '>>',i
+                                        for j in ok_features:
+                                            if j in i:
+                                                print '>>>',i
+                                                for s,sv in zip(self.u_shp_name, self.u_shp_value):
+                                                    for c,cv in zip(self.u_hsv_name, self.u_hsv_value):
+                                                        val = 1
+                                                        # print '>>',s,c
+                                                        # entity = ''
+                                                        changed = 1
+                                                        i2 = i[:]
+                                                        i2 = i2.split(' ')
+                                                        for ccc,k in enumerate(i2):
+                                                            if k == 'F_HSV':
+                                                                i2[ccc] = c
+                                                                val *= cv
+                                                            if k == 'F_SHAPE':
+                                                                i2[ccc] = s
+                                                                val *= sv
+                                                            if '_' not in (' ').join(i2):
+                                                                print '-----------',i2,self.N[part][i]/self.N[part]['sum']*val
+                                                        S[count] = ' '.join(i2)
+                                                        new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']*val
+                        break
+                if not changed:
+                    new_sentences[' '.join(S[:])] = V1
+            all_sentences = new_sentences.copy()
+
+
+
+            # update the FV
+            print '--------------------------- Updating FV'
+            new_sentences = {}
+            for S in all_sentences:
+                V1 = all_sentences[S]
+                S = S.split(' ')
+                changed = 0
+                for count,part in enumerate(S):
+                    if '_' in part:
+                        # if its a location
+                        if self.u_pos_f != []:
+                            if part == '_F_POS':
+                                changed = 1
+                                for p in self.all_valid_hypotheses['F_POS']:
+                                    for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
+                                        m1 = self.u_pos_f
+                                        m2 = np.asarray(list(p1))
+                                        if self._distance_test(m1,m2)<.25:
+                                            S[count] = p
+                                            new_sentences[' '.join(S[:])] = V1/self._distance_test(m1,m2)
+                        # if its a relation
+                if not changed:
+                    new_sentences[' '.join(S[:])] = V1
+            all_sentences = new_sentences.copy()
+
             # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-            # print sorted_x
-            # print tttt
+            # if len(sorted_x)>max_num_in_each_sentences:
+            #     all_sentences = {}
+            #     for count,s in enumerate(reversed(sorted_x)):
+            #         all_sentences[s[0]] = s[1]
+            #         if count == max_num_in_each_sentences:    break
 
-
-            if self.motion == [0,1,0]:
-                # update the E
-                print '--------------------------- Updating Entity'
-                new_sentences = {}
-                for S in all_sentences:
-                    V1 = all_sentences[S]
-                    S = S.split(' ')
-                    changed = 0
-                    for count,part in enumerate(S):
-                        if '_' in part:
-                            # if its single feature
-                            if  self.u_pos!=[] or self.u_hsv!=[] or self.u_shp!=[]:
-                                ok_features = []
-                                if self.u_pos!=[]:      ok_features.append('F_POS')
-                                if self.u_hsv!=[]:      ok_features.append('F_HSV')
-                                if self.u_shp!=[]:      ok_features.append('F_SHAPE')
-                                if part == '_entity':
-                                    for i in self.N[part]:
-                                        if i != 'sum' and '_entity' not in i:
-                                            for j in ok_features:
-                                                if j in i:
-                                                    # print '>>>',i
-                                                    for s,sv in zip(self.u_shp_name, self.u_shp_value):
-                                                        for c,cv in zip(self.u_hsv_name, self.u_hsv_value):
-                                                            val = 1
-                                                            # print '>>',s,c
-                                                            # entity = ''
-                                                            changed = 1
-                                                            i2 = i[:]
-                                                            i2 = i2.split(' ')
-                                                            for ccc,k in enumerate(i2):
-                                                                if k == 'F_HSV':
-                                                                    i2[ccc] = c
-                                                                    val *= cv
-                                                                if k == 'F_SHAPE':
-                                                                    i2[ccc] = s
-                                                                    val *= sv
-                                                                # print '>>>>',i2,val
-                                                                    # print i,self.N[part][i]/self.N[part]['sum']
-                                                            S[count] = ' '.join(i2)
-                                                            new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']*val
-                            break
-                    if not changed:
-                        new_sentences[' '.join(S[:])] = V1
-                all_sentences = new_sentences.copy()
-                sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-                if len(sorted_x)>max_num_in_each_sentences:
-                    all_sentences = {}
-                    for count,s in enumerate(reversed(sorted_x)):
-                        all_sentences[s[0]] = s[1]
-                        if count == max_num_in_each_sentences:    break
-                # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-                # print sorted_x
-                # print tttt
-
-
-                # update the FV
-                print '--------------------------- Updating FV'
-                new_sentences = {}
-                for S in all_sentences:
-                    V1 = all_sentences[S]
-                    S = S.split(' ')
-                    changed = 0
-                    for count,part in enumerate(S):
-                        if '_' in part:
-                            # if its a location
-                            if self.u_pos_f != []:
-                                if part == '_F_POS':
-                                    changed = 1
-                                    for p in self.all_valid_hypotheses['F_POS']:
-                                        for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
-                                            m1 = self.u_pos_f
-                                            m2 = np.asarray(list(p1))
-                                            if self._distance_test(m1,m2)<.25:
-                                                S[count] = p
-                                                new_sentences[' '.join(S[:])] = V1/self._distance_test(m1,m2)
-                            # if its a relation
-                    if not changed:
-                        new_sentences[' '.join(S[:])] = V1
-                all_sentences = new_sentences.copy()
-
-                sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-                if len(sorted_x)>max_num_in_each_sentences:
-                    all_sentences = {}
-                    for count,s in enumerate(reversed(sorted_x)):
-                        all_sentences[s[0]] = s[1]
-                        if count == max_num_in_each_sentences:    break
-
-            print
-            print '==----------------- All sentences ---------------=='
-            print
-            sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-            counter = 0
-            for count,i in enumerate(reversed(sorted_x)):
-                words =  i[0].split(' ')
-                ok = 1
-                for j in range(len(words)-1):
-                    if words[j] == words[j+1]:
-                        ok = 0
-                if ok:
-                    counter += 1
-                    print ' '.join(words),':',i[1]
-                if counter>1: break
+        print
+        print '==----------------- All sentences ---------------=='
+        print
+        sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
+        counter = 0
+        for count,i in enumerate(reversed(sorted_x)):
+            words =  i[0].split(' ')
+            ok = 1
+            for j in range(len(words)-1):
+                if words[j] == words[j+1] or '_' in words[j]:
+                    ok = 0
+            if ok:
+                counter += 1
+                print ' '.join(words),':',i[1]
+            if counter>30: break
 
             # print self.all_valid_hypotheses
 
