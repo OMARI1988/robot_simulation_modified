@@ -41,7 +41,7 @@ class Robot():
         self.positions = {}
         # manage diroctories to store data and images
         self.image_dir = '/home/omari/Datasets/robot_modified/scenes/'
-        self.image_dir2 = '/home/omari/Dropbox/robot_modified/EN/scenes/'
+        self.image_dir2 = '/home/omari/Dropbox/robot_modified/scenes/'
         if not os.path.isdir(self.image_dir):
 	        print 'please change the diroctory in extract_data.py'
 
@@ -92,6 +92,10 @@ class Robot():
         a1 = randint(0,1)
         a2 = randint(0,1)
         a3 = randint(0,1)
+        # #NOTE remove next 3 lines
+        # a1 = 0
+        # a2 = 0
+        # a3 = 0
         c='nothing'
         d='nothing'
         e='nothing'
@@ -288,7 +292,7 @@ class Robot():
     #-----------------------------------------------------------------------------------------------------#     save motion
     def _save_motion(self):
         target = open('/home/omari/Datasets/robot_modified/motion/scene'+str(self.scene)+'.txt', 'w')
-        target2 = open('/home/omari/Dropbox/robot_modified/motion/scene'+str(self.scene)+'.txt', 'w')
+        target2 = open('/home/omari/Dropbox/robot_modified/EN/motion/scene'+str(self.scene)+'.txt', 'w')
         for F in [target,target2]:
             for i in self.sentences:
                 F.write('sentence:'+str(i)+'\n')
@@ -491,7 +495,7 @@ class Robot():
     #-----------------------------------------------------------------------------------------------------#     initial draw scene
     def draw_scene(self):
         self.display = display(title='simultaneous learning and grounding',
-            x=0, y=0, width=600, height=600,
+            x=0, y=0, width=1000, height=1000,
             center=(self.chess_shift_x,self.chess_shift_y,0),
             forward=(self.chess_shift_x-10,self.chess_shift_y,-7),
             background=(1,1,1))

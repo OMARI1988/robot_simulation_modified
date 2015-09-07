@@ -602,6 +602,11 @@ def calc(data):
     for i in motion_words:
         if i in subset:
             motion_flag = 1
+
+    # the_flag = 1
+    # for i in subset:
+    #     if 'the' in i:
+    #         the_flag = 0
     results = [[]]
     hypotheses = []
     #---------------------------------------------------------------#
@@ -1255,7 +1260,7 @@ class process_data():
     def _build_obj_hyp_igmm(self):
         for s in self.phrases:
             for word in self.phrases[s]:
-                #if word == 'green':
+                # if 'the' not in word:
                     if word not in self.gmm_obj:
                         self.gmm_obj[word] = {}
                         for f in self.gmm_M:
@@ -1384,19 +1389,20 @@ class process_data():
     def _build_relation_hyp(self):
         for s in self.phrases:
             for word in self.phrases[s]:
-                # not_ok = 1
-                # for w in word.split(' '):
-                #     if w in ['top','over','on','above','placed','front','sitting','onto','underneath','infront','besides','resting','sit','sits','topmost','ontop','sat','stood','higher','downwords']:
-                #         not_ok = 0
-                if word not in self.hyp_relation:
-                    self.hyp_relation[word] = {}
-                    self.hyp_relation[word]['count'] = 0
-                    self.hyp_relation[word]['F_DIR'] = {}
-                # if self.unique_direction != []:
-                self.hyp_relation[word]['count'] += 1
-                for direction in self.unique_direction:
-                    if direction not in self.hyp_relation[word]['F_DIR']:   self.hyp_relation[word]['F_DIR'][direction] = 1
-                    else: self.hyp_relation[word]['F_DIR'][direction] += 1
+                # if 'the' not in word:
+                    # not_ok = 1
+                    # for w in word.split(' '):
+                    #     if w in ['top','over','on','above','placed','front','sitting','onto','underneath','infront','besides','resting','sit','sits','topmost','ontop','sat','stood','higher','downwords']:
+                    #         not_ok = 0
+                    if word not in self.hyp_relation:
+                        self.hyp_relation[word] = {}
+                        self.hyp_relation[word]['count'] = 0
+                        self.hyp_relation[word]['F_DIR'] = {}
+                    # if self.unique_direction != []:
+                    self.hyp_relation[word]['count'] += 1
+                    for direction in self.unique_direction:
+                        if direction not in self.hyp_relation[word]['F_DIR']:   self.hyp_relation[word]['F_DIR'][direction] = 1
+                        else: self.hyp_relation[word]['F_DIR'][direction] += 1
 
     #--------------------------------------------------------------------------------------------------------#
     # NOTE: this one has a hack, please make sure to clear it.
@@ -1433,21 +1439,22 @@ class process_data():
         checked = []
         for s in self.phrases:
             for word in self.phrases[s]:
-                if word not in checked:
-                    checked.append(word)
-                    count = float(self.hyp_relation[word]['count'])
-                    for j in self.hyp_relation[word]:
-                        if j != 'count':
-                            for k in self.hyp_relation[word][j]:
-                                prob = self._probability(count,self.hyp_relation[word][j][k])
-                                if prob>self.p_relation_pass:
-                                    if word not in self.hyp_relation_pass:
-                                        self.hyp_relation_pass[word] = {}
-                                        self.hyp_relation_pass[word]['possibilities'] = 0
-                                    if j not in self.hyp_relation_pass[word]:
-                                        self.hyp_relation_pass[word][j] = {}
-                                    self.hyp_relation_pass[word]['possibilities'] += 1
-                                    self.hyp_relation_pass[word][j][k] = prob
+                if 'the' not in word:
+                    if word not in checked:
+                        checked.append(word)
+                        count = float(self.hyp_relation[word]['count'])
+                        for j in self.hyp_relation[word]:
+                            if j != 'count':
+                                for k in self.hyp_relation[word][j]:
+                                    prob = self._probability(count,self.hyp_relation[word][j][k])
+                                    if prob>self.p_relation_pass:
+                                        if word not in self.hyp_relation_pass:
+                                            self.hyp_relation_pass[word] = {}
+                                            self.hyp_relation_pass[word]['possibilities'] = 0
+                                        if j not in self.hyp_relation_pass[word]:
+                                            self.hyp_relation_pass[word][j] = {}
+                                        self.hyp_relation_pass[word]['possibilities'] += 1
+                                        self.hyp_relation_pass[word][j][k] = prob
 
     #--------------------------------------------------------------------------------------------------------#
     def _test_motion_hyp(self):
@@ -1455,21 +1462,22 @@ class process_data():
         checked = []
         for s in self.phrases:
             for word in self.phrases[s]:
-                if word not in checked:
-                    checked.append(word)
-                    count = float(self.hyp_motion[word]['count'])
-                    for j in self.hyp_motion[word]:
-                        if j != 'count':
-                            for k in self.hyp_motion[word][j]:
-                                prob = self._probability(count,self.hyp_motion[word][j][k])
-                                if prob>self.p_relation_pass:
-                                    if word not in self.hyp_motion_pass:
-                                        self.hyp_motion_pass[word] = {}
-                                        self.hyp_motion_pass[word]['possibilities'] = 0
-                                    if j not in self.hyp_motion_pass[word]:
-                                        self.hyp_motion_pass[word][j] = {}
-                                    self.hyp_motion_pass[word]['possibilities'] += 1
-                                    self.hyp_motion_pass[word][j][k] = prob
+                if 'the' not in word:
+                    if word not in checked:
+                        checked.append(word)
+                        count = float(self.hyp_motion[word]['count'])
+                        for j in self.hyp_motion[word]:
+                            if j != 'count':
+                                for k in self.hyp_motion[word][j]:
+                                    prob = self._probability(count,self.hyp_motion[word][j][k])
+                                    if prob>self.p_relation_pass:
+                                        if word not in self.hyp_motion_pass:
+                                            self.hyp_motion_pass[word] = {}
+                                            self.hyp_motion_pass[word]['possibilities'] = 0
+                                        if j not in self.hyp_motion_pass[word]:
+                                            self.hyp_motion_pass[word][j] = {}
+                                        self.hyp_motion_pass[word]['possibilities'] += 1
+                                        self.hyp_motion_pass[word][j][k] = prob
 
     #--------------------------------------------------------------------------------------------------------#
     def _test_obj_hyp(self):
@@ -1477,24 +1485,25 @@ class process_data():
         checked = []
         for s in self.phrases:
             for word in self.phrases[s]:
-                if word not in checked:
-                    checked.append(word)
-                    for f in self.gmm_obj[word]:
-                        N = self.gmm_obj[word][f]['N']
-                        for i in self.gmm_obj[word][f]['gmm']:
-                            value = self.gmm_obj[word][f]['gmm'][i]['mean']
-                            count = self.gmm_obj[word][f]['gmm'][i]['N']
-                            p = self._probability(N,count)
-                            if p >self.p_obj_pass:
-                                #print f,'>>>',word,value,p
-                                if word not in hyp_language_pass:
-                                    hyp_language_pass[word] = {}
-                                    hyp_language_pass[word]['possibilities'] = 1
-                                else:
-                                    hyp_language_pass[word]['possibilities'] += 1
-                                if f not in hyp_language_pass[word]:
-                                    hyp_language_pass[word][f] = {}
-                                hyp_language_pass[word][f][tuple(value)] = p
+                if 'the' not in word:
+                    if word not in checked:
+                        checked.append(word)
+                        for f in self.gmm_obj[word]:
+                            N = self.gmm_obj[word][f]['N']
+                            for i in self.gmm_obj[word][f]['gmm']:
+                                value = self.gmm_obj[word][f]['gmm'][i]['mean']
+                                count = self.gmm_obj[word][f]['gmm'][i]['N']
+                                p = self._probability(N,count)
+                                if p >self.p_obj_pass:
+                                    #print f,'>>>',word,value,p
+                                    if word not in hyp_language_pass:
+                                        hyp_language_pass[word] = {}
+                                        hyp_language_pass[word]['possibilities'] = 1
+                                    else:
+                                        hyp_language_pass[word]['possibilities'] += 1
+                                    if f not in hyp_language_pass[word]:
+                                        hyp_language_pass[word][f] = {}
+                                    hyp_language_pass[word][f][tuple(value)] = p
         #for word in hyp_language_pass:
         self.hyp_obj_pass = copy.deepcopy(hyp_language_pass)
 
@@ -1765,7 +1774,7 @@ class process_data():
                 self.valid_hypotheses[scene] = {}
                 # Test
                 for count,P in enumerate(self.valid_configurations[scene]):
-                    # if count != 12: continue    # Note remove
+                    # if count != 8: continue    # Note remove
                     phrases_with_hyp = P[0]
                     for L in range(2,np.min([len(phrases_with_hyp)+1,self.maximum_hyp_in_sentence+1])):#
                         # if L != 7: continue     # Note remove
