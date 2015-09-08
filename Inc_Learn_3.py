@@ -7,14 +7,14 @@ from data_processing import *
 P = process_data()
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,40):
+  for scene in range(1,1001):
     if scene in [891,892]: continue
     P._read(scene)                                  # Objects, Graph, Sentences
     P._print_scentenses()
     P._fix_data()                                   # correction to Data removing 20 and 40
     P._find_unique_words()                          # find the unique words in every valid sentence = P.words
     P._find_word_relations()                        # learns the word order pick is followed by up
-
+    P._words_we_cant_learn()
 
     print '**================= end of scene ===================**'
 
@@ -23,10 +23,10 @@ for scan in range(1):
 # file3.close()
 #
 #
-# file3 = open("/home/omari/Dropbox/robot_modified/EN/hypotheses/all_commands.txt", "w")
-# for i in P.all_sentences:
-#     file3.write(i+'\n')
-# file3.close()
+file3 = open("/home/omari/Dropbox/robot_modified/EN/hypotheses/commands_we_can_learn.txt", "w")
+for i in P.all_sentences:
+    file3.write(i+'\n')
+file3.close()
 
 print P.words_order
 

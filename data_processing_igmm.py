@@ -835,9 +835,8 @@ class process_data():
     # check to see if we can learn the sentence before we even process it
     def _check_for_words_we_cant_learn(self):
         remove_list = []
-        bad_words = ['tower','nearest','closest','furthest','edge','between','sorrounded']
+        bad_words = ['tower','nearest','closest','furthest','edge','between','sorrounded','one','two','three','four','five','1','2','3','4','first','second','square','closer', 'forward','rows','column', 'towards','cell','cells','opposite', 'surrounded','farthest','double','see','original','youre','parallel']
         for i in self.S:
-            print i,self.S[i]
             sent = self.S[i].split(' ')
             ok = 1
             for word in bad_words:

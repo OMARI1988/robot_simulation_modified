@@ -45,6 +45,7 @@ class process_data():
         self.all_words = []
         self.all_sentences = []
         self.words_order = {}
+        self.bad_words = ['tower','nearest','closest','furthest','edge','between','sorrounded', 'one','two','three', 'four','five','1','2','3','4','first','second','square','closer', 'forward','rows','column', 'towards','cell','cells', 'opposite', 'surrounded','farthest','double','see','original','youre','parallel', 'farther','near','nearby','nearer','robot','hand','blocks','cubes','diagonal','next','lowest','elevation','highest','stack','current','most','leftmost','rightmost','tallest','exposed','other','another','faces','arm','side','its','you','close','edges','edge','nearest','building']
     #--------------------------------------------------------------------------------------------------------#
     def _read(self,scene):
         self.scene = scene
@@ -101,7 +102,7 @@ class process_data():
     def _print_scentenses(self):
         for count,i in enumerate(self.S):
             print count,'-',self.S[i]
-            self.all_sentences.append(str(self.scene)+'-'+str(i)+'-'+self.S[i])
+            # self.all_sentences.append(str(self.scene)+'-'+str(i)+'-'+self.S[i])
         print '--------------------------'
 
     #--------------------------------------------------------------------------------------------------------#
@@ -148,6 +149,18 @@ class process_data():
                     self.words_order[w[i]][w[i+1]] = 0
                 self.words_order[w[i]][w[i+1]] += 1
                 self.words_order[w[i]]['count'] += 1
+
+#--------------------------------------------------------------------------------------------------------#
+    def _words_we_cant_learn(self):
+        for i in self.S:
+            sentence = self.S[i]
+            w = sentence.split(' ')
+            ok = 1
+            for j in self.bad_words:
+                if j in w:
+                    ok = 0
+            if ok:
+                self.all_sentences.append(str(self.scene)+'-'+str(i)+'-'+self.S[i])
 
     #--------------------------------------------------------------------------------------------------------#
     def _compute_features_for_all(self):
