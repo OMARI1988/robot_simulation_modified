@@ -9,6 +9,7 @@ import pyscreenshot as ImageGrab
 # http://www.anninaruest.com/pie/2014/07/inverse-kinematics-and-the-m100rak/
 from random import randint
 import operator
+import pickle
 
 class Robot():
     #-----------------------------------------------------------------------------------------------------#     initial
@@ -45,6 +46,7 @@ class Robot():
         self.image_dir2 = '/home/omari/Dropbox/robot_modified/EN/scenes/'
         if not os.path.isdir(self.image_dir):
 	        print 'please change the diroctory in extract_data.py'
+        self.words_order = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/words_order.p", "rb" ) )
 
     #--------------------------------------------------------------------------------------------------------#
     def _fix_sentences(self):
@@ -538,13 +540,13 @@ class Robot():
                             if self.u_hsv!=[]:      ok_features.append('F_HSV')
                             if self.u_shp!=[]:      ok_features.append('F_SHAPE')
                             if part == '_entity':
-                                print part
+                                # print part
                                 for i in self.N[part]:
                                     if i != 'sum' and '_entity' not in i:
                                         # print '>>',i
                                         for j in ok_features:
                                             if j in i:
-                                                print '>>>',i
+                                                # print '>>>',i
                                                 for s,sv in zip(self.u_shp_name, self.u_shp_value):
                                                     for c,cv in zip(self.u_hsv_name, self.u_hsv_value):
                                                         val = 1
@@ -560,8 +562,8 @@ class Robot():
                                                             if k == 'F_SHAPE':
                                                                 i2[ccc] = s
                                                                 val *= sv
-                                                            if '_' not in (' ').join(i2):
-                                                                print '-----------',i2,self.N[part][i]/self.N[part]['sum']*val
+                                                            # if '_' not in (' ').join(i2):
+                                                                # print '-----------',i2,self.N[part][i]/self.N[part]['sum']*val
                                                         S[count] = ' '.join(i2)
                                                         new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']*val
                         break
@@ -595,6 +597,19 @@ class Robot():
                 if not changed:
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
+
+            # including words order
+            print '--------------------------- Updating Word Order'
+            for i in all_sentences:
+                words = i.split(' ')
+                words_order_val = [10]
+                for j in range(len(words)-1):
+                    if words[j] in self.words_order:
+                        if words[j+1] in self.words_order[words[j]]:
+                            words_order_val.append(1+float(self.words_order[words[j]][words[j+1]])/float(self.words_order[words[j]]['count']))
+                all_sentences[i] *= np.min(words_order_val)
+                print '>>>>..',i,np.min(words_order_val)
+
 
             # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
             # if len(sorted_x)>max_num_in_each_sentences:

@@ -11,7 +11,7 @@ import copy
 
 class process_data():
     def __init__(self):
-        self.dir1 = '/home/omari/Dropbox/robot_modified/IT/motion/scene'
+        self.dir1 = '/home/omari/Dropbox/robot_modified/EN/motion/scene'
 
         # initial language
         self.N                      = {}                    # non-terminals
@@ -44,6 +44,7 @@ class process_data():
         self.p_relation_pass        = .92                       # for both relation and motion
         self.all_words = []
         self.all_sentences = []
+        self.words_order = {}
     #--------------------------------------------------------------------------------------------------------#
     def _read(self,scene):
         self.scene = scene
@@ -129,6 +130,24 @@ class process_data():
                     phrases.append(' '.join(w[i:j]))
             for i in phrases:
                 if i not in self.phrases[s]:    self.phrases[s].append(i)
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _find_word_relations(self):
+        # read the sentence
+        for s in self.S:
+            # self.phrases[s] = []
+            # self.words_order[s] = []
+            sentence = self.S[s]
+            w = sentence.split(' ')
+            phrases = []
+            for i in range(len(w)-1):
+                if w[i] not in self.words_order:
+                    self.words_order[w[i]] = {}
+                    self.words_order[w[i]]['count'] = 0
+                if w[i+1] not in self.words_order[w[i]]:
+                    self.words_order[w[i]][w[i+1]] = 0
+                self.words_order[w[i]][w[i+1]] += 1
+                self.words_order[w[i]]['count'] += 1
 
     #--------------------------------------------------------------------------------------------------------#
     def _compute_features_for_all(self):
