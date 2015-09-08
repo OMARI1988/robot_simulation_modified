@@ -402,7 +402,8 @@ def calc(data):
 
                         if v == (1,0,):
                             location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i,printtt)
-                            # print '>>>',location
+                            if printtt:
+                                print '>>>',location
                             if len(location)==1:
                                 # print '--------------the target location is:',location
                                 match = _match_final_scene([int(m_obj)],'F_POS',location,scene_f)
@@ -526,7 +527,7 @@ def calc(data):
                         # print o1,o2
                         distance = np.asarray(scene.node[o1]['_F_POS'])-np.asarray(scene.node[o2]['_F_POS'])
 
-                        if distance[0] == relations_v[i][0][0] and distance[1] == relations_v[i][0][1]:
+                        if distance[0] == relations_v[i][0][0] and distance[1] == relations_v[i][0][1] and distance[2] == relations_v[i][0][2]:
                             obj2_bar.append(o1)
                 # print '>>>>> obj2 bar',obj2_bar
                 # There are some objects that achive this relation
@@ -539,7 +540,17 @@ def calc(data):
             if len(obj2)==1:
                 #print 'The final object',obj2
                 loc = scene.node[obj2[0]]['_'+'F_POS']
+
+
+                loc[0] += relations_v[0][0][0]
+                loc[1] += relations_v[0][0][1]
+                loc[2] += relations_v[0][0][2]
+
                 location_pass.append(loc)
+
+        # print '##########################################'
+        # print location_pass
+        # print '##########################################'
 
         return location_pass
 
@@ -610,7 +621,11 @@ def calc(data):
     m_obj = data[9]
     motion_words = data[10]
     printtt = 0
-    if subset ==  ('',): #('on', 'pyramid', 'green', 'block', 'put', 'red',)
+    ok = 1
+    for ss in ('move','red','block','place','on top of','blue','green',): #('on', 'pyramid', 'green', 'block', 'put', 'red',)
+        if ss not in subset:
+            ok = 0
+    if ok:
         printtt = 1
     #---------------------------------------------------------------#
     #test if the subset has a motion word
@@ -1787,16 +1802,16 @@ class process_data():
         if 'CH_POS' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
-                # if scene != 0:  continue
+                # if scene != 8:  continue
 
                 self.valid_combination[scene] = {}
                 self.valid_hypotheses[scene] = {}
                 # Test
                 for count,P in enumerate(self.valid_configurations[scene]):
-                    # if count != 3: continue    # Note remove
+                    # if count != 8: continue    # Note remove
                     phrases_with_hyp = P[0]
                     for L in range(2,np.min([len(phrases_with_hyp)+1,self.maximum_hyp_in_sentence+1])):#
-                        # if L != 8: continue     # Note remove
+                        # if L != 7: continue     # Note remove
                         if L not in self.valid_combination[scene]:
                             self.valid_combination[scene][L]    = []
                             self.valid_hypotheses[scene][L]     = []
@@ -2531,15 +2546,17 @@ class process_data():
     #--------------------------------------------------------------------------------------------------------#
     def _analysis(self):
         for scene in self.valid_combination:
-            for L in self.valid_combination[scene]:
-                for p in self.valid_combination[scene][L]:
-                    for p2 in p:
-                        for p3 in p2:
-                            if p3 != []:
-                                if self.scene not in self.correct_commands:
-                                    self.correct_commands[self.scene] = []
-                                if str(self.scene)+'-'+str(scene)+'-'+self.S[scene] not in self.correct_commands[self.scene]:
-                                    self.correct_commands[self.scene].append(str(self.scene)+'-'+str(scene)+'-'+self.S[scene])
+            L_max = self.max_L[scene]
+            if L_max>0:
+                for L in self.valid_combination[scene]:
+                    for p in self.valid_combination[scene][L]:
+                        for p2 in p:
+                            for p3 in p2:
+                                if p3 != []:
+                                    if self.scene not in self.correct_commands:
+                                        self.correct_commands[self.scene] = []
+                                    if str(self.scene)+'-'+str(scene)+'-'+self.S[scene] not in self.correct_commands[self.scene]:
+                                        self.correct_commands[self.scene].append(str(self.scene)+'-'+str(scene)+'-'+self.S[scene])
         for s in self.S:
             ok = 1
             if self.scene in self.correct_commands:
