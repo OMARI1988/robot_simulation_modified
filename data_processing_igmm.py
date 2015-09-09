@@ -192,9 +192,17 @@ def calc(data):
                     s2 = activity_sentence[v][d]['value']
                     if v == (0,1,0,):
                         # we need both TE and TV
-                        for L in range(1,len(s1)):
+                        _indices = [i+1 for i, x in enumerate(s1) if '_' in x]
+                        for L in _indices:
                             x = _check_TE_TV(s1[0:L],s1[L:len(s1)],s2[0:L],s2[L:len(s2)])
                             if x != []:
+                                # print '>>>>>>>',x[0][0]
+                                # print '>>>>>>>',x[0][1]
+                                # print '>>>>>>>',x[0][2]
+                                # print '>>>>>>>',x[0][3]
+                                # print '>>>>>>>',x[0][4]
+                                # print '>>>>>>>',x[0][5]
+                                # print '-------------------'
                                 activity_sentence[v][d]['valid_configurations'].append(x)
 
                     if v == (0,1,):
@@ -208,10 +216,15 @@ def calc(data):
                         x = _check_TV_main(s1,s2)
                         if x != []:
                             activity_sentence[v][d]['valid_configurations'].append(x)
-                        for L in range(1,len(s1)):
-                            x = _check_TE_TV(s1[0:L],s1[L:len(s1)],s2[0:L],s2[L:len(s2)])
-                            if x != []:
-                                activity_sentence[v][d]['valid_configurations'].append(x)
+
+                        #############################################
+                        #### this has been fixed by extending the actions to include all possibilities #####
+                        #############################################
+                        # _indices = [i+1 for i, x in enumerate(s1) if '_' in x]
+                        # for L in _indices:
+                        #     x = _check_TE_TV2(s1[0:L],s1[L:len(s1)],s2[0:L],s2[L:len(s2)])
+                        #     if x != []:
+                        #         activity_sentence[v][d]['valid_configurations'].append(x)
         return activity_sentence
 
     #--------------------------------------------------------------------------------------------------------#
@@ -672,6 +685,8 @@ def calc(data):
                         # divide sentence with verbs
                         activity_sentence = _activity_domain(parsed_sentence, value_sentence, subset, element)
                         activity_sentence = _divide_into_TE_and_TV(activity_sentence)
+                        # print activity_sentence
+                        # print tttt
                         # print subset
                         # if printtt:
                         #     print activity_sentence
@@ -1815,7 +1830,7 @@ class process_data():
         if 'CH_POS' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
-                # if scene != 8:  continue
+                if scene != 9:  continue
 
                 self.valid_combination[scene] = {}
                 self.valid_hypotheses[scene] = {}

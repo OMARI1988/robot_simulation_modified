@@ -98,7 +98,7 @@ class Robot():
         c='nothing'
         d='nothing'
         e='nothing'
-        print a1,a2,a3
+        # print a1,a2,a3
         if a1:            c = 'black'
         if a2:            d = 'sphere'    # orb, ball
         if a3:            e = 'cylinder' # can,
@@ -276,6 +276,9 @@ class Robot():
         x1 = positions[I]['x'][0]
         y1 = positions[I]['y'][0]
         z1 = positions[I]['z'][0]
+
+        print '>>>>',x1,y1,z1
+
         self.u_pos = []
         self.u_hsv = []
         self.u_shp = []
@@ -291,9 +294,8 @@ class Robot():
         use_pos = 0
         for p in self.all_valid_hypotheses['F_POS']:
             for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
-                m1 = np.asarray([x1/7.0,y1/7.0])
+                m1 = np.asarray([x1/7.0,y1/7.0,z1])
                 m2 = np.asarray(list(p1))
-                # print m1,m2
                 if self._distance_test(m1,m2)<.25:
                     use_pos = 1
 
@@ -350,7 +352,7 @@ class Robot():
         use_pos = 0
         for p in self.all_valid_hypotheses['F_POS']:
             for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
-                m1 = np.asarray([x1/7.0,y1/7.0])
+                m1 = np.asarray([x1/7.0,y1/7.0,z1])
                 m2 = np.asarray(list(p1))
                 # print m1,m2
                 if self._distance_test(m1,m2)<.25:
