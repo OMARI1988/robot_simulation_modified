@@ -49,7 +49,7 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,3):
+  for scene in range(189,190):      #_entity = _entity  _entity
     if P.first_time:                P._read_grammar(scene,valid_scenes)
     #if scene not in valid_scenes:   continue
     #slightly hard [10,]

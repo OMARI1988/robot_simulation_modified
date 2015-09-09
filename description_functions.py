@@ -551,7 +551,7 @@ class Robot():
                                                 for s,sv in zip(self.u_shp_name, self.u_shp_value):
                                                     for c,cv in zip(self.u_hsv_name, self.u_hsv_value):
                                                         val = 1
-                                                        print '>>',s,c
+                                                        # print '>>',s,c
                                                         # entity = ''
                                                         changed = 1
                                                         i2 = i[:]
@@ -572,7 +572,7 @@ class Robot():
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
 
-            print all_sentences
+            # print all_sentences
 
 
             # update the FV
@@ -610,7 +610,7 @@ class Robot():
                         if words[j+1] in self.words_order[words[j]]:
                             words_order_val.append(1+float(self.words_order[words[j]][words[j+1]])/float(self.words_order[words[j]]['count']))
                 all_sentences[i] *= np.min(words_order_val)
-                print '>>>>..',i,np.min(words_order_val)
+                # print '>>>>..',i,np.min(words_order_val)
 
 
             # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
