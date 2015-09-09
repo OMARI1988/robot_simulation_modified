@@ -1830,7 +1830,7 @@ class process_data():
         if 'CH_POS' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
-                if scene != 9:  continue
+                # if scene != 9:  continue
 
                 self.valid_combination[scene] = {}
                 self.valid_hypotheses[scene] = {}
