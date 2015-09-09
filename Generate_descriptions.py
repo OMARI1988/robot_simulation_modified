@@ -53,4 +53,4 @@ R._move_robot(0)
 # print '----------------------------------------'
 
 R._get_unique_features()
-R._generate_all_sentences()
+# R._generate_all_sentences()

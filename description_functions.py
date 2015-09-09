@@ -1,5 +1,5 @@
 from visual import *
-from shapefile import *
+# from shapefile import *
 from Polygon import *
 import numpy as np
 import wx
@@ -10,6 +10,10 @@ import pyscreenshot as ImageGrab
 from random import randint
 import operator
 import pickle
+import os
+
+import itertools
+import copy
 
 class Robot():
     #-----------------------------------------------------------------------------------------------------#     initial
@@ -268,8 +272,130 @@ class Robot():
 
         #initial scene
         # check to see if single feature is enough
-        self._single_feature(I,self.positions)
-        self._single_feature_f(F,self.positions_f)
+        # self._single_feature(I,self.positions)
+        # self._single_feature_f(F,self.positions_f)
+
+        # print self.u_pos
+        # print self.u_hsv
+        # print self.u_shp
+        # print '------'
+        # print self.u_pos_f
+        # print self.u_hsv_f
+        # print self.u_shp_f
+        # print '------'
+
+
+        self.feature_I = self._find_unique_feature(I,copy.deepcopy(self.positions))
+        self.feature_F = self._find_unique_feature_F(F,copy.deepcopy(self.positions_f))
+        print '-------------'
+        print self.feature_I
+        print self.feature_F
+
+    #--------------------------------------------------------------------------------------------------------#
+    def _find_unique_feature(self,I,positions):
+        x1 = positions[I]['x'][0]/7.0
+        y1 = positions[I]['y'][0]/7.0
+        z1 = positions[I]['z'][0]
+
+        scene_layout = {}
+        for i in positions:
+            scene_layout[i] = {}
+            scene_layout[i]['F_SHAPE'] = positions[i]['F_SHAPE']
+            scene_layout[i]['F_HSV'] = positions[i]['F_HSV']
+            scene_layout[i]['F_POS'] = [positions[i]['x'][0]/7.0,positions[i]['y'][0]/7.0,positions[i]['z'][0]]
+
+        # Test which features can be used from the moving objects
+        # 1) check pos first
+        features = []
+        use_pos = 0
+        for p in self.all_valid_hypotheses['F_POS']:
+            for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
+                m1 = np.asarray([x1,y1,z1])
+                m2 = np.asarray(list(p1))
+                # print p,m1,m2
+                if self._distance_test(m1,m2)<.25:
+                    if 'F_POS' not in features:
+                        features.append('F_POS')
+        # I already now that color and shape are good to go
+        # 2) Test color
+        features.append('F_HSV')
+        # 3) test Shape
+        features.append('F_SHAPE')
+
+        unique_feature = []
+        
+        for L in range(1,len(features)+1):
+            for subset in itertools.combinations(features,L):
+                objects = {}
+                for f in list(subset):
+                    objects[f] = []
+                    feature_v = scene_layout[I][f]
+                    for o in scene_layout:
+                        if o != I:
+                            if feature_v == scene_layout[o][f]:
+                                objects[f].append(o)
+                            #print f,feature_v,scene_layout[o][f]
+                # all the objects are saved in intersection, now try and see if features are good enough to get a unique object
+                intersection = scene_layout.keys()
+                intersection.remove(I)
+                # print '>>>>>',intersection
+                for f in objects:
+                    intersection = [val for val in intersection if val in objects[f]]
+                if intersection == []:
+                    unique_feature.append(list(subset))
+            if unique_feature != []:        break
+        return unique_feature
+
+
+#--------------------------------------------------------------------------------------------------------#
+    def _find_unique_feature_F(self,I,positions):
+        x1 = positions[I]['x'][0]/7.0
+        y1 = positions[I]['y'][0]/7.0
+        z1 = positions[I]['z'][0]
+
+        scene_layout = {}
+        for i in positions:
+            scene_layout[i] = {}
+            scene_layout[i]['F_SHAPE'] = positions[i]['F_SHAPE']
+            scene_layout[i]['F_HSV'] = positions[i]['F_HSV']
+            scene_layout[i]['F_POS'] = [positions[i]['x'][0]/7.0,positions[i]['y'][0]/7.0,positions[i]['z'][0]]
+
+        # Test which features can be used from the moving objects
+        # 1) check pos first
+        features = []
+        use_pos = 0
+        for p in self.all_valid_hypotheses['F_POS']:
+            for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
+                m1 = np.asarray([x1,y1,z1])
+                m2 = np.asarray(list(p1))
+                # print p,m1,m2
+                if self._distance_test(m1,m2)<.25:
+                    if 'F_POS' not in features:
+                        features.append('F_POS')
+
+        unique_feature = []
+        for L in range(1,len(features)+1):
+            for subset in itertools.combinations(features,L):
+                objects = {}
+                for f in list(subset):
+                    objects[f] = []
+                    feature_v = scene_layout[I][f]
+                    for o in scene_layout:
+                        if o != I:
+                            if feature_v == scene_layout[o][f]:
+                                objects[f].append(o)
+                            #print f,feature_v,scene_layout[o][f]
+                # all the objects are saved in intersection, now try and see if features are good enough to get a unique object
+                intersection = scene_layout.keys()
+                intersection.remove(I)
+                # print '>>>>>',intersection
+                for f in objects:
+                    intersection = [val for val in intersection if val in objects[f]]
+                if intersection == []:
+                    unique_feature.append(list(subset))
+            if unique_feature != []:        break
+
+        return unique_feature
 
     #--------------------------------------------------------------------------------------------------------#
     def _single_feature(self,I,positions):
