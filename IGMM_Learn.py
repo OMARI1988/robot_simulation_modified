@@ -15,13 +15,27 @@ import pickle
 #########################################################################################################
 #   inital processing                                                                                   #
 #########################################################################################################
-file1 = open('/home/omari/Dropbox/robot_modified/EN/hypotheses/all_scenes.txt', 'r')
-valid_scenes = [int(i.split('\n')[0]) for i in file1.readlines()]
+# file1 = open('/home/omari/Dropbox/robot_modified/EN/hypotheses/all_scenes.txt', 'r')
+# valid_scenes = [int(i.split('\n')[0]) for i in file1.readlines()]
+# file1.close()
+
+file1 = open('/home/omari/Dropbox/robot_modified/EN/hypotheses/commands_we_can_learn.txt', 'r')
+valid_lines = [i.split('\n')[0] for i in file1.readlines()]
+valid_scenes = {}
+for i in valid_lines:
+    scene = i.split('-')[0]
+    command = i.split('-')[1]
+    if scene not in valid_scenes:
+        valid_scenes[scene] = []
+    valid_scenes[scene].append(command)
+file1.close()
+
 plot = 0                                #
 simple = 1                              # simple graph structure for multi processing
 dropbox = 1                             # update dropbox
 
 P = process_data(dropbox)
+P.valid_scenes = valid_scenes
 P.first_time = 1
 
 print           'reading object hypotheses'
@@ -35,8 +49,8 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,1001):
-    # if P.first_time:                P._read_grammar(scene,valid_scenes)
+  for scene in range(1,50):
+    if P.first_time:                P._read_grammar(scene,valid_scenes)
     #if scene not in valid_scenes:   continue
     #slightly hard [10,]
     if scene in [891,892]:          continue
@@ -45,7 +59,8 @@ for scan in range(1):
     #   Read sentences and scenes                                                                           #
     #########################################################################################################
     P._read(scene)                                  # Objects, Graph, Sentences
-    P._check_for_words_we_cant_learn()
+    # P._check_for_words_we_cant_learn()
+    P._check_for_commands_we_cant_learn()
     P._print_scentenses()
     # if len(P.S) != 0:
     #     print '>>> NO Sentences'

@@ -847,6 +847,20 @@ class process_data():
         for i in remove_list:
             self.S.pop(i,None)
 
+    #----------------------------------------------------------------copy----------------------------------------#
+    def _check_for_commands_we_cant_learn(self):
+        remove_list = []
+        if str(self.scene) in self.valid_scenes:
+            for i in self.S:
+                if str(i) not in self.valid_scenes[str(self.scene)]:
+                    remove_list.append(i)
+        else:
+            remove_list = self.S.keys()
+        # print self.S
+        # print self.valid_scenes
+        for i in remove_list:
+            self.S.pop(i,None)
+
     #--------------------------------------------------------------------------------------------------------#
     # print sentences on terminal
     def _save_all_sentences(self):

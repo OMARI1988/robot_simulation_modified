@@ -918,9 +918,9 @@ class Robot():
     #-----------------------------------------------------------------------------------------------------#     initial draw scene
     def draw_scene(self):
         self.display = display(title='simultaneous learning and grounding',
-            x=0, y=0, width=600, height=600,
+            x=0, y=0, width=1000, height=1000,
             center=(self.chess_shift_x,self.chess_shift_y,0),
-            forward=(self.chess_shift_x-10,self.chess_shift_y,-7),
+            forward=(self.chess_shift_x-10,self.chess_shift_y-3,-7),
             background=(1,1,1))
         self.label = label(pos=(10,10,10), text='Scene number : ',height=20,color=(0,0,0))
         checkerboard = ( (.8,1,.8,1,.8,1,.8,1),
@@ -938,9 +938,9 @@ class Robot():
             color=color.orange,material=materials.wood)
         chess2 = box(pos=(self.chess_shift_x,self.chess_shift_y,-.25),axis=(0,0,1), size=(.5,8,8),
             color=color.orange, material=tex)
-        x = arrow(pos=(0,0,0),axis=(1,0,0),length=2,shaftwidth=.2,color=color.red)
-        y = arrow(pos=(0,0,0),axis=(0,1,0),length=2,shaftwidth=.2,color=color.green)
-        z = arrow(pos=(0,0,0),axis=(0,0,1),length=2,shaftwidth=.2,color=color.blue)
+        x = arrow(pos=(1,6,0),axis=(1,0,0),length=2,shaftwidth=.2,color=color.red)
+        y = arrow(pos=(1,6,0),axis=(0,1,0),length=2,shaftwidth=.2,color=color.green)
+        z = arrow(pos=(1,6,0),axis=(0,0,1),length=2,shaftwidth=.2,color=color.blue)
 
     #-----------------------------------------------------------------------------------------------------#     initial draw robot
     def draw_robot(self):
