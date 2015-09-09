@@ -2050,10 +2050,17 @@ class process_data():
 
                                         #---------------------------------#
                                         # TE = the _entity
-                                        T = 'E2'
-                                        self._update_self_N(T,TE_converted)
-                                        T = 'FV2'
-                                        self._update_self_N(T,TV_converted)
+                                        if connecter != []:
+                                            T = 'E2c'
+                                            self._update_self_N(T,TE_converted)
+                                            T = 'FV2c'
+                                            self._update_self_N(T,TV_converted)
+
+                                        else:
+                                            T = 'E2'
+                                            self._update_self_N(T,TE_converted)
+                                            T = 'FV2'
+                                            self._update_self_N(T,TV_converted)
 
                                         #---------------------------------#
                                         # _entity and _shape and _location
@@ -2074,7 +2081,7 @@ class process_data():
                                                 self._update_self_no_match(word)
                                         #---------------------------------#
                                         if connecter != []:
-                                            S1 = order[0]+' '+order[0]+order[1]+'_connect'+' '+order[1]
+                                            S1 = order[0]+'c'+' '+order[0]+order[1]+'_connect'+' '+order[1]+'c'
                                         else:
                                             S1 = order[0]+' '+order[1]
                                         self._update_self_N(TETV_grammar,S1)

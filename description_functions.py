@@ -379,7 +379,7 @@ class Robot():
             if S != 'sum':
                 # first kind of sentences
                 if self.motion == [0,1,0]:
-                    conditions = ['E2FV2','E1','FV1']
+                    conditions = ['E2FV2','E1','FV1','E2c','FV2c']
                     if 'E2_FV2' in S.split(' '):
                         all_sentences[S] = self.N['S'][S]/self.N['S']['sum']
                     if '_S' in S.split(' '):
@@ -396,6 +396,7 @@ class Robot():
                     conditions = ['FV1']
                     if 'FV1' in S.split(' '):
                         all_sentences[S] = self.N['S'][S]/self.N['S']['sum']
+
 
         # Verbs
         print '--------------------------- Updating verbs'
@@ -434,7 +435,7 @@ class Robot():
 
         # Conditions
         print '--------------------------- Updating conditions'
-        for condition in ['E2_FV2','E2','FV2','E1','FV1']:
+        for condition in ['E2_FV2','E2','FV2','E2c','FV2c','E1','FV1']:
             new_sentences = {}
             for S in all_sentences:
                 V1 = all_sentences[S]
@@ -467,7 +468,6 @@ class Robot():
         # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
         # print sorted_x
         # print tttt
-
         # connections
         print '--------------------------- Updating connections'
         for condition in ['connect']:
@@ -542,7 +542,6 @@ class Robot():
                             if self.u_hsv!=[]:      ok_features.append('F_HSV')
                             if self.u_shp!=[]:      ok_features.append('F_SHAPE')
                             if part == '_entity':
-                                # print part
                                 for i in self.N[part]:
                                     if i != 'sum' and '_entity' not in i:
                                         # print '>>',i
@@ -552,7 +551,7 @@ class Robot():
                                                 for s,sv in zip(self.u_shp_name, self.u_shp_value):
                                                     for c,cv in zip(self.u_hsv_name, self.u_hsv_value):
                                                         val = 1
-                                                        # print '>>',s,c
+                                                        print '>>',s,c
                                                         # entity = ''
                                                         changed = 1
                                                         i2 = i[:]
@@ -573,6 +572,7 @@ class Robot():
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
 
+            print all_sentences
 
 
             # update the FV
