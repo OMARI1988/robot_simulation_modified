@@ -1,17 +1,16 @@
 import numpy as np
 # from nltk import PCFG
 import pickle
-from data_processing_igmm import *
+from data_processing_igmm_IT import *
 # from xml_functions import *
 from description_functions import *
-
 
 
 file1 = open('/home/omari/Dropbox/robot_modified/EN/hypotheses/all_scenes.txt', 'r')
 valid_scenes = [int(i.split('\n')[0]) for i in file1.readlines()]
 
 # scenes
-grammar_scene = 120
+grammar_scene = 1
 scene = 1
 
 #change data

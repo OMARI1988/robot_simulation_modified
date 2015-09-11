@@ -272,8 +272,8 @@ class Robot():
 
         #initial scene
         # check to see if single feature is enough
-        # self._single_feature(I,self.positions)
-        # self._single_feature_f(F,self.positions_f)
+        self._single_feature(I,self.positions)
+        self._single_feature_f(F,self.positions_f)
 
         # print self.u_pos
         # print self.u_hsv
@@ -285,11 +285,11 @@ class Robot():
         # print '------'
 
 
-        self.feature_I = self._find_unique_feature(I,copy.deepcopy(self.positions))
-        self.feature_F = self._find_unique_feature_F(F,copy.deepcopy(self.positions_f))
-        print '-------------'
-        print self.feature_I
-        print self.feature_F
+        # self.feature_I = self._find_unique_feature(I,copy.deepcopy(self.positions))
+        # self.feature_F = self._find_unique_feature_F(F,copy.deepcopy(self.positions_f))
+        # print '-------------'
+        # print self.feature_I
+        # print self.feature_F
 
     #--------------------------------------------------------------------------------------------------------#
     def _find_unique_feature(self,I,positions):
@@ -323,7 +323,7 @@ class Robot():
         features.append('F_SHAPE')
 
         unique_feature = []
-        
+
         for L in range(1,len(features)+1):
             for subset in itertools.combinations(features,L):
                 objects = {}

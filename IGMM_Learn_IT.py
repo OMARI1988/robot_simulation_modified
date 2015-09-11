@@ -2,7 +2,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
-from data_processing_igmm_IT import *
+from data_processing_igmm_IT_2 import *
 import time
 import pickle
 
@@ -15,8 +15,20 @@ import pickle
 #########################################################################################################
 #   inital processing                                                                                   #
 #########################################################################################################
-file1 = open('/home/omari/Dropbox/robot_modified/EN/hypotheses/all_scenes.txt', 'r')
-valid_scenes = [int(i.split('\n')[0]) for i in file1.readlines()]
+# file1 = open('/home/omari/Dropbox/robot_modified/EN/hypotheses/all_scenes.txt', 'r')
+# valid_scenes = [int(i.split('\n')[0]) for i in file1.readlines()]
+
+file1 = open('/home/omari/Dropbox/robot_modified/EN/hypotheses/commands_we_can_learn.txt', 'r')
+valid_lines = [i.split('\n')[0] for i in file1.readlines()]
+valid_scenes = {}
+for i in valid_lines:
+    scene = i.split('-')[0]
+    command = i.split('-')[1]
+    if scene not in valid_scenes:
+        valid_scenes[scene] = []
+    valid_scenes[scene].append(command)
+file1.close()
+
 plot = 0                                #
 simple = 1                              # simple graph structure for multi processing
 dropbox = 1                             # update dropbox
@@ -26,7 +38,7 @@ dropbox = 1                             # update dropbox
 P = process_data(dropbox)
 P._read_Eriss_commands()
 P.first_time = 1
-#
+# #
 print           'reading object hypotheses'
 P.gmm_obj       = pickle.load( open( "/home/omari/Dropbox/robot_modified/IT/pickle/gmm_obj_1000.p", "rb" ) )
 print           'reading motion hypotheses'
@@ -38,7 +50,7 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/IT/
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,1001):
+  for scene in range(1,121):
     if P.first_time:                P._read_grammar(scene,valid_scenes)
     #slightly hard [10,]
     if scene in [891,892]:          continue
@@ -47,6 +59,7 @@ for scan in range(1):
     #   Read sentences and scenes                                                                           #
     #########################################################################################################
     P._read(scene)                                  # Objects, Graph, Sentences
+    P._fix_sentences()
     # this is just for checking
     P._check_for_words_we_cant_learn()
     P._print_scentenses()
@@ -121,7 +134,7 @@ for scan in range(1):
 # pickle.dump( P.a_lot_of_objects, open( "/home/omari/Dropbox/robot_modified/IT/pickle/a_lot_of_objects.p", "wb" ) )
 # print 'finished saving'
 
-print '>>>>',P.all_scenes_with_no_commands
+# print '>>>>',P.all_scenes_with_no_commands
 #print P.pcfg1
 #for word in P.hyp_language_pass:
 #    print word,P.hyp_language_pass[word]['all']
