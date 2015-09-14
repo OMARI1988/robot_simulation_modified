@@ -47,10 +47,10 @@ class Robot():
         self.positions_f = {}
         # manage diroctories to store data and images
         self.image_dir = '/home/omari/Datasets/robot_modified/scenes/'
-        self.image_dir2 = '/home/omari/Dropbox/robot_modified/EN/scenes/'
+        self.image_dir2 = '/home/omari/Dropbox/robot_modified/IT/scenes/'
         if not os.path.isdir(self.image_dir):
 	        print 'please change the diroctory in extract_data.py'
-        self.words_order = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/words_order.p", "rb" ) )
+        # self.words_order = pickle.load( open( "/home/omari/Dropbox/robot_modified/IT/pickle/words_order.p", "rb" ) )
 
     #--------------------------------------------------------------------------------------------------------#
     def _fix_sentences(self):
@@ -272,9 +272,9 @@ class Robot():
 
         #initial scene
         # check to see if single feature is enough
-        self._single_feature(I,self.positions)
-        self._single_feature_f(F,self.positions_f)
-
+        # self._single_feature(I,self.positions)
+        # self._single_feature_f(F,self.positions_f)
+        #
         # print self.u_pos
         # print self.u_hsv
         # print self.u_shp
@@ -285,14 +285,29 @@ class Robot():
         # print '------'
 
 
-        # self.feature_I = self._find_unique_feature(I,copy.deepcopy(self.positions))
-        # self.feature_F = self._find_unique_feature_F(F,copy.deepcopy(self.positions_f))
-        # print '-------------'
-        # print self.feature_I
-        # print self.feature_F
+        self.feature_I = self._find_unique_feature(I,copy.deepcopy(self.positions))
+        if self.motion == [0,1,0] or self.motion == [1,0]:
+            self.feature_F = self._find_unique_feature_F(F,copy.deepcopy(self.positions_f))
+            print self.feature_F
+        print '-------------'
+        # self.feature_I = [['color']]
+        print self.feature_I
+
+        # self.feature_I =
 
     #--------------------------------------------------------------------------------------------------------#
     def _find_unique_feature(self,I,positions):
+
+        self.u_pos_f    = []
+        self.u_hsv_name = []
+        self.u_shp_name = []
+        self.u_hsv_value = []
+        self.u_shp_value = []
+        self.u_hsvR_name = []
+        self.u_shpR_name = []
+        self.u_hsvR_value = []
+        self.u_shpR_value = []
+
         x1 = positions[I]['x'][0]/7.0
         y1 = positions[I]['y'][0]/7.0
         z1 = positions[I]['z'][0]
@@ -307,48 +322,122 @@ class Robot():
         # Test which features can be used from the moving objects
         # 1) check pos first
         features = []
+        relations = []
         use_pos = 0
+        # print self.all_valid_hypotheses.keys()
         for p in self.all_valid_hypotheses['F_POS']:
             for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
                 m1 = np.asarray([x1,y1,z1])
                 m2 = np.asarray(list(p1))
-                # print p,m1,m2
-                if self._distance_test(m1,m2)<.25:
+                print p,m1,m2
+                if self._distance_test(m1,m2)<.10:
+                    # print p
+
                     if 'F_POS' not in features:
                         features.append('F_POS')
+
         # I already now that color and shape are good to go
         # 2) Test color
         features.append('F_HSV')
         # 3) test Shape
         features.append('F_SHAPE')
 
-        unique_feature = []
+        # self.u_hsv.append(np.asarray(list(positions[I]['F_HSV'])))
+        for c in self.all_valid_hypotheses['F_HSV']:
+            for c1 in self.all_valid_hypotheses['F_HSV'][c].keys():
+                m1 = np.asarray(list(positions[I]['F_HSV']))
+                m2 = np.asarray(list(c1))
+                if self._distance_test(m1,m2)<.1:
+                    self.u_hsv_name.append(c)
+                    # print self.all_valid_hypotheses['F_HSV'].keys()
+                    self.u_hsv_value.append(self.all_valid_hypotheses['F_HSV'][c][c1]/self.all_valid_hypotheses['sum']['F_HSV'])
 
-        for L in range(1,len(features)+1):
-            for subset in itertools.combinations(features,L):
-                objects = {}
-                for f in list(subset):
-                    objects[f] = []
-                    feature_v = scene_layout[I][f]
-                    for o in scene_layout:
-                        if o != I:
-                            if feature_v == scene_layout[o][f]:
-                                objects[f].append(o)
-                            #print f,feature_v,scene_layout[o][f]
-                # all the objects are saved in intersection, now try and see if features are good enough to get a unique object
-                intersection = scene_layout.keys()
-                intersection.remove(I)
-                # print '>>>>>',intersection
-                for f in objects:
-                    intersection = [val for val in intersection if val in objects[f]]
-                if intersection == []:
-                    unique_feature.append(list(subset))
+        # self.u_shp.append(np.asarray(list([positions[I]['F_SHAPE']])))
+        for s in self.all_valid_hypotheses['F_SHAPE']:
+            for s1 in self.all_valid_hypotheses['F_SHAPE'][s].keys():
+                m1 = np.asarray(list([positions[I]['F_SHAPE']]))
+                m2 = np.asarray(list([s1]))
+                if self._distance_test(m1,m2)<.1:
+                    print '>>>>',m1,m2,s
+                    self.u_shp_name.append(s)
+                    self.u_shp_value.append(self.all_valid_hypotheses['F_SHAPE'][s][s1]/self.all_valid_hypotheses['sum']['F_SHAPE'])
+
+        relations.append('F_DIR')
+
+        unique_feature = []
+        # this is designed to work with only on top so the hight of the object is how many objects under it
+        for R in range(0,int(z1)+1):
+            for L in range(1,len(features)+1):
+                for subset in itertools.combinations(features,L):
+                    objects = 0
+                    objects = {}
+                    for f in list(subset):
+                        # print '>>>>',R,L,f
+                        objects[f] = []
+                        feature_v = scene_layout[I][f]
+                        for o in scene_layout:
+                            if o != I:
+                                if feature_v == scene_layout[o][f]:
+                                    objects[f].append(o)
+                        if R>0:
+                            objects_to_be_removed = []
+                            for o in objects[f]:
+                                if scene_layout[o]['F_POS'][2]<R:
+                                    objects_to_be_removed.append(o)
+                            # print 'TBR',objects_to_be_removed
+                            # make sure the similar objects have at least one object below them
+                            for o in objects_to_be_removed:
+                                objects[f].remove(o)
+                            # get the relation object
+                            pos = scene_layout[I]['F_POS']
+                            pos[2] -= R
+                            for o in scene_layout:
+                                if scene_layout[o]['F_POS'] == pos:
+                                    I_R = o
+                            # make sure that similar objects have different objects with this relation
+                            objects_to_be_removed = []
+                            feature_R_v = scene_layout[I_R][f]
+                            for o in objects[f]:
+                                # get the relation object for similar object
+                                pos = scene_layout[o]['F_POS']
+                                pos[2] -= R
+                                for o2 in scene_layout:
+                                    if scene_layout[o2]['F_POS'] == pos:
+                                        I_R2 = o2
+                                #print feature_R_v
+                                #print scene_layout[I_R2][f]
+                                #print '-................-'
+                                if feature_R_v != scene_layout[I_R2][f]:
+                                    objects_to_be_removed.append(o)
+                            # remove all objects that their relational object does not match the actual object
+                            for o in objects_to_be_removed:
+                                objects[f].remove(o)
+                            #print objects
+                    #
+                    # if R==0:
+                    #     for f in list(subset):
+                    #         objects[f] = []
+                    #         feature_v = scene_layout[I][f]
+                    #         for o in scene_layout:
+                    #             if o != I:
+                    #                 if feature_v == scene_layout[o][f]:
+                    #                     objects[f].append(o)
+                                #print f,feature_v,scene_layout[o][f]
+                    # all the objects are saved in intersection, now try and see if features are good enough to get a unique object
+                    intersection = scene_layout.keys()
+                    intersection.remove(I)
+                    # print '>>>>>',intersection
+                    for f in objects:
+                        intersection = [val for val in intersection if val in objects[f]]
+                    if intersection == []:
+                        unique_feature.append([list(subset),R])
+                if unique_feature != []:        break
             if unique_feature != []:        break
         return unique_feature
 
-
 #--------------------------------------------------------------------------------------------------------#
     def _find_unique_feature_F(self,I,positions):
+        I_R = -1
         x1 = positions[I]['x'][0]/7.0
         y1 = positions[I]['y'][0]/7.0
         z1 = positions[I]['z'][0]
@@ -372,8 +461,13 @@ class Robot():
                 if self._distance_test(m1,m2)<.25:
                     if 'F_POS' not in features:
                         features.append('F_POS')
+        self.u_pos_f.append(m1)
+
+        # print features
 
         unique_feature = []
+        # for R in range(0,int(z1)+1):
+        R = 0
         for L in range(1,len(features)+1):
             for subset in itertools.combinations(features,L):
                 objects = {}
@@ -384,16 +478,102 @@ class Robot():
                         if o != I:
                             if feature_v == scene_layout[o][f]:
                                 objects[f].append(o)
-                            #print f,feature_v,scene_layout[o][f]
-                # all the objects are saved in intersection, now try and see if features are good enough to get a unique object
+
                 intersection = scene_layout.keys()
                 intersection.remove(I)
                 # print '>>>>>',intersection
                 for f in objects:
                     intersection = [val for val in intersection if val in objects[f]]
                 if intersection == []:
-                    unique_feature.append(list(subset))
+                    unique_feature.append([list(subset),R])
             if unique_feature != []:        break
+
+        if unique_feature == []:
+
+            features.append('F_HSV')
+            features.append('F_SHAPE')
+            for R in range(1,int(z1)+1):
+                for L in range(1,len(features)+1):
+                    for subset in itertools.combinations(features,L):
+                        objects = 0
+                        objects = {}
+                        for f in list(subset):
+                            # print '>>>>',R,L,f
+                            objects[f] = []
+                            pos = scene_layout[I]['F_POS'][:]
+                            pos[2] -= R
+                            for o in scene_layout:
+                                if scene_layout[o]['F_POS'] == pos:
+                                    I_R = o
+                                    print '>>>>>>>>>>',scene_layout[o]['F_POS'],pos,I_R
+                            feature_v = scene_layout[I_R][f]
+                            for o in scene_layout:
+                                if o != I_R:
+                                    if feature_v == scene_layout[o][f]:
+                                        objects[f].append(o)
+                            # if R>0:
+                                # objects_to_be_removed = []
+                                # for o in objects[f]:
+                                #     if scene_layout[o]['F_POS'][2]<R:
+                                #         objects_to_be_removed.append(o)
+                                # print 'TBR',objects_to_be_removed
+                                # make sure the similar objects have at least one object below them
+                                # for o in objects_to_be_removed:
+                                #     objects[f].remove(o)
+                                # get the relation object
+
+                                # make sure that similar objects have different objects with this relation
+                                # objects_to_be_removed = []
+                                # feature_R_v = scene_layout[I_R][f]
+                                # for o in objects[f]:
+                                #     # get the relation object for similar object
+                                #     pos = scene_layout[o]['F_POS']
+                                #     pos[2] -= R
+                                #     for o2 in scene_layout:
+                                #         if scene_layout[o2]['F_POS'] == pos:
+                                #             I_R2 = o2
+                                #     #print feature_R_v
+                                #     #print scene_layout[I_R2][f]
+                                #     #print '-................-'
+                                #     if feature_R_v != scene_layout[I_R2][f]:
+                                #         objects_to_be_removed.append(o)
+                                # remove all objects that their relational object does not match the actual object
+                                # for o in objects_to_be_removed:
+                                #     objects[f].remove(o)
+
+                                #print f,feature_v,scene_layout[o][f]
+                    # all the objects are saved in intersection, now try and see if features are good enough to get a unique object
+                    intersection = scene_layout.keys()
+                    intersection.remove(I_R)
+                    # print '>>>>>',intersection
+                    for f in objects:
+                        intersection = [val for val in intersection if val in objects[f]]
+                    if intersection == []:
+                        unique_feature.append([list(subset),R])
+                if unique_feature != []:        break
+        self.features_final = features
+
+        # self.u_hsv.append(np.asarray(list(positions[I]['F_HSV'])))
+        if I_R != -1:
+            for c in self.all_valid_hypotheses['F_HSV']:
+                for c1 in self.all_valid_hypotheses['F_HSV'][c].keys():
+                    m1 = np.asarray(list(positions[I_R]['F_HSV']))
+                    m2 = np.asarray(list(c1))
+                    if self._distance_test(m1,m2)<.25:
+                        self.u_hsvR_name.append(c)
+                        # print self.all_valid_hypotheses['F_HSV'].keys()
+                        self.u_hsvR_value.append(self.all_valid_hypotheses['F_HSV'][c][c1]/self.all_valid_hypotheses['sum']['F_HSV'])
+
+            # self.u_shp.append(np.asarray(list([positions[I]['F_SHAPE']])))
+            for s in self.all_valid_hypotheses['F_SHAPE']:
+                for s1 in self.all_valid_hypotheses['F_SHAPE'][s].keys():
+                    m1 = np.asarray(list([positions[I_R]['F_SHAPE']]))
+                    m2 = np.asarray(list([s1]))
+                    if self._distance_test(m1,m2)<.25:
+                        print '>>>>>>>>>>>>>>-----',m1,m2,s
+                        self.u_shpR_name.append(s)
+                        self.u_shpR_value.append(self.all_valid_hypotheses['F_SHAPE'][s][s1]/self.all_valid_hypotheses['sum']['F_SHAPE'])
+
 
         return unique_feature
 
@@ -409,11 +589,9 @@ class Robot():
         self.u_hsv = []
         self.u_shp = []
 
-        self.u_pos_name = []
         self.u_hsv_name = []
         self.u_shp_name = []
 
-        self.u_pos_value = []
         self.u_hsv_value = []
         self.u_shp_value = []
         #check position
@@ -523,7 +701,6 @@ class Robot():
                     if 'FV1' in S.split(' '):
                         all_sentences[S] = self.N['S'][S]/self.N['S']['sum']
 
-
         # Verbs
         print '--------------------------- Updating verbs'
         for condition in conditions:
@@ -541,23 +718,6 @@ class Robot():
                 if not changed:
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
-
-        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-        # all_sentences_with_verbs = all_sentences.copy()
-        # if len(sorted_x)>max_num_of_sentences:
-        #     # all_sentences = {}
-        #     all_sentences_with_verbs = {}
-        #     for count,s in enumerate(reversed(sorted_x)):
-        #         # all_sentences[s[0]] = s[1]
-        #         all_sentences_with_verbs[s[0]] = s[1]
-        #         if count == max_num_of_sentences:    break
-
-
-
-        # for sss in all_sentences_with_verbs:
-        #     all_sentences = {}
-        #     all_sentences[sss] = all_sentences_with_verbs[sss]
-
 
         # Conditions
         print '--------------------------- Updating conditions'
@@ -585,16 +745,6 @@ class Robot():
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
 
-        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-        # if len(sorted_x)>max_num_in_each_sentences:
-        #     all_sentences = {}
-        #     for count,s in enumerate(reversed(sorted_x)):
-        #         all_sentences[s[0]] = s[1]
-        #         if count == max_num_in_each_sentences:    break
-        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-        # print sorted_x
-        # print tttt
-        # connections
         print '--------------------------- Updating connections'
         for condition in ['connect']:
             new_sentences = {}
@@ -613,17 +763,6 @@ class Robot():
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
 
-        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-        # if len(sorted_x)>max_num_in_each_sentences:
-        #     all_sentences = {}
-        #     for count,s in enumerate(reversed(sorted_x)):
-        #         all_sentences[s[0]] = s[1]
-        #         if count == max_num_in_each_sentences:    break
-        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-        # print sorted_x
-        # print tttt
-
-        # _pick_up in self.N
         print '--------------------------- Updating non_terminals'
         new_sentences = {}
         for S in all_sentences:
@@ -640,129 +779,275 @@ class Robot():
             if not changed:
                 new_sentences[' '.join(S[:])] = V1
         all_sentences = new_sentences.copy()
-        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-        # if len(sorted_x)>max_num_in_each_sentences:
-        #     all_sentences = {}
-        #     for count,s in enumerate(reversed(sorted_x)):
-        #         all_sentences[s[0]] = s[1]
-        #         if count == max_num_in_each_sentences:    break
-        # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-        # print sorted_x
-        # print tttt
 
 
-        if self.motion == [0,1,0]:
-            # update the E
-            print '--------------------------- Updating Entity'
-            new_sentences = {}
-            for S in all_sentences:
-                V1 = all_sentences[S]
-                S = S.split(' ')
-                changed = 0
-                for count,part in enumerate(S):
-                    if '_' in part:
-                        # if its single feature
-                        if  self.u_pos!=[] or self.u_hsv!=[] or self.u_shp!=[]:
-                            ok_features = []
-                            if self.u_pos!=[]:      ok_features.append('F_POS')
-                            if self.u_hsv!=[]:      ok_features.append('F_HSV')
-                            if self.u_shp!=[]:      ok_features.append('F_SHAPE')
-                            if part == '_entity':
-                                for i in self.N[part]:
-                                    if i != 'sum' and '_entity' not in i:
-                                        # print '>>',i
-                                        for j in ok_features:
-                                            if j in i:
-                                                # print '>>>',i
-                                                for s,sv in zip(self.u_shp_name, self.u_shp_value):
-                                                    for c,cv in zip(self.u_hsv_name, self.u_hsv_value):
-                                                        val = 1
-                                                        # print '>>',s,c
-                                                        # entity = ''
-                                                        changed = 1
-                                                        i2 = i[:]
-                                                        i2 = i2.split(' ')
-                                                        for ccc,k in enumerate(i2):
-                                                            if k == 'F_HSV':
-                                                                i2[ccc] = c
-                                                                val *= cv
-                                                            if k == 'F_SHAPE':
-                                                                i2[ccc] = s
-                                                                val *= sv
-                                                            # if '_' not in (' ').join(i2):
-                                                                # print '-----------',i2,self.N[part][i]/self.N[part]['sum']*val
-                                                        S[count] = ' '.join(i2)
-                                                        new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']*val
-                        break
-                if not changed:
-                    new_sentences[' '.join(S[:])] = V1
-            all_sentences = new_sentences.copy()
+        # if self.motion == [0,1,0]:
+        # update the E
+        print '--------------------------- Updating E-condition'
+        new_sentences = {}
+        for S in all_sentences:
+            V1 = all_sentences[S]
+            S = S.split(' ')
+            changed = 0
+            for count,part in enumerate(S):
+                if '_' in part:
+                    # if its single feature
+                    if self.feature_I[0][1] == 0:
+                        ok_features = []
+                        for f1 in self.feature_I:
+                            for f2 in f1[0]:
+                                ok_features.append(f2)
+                        if part == '_entity':
+                            for i in self.N[part]:
+                                if i != 'sum' and '_entity' not in i:
+                                    # print '>>',i
+                                    for j in ok_features:
+                                        if j in i:
+                                            # print '>>>',i
+                                            for s,sv in zip(self.u_shp_name, self.u_shp_value):
+                                                for c,cv in zip(self.u_hsv_name, self.u_hsv_value):
+                                                    val = 1
+                                                    # print '>>',s,c
+                                                    # entity = ''
+                                                    changed = 1
+                                                    i2 = i[:]
+                                                    i2 = i2.split(' ')
+                                                    for ccc,k in enumerate(i2):
+                                                        if k == 'F_HSV':
+                                                            i2[ccc] = c
+                                                            val *= cv
+                                                        if k == 'F_SHAPE':
+                                                            i2[ccc] = s
+                                                            val *= sv
+                                                        # if '_' not in (' ').join(i2):
+                                                            # print '-----------',i2,self.N[part][i]/self.N[part]['sum']*val
+                                                    S[count] = ' '.join(i2)
+                                                    new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']*val
 
-            # print all_sentences
+                    if self.feature_I[0][1] == 1:
+                        ok_features = []
+                        for f1 in self.feature_I:
+                            for f2 in f1[0]:
+                                ok_features.append(f2)
+                        if part == '_entity':
+                            for i in self.N[part]:
+                                print i
+                                if i != 'sum' and '_entity' not in i:
+                                    # print '>>',i
+                                    for j in ok_features:
+                                        if j in i:
+                                            # print '>>>',i
+                                            for s,sv in zip(self.u_shp_name, self.u_shp_value):
+                                                for c,cv in zip(self.u_hsv_name, self.u_hsv_value):
+                                                    val = 1
+                                                    # print '>>',s,c
+                                                    # entity = ''
+                                                    changed = 1
+                                                    i2 = i[:]
+                                                    i2 = i2.split(' ')
+                                                    for ccc,k in enumerate(i2):
+                                                        if k == 'F_HSV':
+                                                            i2[ccc] = c
+                                                            val *= cv
+                                                        if k == 'F_SHAPE':
+                                                            i2[ccc] = s
+                                                            val *= sv
+                                                        # if '_' not in (' ').join(i2):
+                                                            # print '-----------',i2,self.N[part][i]/self.N[part]['sum']*val
+                                                    S[count] = ' '.join(i2)
+                                                    new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']*val
+                    break
+            if not changed:
+                new_sentences[' '.join(S[:])] = V1
+        all_sentences = new_sentences.copy()
 
 
+        if self.motion == [0,1,0] or self.motion == [1,0]:
             # update the FV
-            print '--------------------------- Updating FV'
+            print '--------------------------- Updating FV-condition'
+            # print '>>>>>>>>>>>',self.u_pos_f
             new_sentences = {}
+            counter = 0
             for S in all_sentences:
+                counter += 1
+                print counter
                 V1 = all_sentences[S]
                 S = S.split(' ')
                 changed = 0
                 for count,part in enumerate(S):
                     if '_' in part:
                         # if its a location
-                        if self.u_pos_f != []:
+                        if self.feature_F[0][1] == 0:
                             if part == '_F_POS':
                                 changed = 1
                                 for p in self.all_valid_hypotheses['F_POS']:
                                     for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
-                                        m1 = self.u_pos_f
+                                        m1 = self.u_pos_f[0]
                                         m2 = np.asarray(list(p1))
                                         if self._distance_test(m1,m2)<.25:
                                             S[count] = p
-                                            new_sentences[' '.join(S[:])] = V1/self._distance_test(m1,m2)
-                        # if its a relation
+                                            new_sentences[' '.join(S[:])] = V1#/self._distance_test(m1,m2)
+                        if self.feature_F[0][1] == 1:
+                            # print 'YAAAAAAAAY'
+                            if part == '_relation' :
+                                for i in self.N[part]:
+                                    if i != 'sum' and '_relation' in i:
+                                        i2 = i[:]
+                                        i2 = i2.split(' ')
+                                        # make sure there are at least _relation and _entity
+                                        countt = 0
+                                        P1 = 1
+                                        for j2 in i2:
+                                            if '_' in j2:
+                                                countt += 1
+                                        if countt == 2:
+                                            for count2,part2 in enumerate(i2):
+                                                if part2 == '_relation':
+                                                    for i3 in self.N[part2]:
+                                                        if i3 != 'sum' and '_relation' not in i3:
+                                                            i2[count2] = i3
+                                                            P1 *= self.N[part2][i3]/self.N[part2]['sum']
+                                                if part2 == '_entity':
+                                                    for i3 in self.N[part2]:
+                                                        if i3 != 'sum' and '_entity' not in i3:
+                                                            i2[count2] = i3
+                                                            # print '>>>>.',i3
+                                                            P1 *= self.N[part2][i3]/self.N[part2]['sum']
+                                                            S[count] = ' '.join(i2)
+                                                            new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']*P1
+                                                            changed = 1
+                                                # print '>>>',S
+
                 if not changed:
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
 
-            # including words order
-            print '--------------------------- Updating Word Order'
-            for i in all_sentences:
-                words = i.split(' ')
-                words_order_val = [10]
-                for j in range(len(words)-1):
-                    if words[j] in self.words_order:
-                        if words[j+1] in self.words_order[words[j]]:
-                            words_order_val.append(1+float(self.words_order[words[j]][words[j+1]])/float(self.words_order[words[j]]['count']))
-                all_sentences[i] *= np.min(words_order_val)
-                # print '>>>>..',i,np.min(words_order_val)
+            print len(all_sentences.keys())
 
+            if self.feature_F[0][1] == 1:
+                new_sentences = {}
+                for S in all_sentences:
+                    # if 'F_POS' not in S:
+                        # print '>>>>>>',S
 
-            # sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
-            # if len(sorted_x)>max_num_in_each_sentences:
-            #     all_sentences = {}
-            #     for count,s in enumerate(reversed(sorted_x)):
-            #         all_sentences[s[0]] = s[1]
-            #         if count == max_num_in_each_sentences:    break
+                    # print S
+                    V1 = all_sentences[S]
+                    S = S.split(' ')
+                    changed = 0
+                    for count,part in enumerate(S):
+                        # print '>>>>>>>',part
+                        if '_' in part:
+                            # print '>>>>>>>',part
+                            if part == 'F_DIR':
+                                for i in self.T['features'][part]:
+                                    if i != 'sum' and 'F_DIR' not in i:
+                                        changed = 1
+
+                                        if '_' in i:
+                                            i2 = i.split('_')
+                                            # print i2
+                                            i2 = ' '.join(i2[1:])
+                                            # print i2
+                                            # print '-----'
+                                        else:
+                                            i2 = i
+                                        S[count] = i2
+                                        new_sentences[' '.join(S[:])] = V1*self.T['features'][part][i]/self.T['sum'][part]
+                                        # print S
+                            break
+                        # if its a relation
+                    if not changed:
+                        new_sentences[' '.join(S[:])] = V1
+            all_sentences = new_sentences.copy()
+
+            if 'F_HSV' not in self.features_final:  self.features_final.append('F_HSV')
+            if 'F_SHAPE' not in self.features_final:  self.features_final.append('F_SHAPE')
+            for just_a_counter in range(len(self.features_final)):
+                if self.feature_F[0][1] == 1:
+                    new_sentences = {}
+                    for S in all_sentences:
+                        # print S
+                        V1 = all_sentences[S]
+                        S = S.split(' ')
+                        changed = 0
+                        for count,part in enumerate(S):
+                            # print '>>>>>>>',part
+                            if '_' in part:
+                                # print '>>>>>>>',part
+                                if part in self.features_final:
+                                    if part == 'F_HSV':
+                                        for c,cv in zip(self.u_hsvR_name, self.u_hsvR_value):
+                                            changed = 1
+                                            S[count] = c
+                                            new_sentences[' '.join(S[:])] = V1*cv
+                                            A = ' '.join(S[:])
+                                            if len(A.split('_')) == 2:
+                                                print A
+                                                print '-------------------------------'
+
+                                    if part == 'F_SHAPE':
+                                        for c,cv in zip(self.u_shpR_name, self.u_shpR_value):
+                                            changed = 1
+                                            S[count] = c
+                                            # print '-6-6-6-6-6-',' '.join(S[:])
+                                            new_sentences[' '.join(S[:])] = V1*cv
+                                            A = ' '.join(S[:])
+
+                                    if part == 'F_POS':
+                                        for p in self.all_valid_hypotheses['F_POS']:
+                                            for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
+                                                m1 = self.u_pos_f[0]
+                                                m2 = np.asarray(list(p1))
+                                                if self._distance_test(m1,m2)<.25:
+                                                    S[count] = p
+                                                    new_sentences[' '.join(S[:])] = V1#/self._distance_test(m1,m2)
+                                            # print S
+                                    break
+                        if not changed:
+                            new_sentences[' '.join(S[:])] = V1
+                all_sentences = new_sentences.copy()
+
+            # # including words order
+            # print '--------------------------- Updating Word Order'
+            # for i in all_sentences:
+            #     words = i.split(' ')
+            #     words_order_val = [10]
+            #     for j in range(len(words)-1):
+            #         if words[j] in self.words_order:
+            #             if words[j+1] in self.words_order[words[j]]:
+            #                 words_order_val.append(1+float(self.words_order[words[j]][words[j+1]])/float(self.words_order[words[j]]['count']))
+            #     all_sentences[i] *= np.min(words_order_val)
+            #     # print '>>>>..',i,np.min(words_order_val)
+
 
         print
         print '==----------------- All sentences ---------------=='
         print
+        sentences = ''
         sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
         counter = 0
         for count,i in enumerate(reversed(sorted_x)):
+            print count
+            # if '_' not in i[0]:
+            #     print '>>>>>>>>',i
+
+            # print count
             words =  i[0].split(' ')
             ok = 1
             for j in range(len(words)-1):
-                if words[j] == words[j+1] or '_' in words[j]:
+                if words[j] == words[j+1] or '_' in words[j] or '_' in words[j+1]:
                     ok = 0
             if ok:
                 counter += 1
                 print ' '.join(words),':',i[1]
-            if counter>30: break
+                sentences += str(counter)+'-'+' '.join(words)+'\n'
+            if counter==30: break
 
-            # print self.all_valid_hypotheses
+        sentences
+        file1 = open("/home/omari/Dropbox/robot_modified/IT/generation/sentences-"+str(self.scene)+".txt", "w")
+        file1.write(sentences)
+        file1.close()
+
 
     #-----------------------------------------------------------------------------------------------------#     find color
     def _find_color(self,a):
@@ -1164,14 +1449,14 @@ class Robot():
         memDC.SelectObject(wx.NullBitmap)
 
         img = bmp.ConvertToImage()
-        if self.frame_number<10:        j = '000'+str(self.frame_number)
-        elif self.frame_number<100:     j = '00'+str(self.frame_number)
-        elif self.frame_number<1000:    j = '0'+str(self.frame_number)
-        if self.scene<10:      k = '000'+str(self.scene)
-        elif self.scene<100:    k = '00'+str(self.scene)
-        elif self.scene<1000:   k = '0'+str(self.scene)
-        img.SaveFile(self.image_dir+str(self.scene)+'/scene_'+k+'_frame_'+j+'.png', wx.BITMAP_TYPE_PNG)
-        img.SaveFile(self.image_dir2+str(self.scene)+'/scene_'+k+'_frame_'+j+'.png', wx.BITMAP_TYPE_PNG)
+        # if self.frame_number<10:        j = '000'+str(self.frame_number)
+        # elif self.frame_number<100:     j = '00'+str(self.frame_number)
+        # elif self.frame_number<1000:    j = '0'+str(self.frame_number)
+        # if self.scene<10:      k = '000'+str(self.scene)
+        # elif self.scene<100:    k = '00'+str(self.scene)
+        # elif self.scene<1000:   k = '0'+str(self.scene)
+        img.SaveFile('/home/omari/Dropbox/robot_modified/IT/generation/'+str(self.scene)+'-scene.png', wx.BITMAP_TYPE_PNG)
+        # img.SaveFile(self.image_dir2+str(self.scene)+'/scene_'+k+'_frame_'+j+'.png', wx.BITMAP_TYPE_PNG)
 
         print self.frame_number,'image saved..'
         self.frame_number+=1

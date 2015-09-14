@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 
 def read_data():
     Data = {}
-    tree = ET.parse('/home/omari/Datasets/robot/treebank/commands.xml')
+    tree = ET.parse('/home/omari/Dropbox/robot_modified/treebank/commands.xml')
     root = tree.getroot()
     Data[root.tag] = {}
     for child in root:
@@ -25,7 +25,7 @@ def read_data():
         else:
             Data[root.tag][sceneid][Id] = child.attrib['text']
 
-    tree1 = ET.parse('/home/omari/Datasets/robot/treebank/comments.xml')
+    tree1 = ET.parse('/home/omari/Dropbox/robot_modified/treebank/comments.xml')
     root1 = tree1.getroot()
     Data['comments'] = {}
     for child in root1:
@@ -34,7 +34,7 @@ def read_data():
 
     Data['layouts'] = {}
     Data['gripper'] = {}
-    tree = ET.parse('/home/omari/Datasets/robot/treebank/layouts.xml')
+    tree = ET.parse('/home/omari/Dropbox/robot_modified/treebank/layouts.xml')
     root = tree.getroot()
     for child in root:
         counter = 0
@@ -50,7 +50,7 @@ def read_data():
                 counter += 1
 
     Data['scenes'] = {}
-    tree = ET.parse('/home/omari/Datasets/robot/treebank/scenes.xml')
+    tree = ET.parse('/home/omari/Dropbox/robot_modified/treebank/scenes.xml')
     root = tree.getroot()
     for child in root:
         Id = int(child.attrib['id'])

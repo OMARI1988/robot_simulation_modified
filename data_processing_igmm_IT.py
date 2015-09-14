@@ -17,6 +17,7 @@ import colorsys
 import multiprocessing
 
 
+
 #--------------------------------------------------------------------------------------------------------#
 # no 2 phrases are allowed to intersect in the same sentence
 def _intersection(subset, indices):
@@ -196,9 +197,17 @@ def calc(data):
                     s2 = activity_sentence[v][d]['value']
                     if v == (0,1,0,):
                         # we need both TE and TV
-                        for L in range(1,len(s1)):
+                        _indices = [i+1 for i, x in enumerate(s1) if '_' in x]
+                        for L in _indices:
                             x = _check_TE_TV(s1[0:L],s1[L:len(s1)],s2[0:L],s2[L:len(s2)])
                             if x != []:
+                                # print '>>>>>>>',x[0][0]
+                                # print '>>>>>>>',x[0][1]
+                                # print '>>>>>>>',x[0][2]
+                                # print '>>>>>>>',x[0][3]
+                                # print '>>>>>>>',x[0][4]
+                                # print '>>>>>>>',x[0][5]
+                                # print '-------------------'
                                 activity_sentence[v][d]['valid_configurations'].append(x)
 
                     if v == (0,1,):
@@ -212,6 +221,15 @@ def calc(data):
                         x = _check_TV_main(s1,s2)
                         if x != []:
                             activity_sentence[v][d]['valid_configurations'].append(x)
+
+                        #############################################
+                        #### this has been fixed by extending the actions to include all possibilities #####
+                        #############################################
+                        # _indices = [i+1 for i, x in enumerate(s1) if '_' in x]
+                        # for L in _indices:
+                        #     x = _check_TE_TV2(s1[0:L],s1[L:len(s1)],s2[0:L],s2[L:len(s2)])
+                        #     if x != []:
+                        #         activity_sentence[v][d]['valid_configurations'].append(x)
         return activity_sentence
 
     #--------------------------------------------------------------------------------------------------------#
@@ -222,7 +240,7 @@ def calc(data):
         TE_result,[s1,e1,r1],[s1_v,e1_v,r1_v] = _check_TE(a[:],a_val[:])
         TV_result,[s2,e2,r2],[s2_v,e2_v,r2_v] = _check_TV(b[:],b_val[:])
         if TE_result and TV_result:
-            Valid.append([['PRE','POST'],[a,b],[s1,e1,r1],[s1_v,e1_v,r1_v],[s2,e2,r2],[s2_v,e2_v,r2_v]])
+            Valid.append([['E2','FV2'],[a,b],[s1,e1,r1],[s1_v,e1_v,r1_v],[s2,e2,r2],[s2_v,e2_v,r2_v]])
         # TE_result,[s1,e1,r1] = _check_TE(b)
         # TV_result,[s2,e2,r2] = _check_TV(a)
         # if TE_result and TV_result:
@@ -236,7 +254,7 @@ def calc(data):
         # [[the order TV,TE or TE,TV].[the sentences a,b],[TE results],[TV results]]
         TE_result,[s1,e1,r1],[s1_v,e1_v,r1_v] = _check_TE(a[:],a_val[:])
         if TE_result:
-            Valid.append([['PRE'],[a,''],[s1,e1,r1],[s1_v,e1_v,r1_v],[''],['']])
+            Valid.append([['E1'],[a,''],[s1,e1,r1],[s1_v,e1_v,r1_v],[''],['']])
         # TE_result,[s1,e1,r1] = _check_TE(b)
         # TV_result,[s2,e2,r2] = _check_TV(a)
         # if TE_result and TV_result:
@@ -250,7 +268,7 @@ def calc(data):
         # [[the order TV,TE or TE,TV].[the sentences a,b],[TE results],[TV results]]
         TV_result,[s2,e2,r2],[s2_v,e2_v,r2_v] = _check_TV(a[:],a_val[:])
         if TV_result:
-            Valid.append([['POST'],['',a],[''],[''],[s2,e2,r2],[s2_v,e2_v,r2_v]])
+            Valid.append([['FV1'],['',a],[''],[''],[s2,e2,r2],[s2_v,e2_v,r2_v]])
         # TE_result,[s1,e1,r1] = _check_TE(b)
         # TV_result,[s2,e2,r2] = _check_TV(a)
         # if TE_result and TV_result:
@@ -358,7 +376,7 @@ def calc(data):
 
     #--------------------------------------------------------------------------------------------------------#
     # check verb sentences with for relations and entities
-    def _match_scene_to_hypotheses(activity_sentence,scene_i,scene_f,m_obj):
+    def _match_scene_to_hypotheses(activity_sentence,scene_i,scene_f,m_obj,printtt):
         match = {}
         for v in activity_sentence:
             for d in activity_sentence[v]:
@@ -373,14 +391,23 @@ def calc(data):
                         TE_values = i[3]
                         TV_results = i[4]
                         TV_values = i[5]
-
-                        # print '>>',v,d
+                        # print '########################################################'
+                        # print 'THIS IS HERE'
+                        # print '########################################################'
+                        if printtt:
+                            print '>>>>>>>>>',v,d
                         if v == (0,1,0,):
                             objects = _get_the_TE_from_scene(TE_results[:],TE_values[:],scene_i)
+                            if printtt:
+                                print 'objects >>',objects
                             if len(objects)==1:
                                 if int(objects[0])==int(m_obj):
+                                    if printtt:
+                                        print '>> the moving object is correct'
                                     #print 'the object is:',objects
-                                    location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i)
+                                    location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i,printtt)
+                                    if printtt:
+                                        print 'location >>',location
                                     if len(location)==1:
                                         #print 'the target location is:',location
                                         match = _match_final_scene(objects,'F_POS',location,scene_f)
@@ -392,10 +419,11 @@ def calc(data):
                                     match = 1
 
                         if v == (1,0,):
-                            location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i)
-                            # print '>>',location
+                            location = _get_the_TV_from_scene(TV_results[:],TV_values[:],scene_i,printtt)
+                            if printtt:
+                                print '>>>',location
                             if len(location)==1:
-                                #print 'the target location is:',location
+                                # print '--------------the target location is:',location
                                 match = _match_final_scene([int(m_obj)],'F_POS',location,scene_f)
                                 #print match
 
@@ -425,7 +453,7 @@ def calc(data):
 
     #--------------------------------------------------------------------------------------------------------#
     # This function gets all the objects in the scene with certain features NO RELATIONS (get target entitity)
-    def _get_the_TV_from_scene(TV_results,TV_values,scene):
+    def _get_the_TV_from_scene(TV_results,TV_values,scene,printtt):
         # m_objects = list((n for n in scene if scene.node[n]['type1']=='mo'))
         # objects = list((n for n in scene if scene.node[n]['type1']=='o'))#
         # all_objects = m_objects+objects
@@ -434,16 +462,31 @@ def calc(data):
         relations = TV_results[2]
         features_v = TV_values[1]
         relations_v = TV_values[2]
-        # print '---',features
-        # print '---',features_v
-        # print '---',relations
-        # print '---',relations_v
+        if printtt:
+            print '---',features
+            print '---',features_v
+            print '---',relations
+            print '---',relations_v
+            print 'len---',len(relations),len(features)
+
+        count = 0
+        for i,j in zip(features,features_v):
+            count2 = 0
+            for i1,j1 in zip(i,j):
+                if i1 == 'F_POS':
+                    features_v[count][count2] = (features_v[count][count2][0]/7.0,features_v[count][count2][1]/7.0, 0,)
+                    if printtt:
+                        print i1,j1,features_v[count][count2]
+                count2 += 1
+            count += 1
         location_pass = []
         if relations == []:
             if len(features[0]) == 1:
                 if features[0][0] == 'F_POS':
-                    loc = np.asarray(features_v[0][0])/7.0
+                    loc = np.asarray(features_v[0][0])
                     location_pass.append(loc)
+
+
         elif len(relations)==1 and len(features)==1:
             obj_pass = []
             for obj in all_objects:
@@ -455,11 +498,18 @@ def calc(data):
             for obj in obj_pass:
                 #NOTE: this will only work for over !
                 #NOTE: if you want to learn nearset its also here
-                loc = scene.node[obj]['_F_POS']
+                loc = scene.node[obj]['_F_POS'][:]
+                # print '-----------',loc
+                # print '-----------',relations_v
                 loc[0] += relations_v[0][0][0]
                 loc[1] += relations_v[0][0][1]
+                loc[2] += relations_v[0][0][2]
+                # print '-----------',loc
                 #print loc
                 location_pass.append(loc)
+
+
+
         elif len(relations) == len(features):
 
             obj1 = []
@@ -495,7 +545,7 @@ def calc(data):
                         # print o1,o2
                         distance = np.asarray(scene.node[o1]['_F_POS'])-np.asarray(scene.node[o2]['_F_POS'])
 
-                        if distance[0] == relations_v[i][0][0] and distance[1] == relations_v[i][0][1]:
+                        if distance[0] == relations_v[i][0][0] and distance[1] == relations_v[i][0][1] and distance[2] == relations_v[i][0][2]:
                             obj2_bar.append(o1)
                 # print '>>>>> obj2 bar',obj2_bar
                 # There are some objects that achive this relation
@@ -508,7 +558,17 @@ def calc(data):
             if len(obj2)==1:
                 #print 'The final object',obj2
                 loc = scene.node[obj2[0]]['_'+'F_POS']
+
+
+                loc[0] += relations_v[0][0][0]
+                loc[1] += relations_v[0][0][1]
+                loc[2] += relations_v[0][0][2]
+
                 location_pass.append(loc)
+
+        # print '##########################################'
+        # print location_pass
+        # print '##########################################'
 
         return location_pass
 
@@ -517,6 +577,8 @@ def calc(data):
     def _match_final_scene(objects,target_feature,target_value,scene):
         match = 0
         loc = scene.node[str(objects[0])]['_'+target_feature]
+        # print 'scene loc >>>>',np.abs(np.asarray(loc))
+        # print 'calculated loc >>>>',np.asarray(target_value)
         if np.sum(np.abs(np.asarray(loc)-np.asarray(target_value)))==0:
             match = 1
         return match
@@ -576,13 +638,20 @@ def calc(data):
     L = data[8]
     m_obj = data[9]
     motion_words = data[10]
-    # print '>>>>>',subset
+    printtt = 0
+    ok = 1
+    for ss in ('move','red','block','place','on top of','blue','green',): #('on', 'pyramid', 'green', 'block', 'put', 'red',)
+        if ss not in subset:
+            ok = 0
+    if ok:
+        printtt = 1
     #---------------------------------------------------------------#
     #test if the subset has a motion word
     motion_flag = 0
     for i in motion_words:
         if i in subset:
             motion_flag = 1
+
     results = [[]]
     hypotheses = []
     #---------------------------------------------------------------#
@@ -590,23 +659,28 @@ def calc(data):
     #no_intersection = _intersection(subset,indices)
     if motion_flag:
         all_possibilities = _all_possibilities_func(subset, hyp_language_pass)
+        # print hyp_language_pass
         #---------------------------------------------------------------#
         # find the actual possibilities for every word in the subset
         for element in itertools.product(*all_possibilities):
             #---------------------------------------------------------------#
             # no 2 words are allowed to mean the same thing
             not_same, features = _not_same_func(element)
-            # print '---',element
-            # print '!!',not_same
+            if printtt:
+                print '---',element
+                print '!!',not_same
             if not_same:
                 #---------------------------------------------------------------#
                 # all features should be in the scene
                 feature_match, matched_features = _all_features_match(features,all_scene_features)
-                # print '++',feature_match
+                if printtt:
+                    print '++',feature_match
                 if feature_match:
                     #---------------------------------------------------------------#
                     # does actions match ?   it should match 100%
                     motion_pass = _motion_match(subset,element,indices,total_motion)
+                    if printtt:
+                        print '--',motion_pass
                     if motion_pass:
                         # print '>>',motion_pass
                         #---------------------------------------------------------------#
@@ -616,9 +690,12 @@ def calc(data):
                         # divide sentence with verbs
                         activity_sentence = _activity_domain(parsed_sentence, value_sentence, subset, element)
                         activity_sentence = _divide_into_TE_and_TV(activity_sentence)
-                        # print subset
                         # print activity_sentence
-                        activity_sentence = _match_scene_to_hypotheses(activity_sentence,graph_i,graph_f,m_obj)
+                        # print tttt
+                        # print subset
+                        # if printtt:
+                        #     print activity_sentence
+                        activity_sentence = _match_scene_to_hypotheses(activity_sentence,graph_i,graph_f,m_obj,printtt)
                         results.append(_print_results(activity_sentence,scene_description,parsed_sentence,subset,element,matched_features,scene,L))
                         if results[-1] != []:
                             if [subset,element] not in hypotheses:  hypotheses.append([subset,element])
@@ -664,7 +741,7 @@ class process_data():
         self.n_word                 = 3
         self.step                   = 3
         self.all_words              = []
-        self.maximum_hyp_in_sentence = 7
+        self.maximum_hyp_in_sentence = 8
 
         #gmm
         self.gmm_obj                = {}
@@ -678,7 +755,7 @@ class process_data():
         self.pass_distance_phrases  = .25                       # distance test for how much phrases match
         self.p_obj_pass             = .7                        # for object
         self.p_relation_pass        = .8                        # for both relation and motion
-        self.pool = multiprocessing.Pool(12)
+        self.pool = multiprocessing.Pool(6)
 
         # Analysis
         self.correct_commands = {}
@@ -689,7 +766,6 @@ class process_data():
         self.all_valid_hypotheses = {}
         self.dropbox = dropbox
         self.a_lot_of_objects = []
-        self.all_scenes_with_no_commands = 0
 
 #--------------------------------------------------------------------------------------------------------#
     def _read_grammar(self, scene, valid_scenes):
@@ -1434,21 +1510,22 @@ class process_data():
         checked = []
         for s in self.phrases:
             for word in self.phrases[s]:
-                if word not in checked:
-                    checked.append(word)
-                    count = float(self.hyp_relation[word]['count'])
-                    for j in self.hyp_relation[word]:
-                        if j != 'count':
-                            for k in self.hyp_relation[word][j]:
-                                prob = self._probability(count,self.hyp_relation[word][j][k])
-                                if prob>self.p_relation_pass:
-                                    if word not in self.hyp_relation_pass:
-                                        self.hyp_relation_pass[word] = {}
-                                        self.hyp_relation_pass[word]['possibilities'] = 0
-                                    if j not in self.hyp_relation_pass[word]:
-                                        self.hyp_relation_pass[word][j] = {}
-                                    self.hyp_relation_pass[word]['possibilities'] += 1
-                                    self.hyp_relation_pass[word][j][k] = prob
+                if 'il' not in word.split(' ') and 'la' not in word.split(' '):
+                    if word not in checked:
+                        checked.append(word)
+                        count = float(self.hyp_relation[word]['count'])
+                        for j in self.hyp_relation[word]:
+                            if j != 'count':
+                                for k in self.hyp_relation[word][j]:
+                                    prob = self._probability(count,self.hyp_relation[word][j][k])
+                                    if prob>self.p_relation_pass:
+                                        if word not in self.hyp_relation_pass:
+                                            self.hyp_relation_pass[word] = {}
+                                            self.hyp_relation_pass[word]['possibilities'] = 0
+                                        if j not in self.hyp_relation_pass[word]:
+                                            self.hyp_relation_pass[word][j] = {}
+                                        self.hyp_relation_pass[word]['possibilities'] += 1
+                                        self.hyp_relation_pass[word][j][k] = prob
 
     #--------------------------------------------------------------------------------------------------------#
     def _test_motion_hyp(self):
@@ -1456,21 +1533,22 @@ class process_data():
         checked = []
         for s in self.phrases:
             for word in self.phrases[s]:
-                if word not in checked:
-                    checked.append(word)
-                    count = float(self.hyp_motion[word]['count'])
-                    for j in self.hyp_motion[word]:
-                        if j != 'count':
-                            for k in self.hyp_motion[word][j]:
-                                prob = self._probability(count,self.hyp_motion[word][j][k])
-                                if prob>self.p_relation_pass:
-                                    if word not in self.hyp_motion_pass:
-                                        self.hyp_motion_pass[word] = {}
-                                        self.hyp_motion_pass[word]['possibilities'] = 0
-                                    if j not in self.hyp_motion_pass[word]:
-                                        self.hyp_motion_pass[word][j] = {}
-                                    self.hyp_motion_pass[word]['possibilities'] += 1
-                                    self.hyp_motion_pass[word][j][k] = prob
+                if 'il' not in word.split(' ') and 'la' not in word.split(' '):
+                    if word not in checked:
+                        checked.append(word)
+                        count = float(self.hyp_motion[word]['count'])
+                        for j in self.hyp_motion[word]:
+                            if j != 'count':
+                                for k in self.hyp_motion[word][j]:
+                                    prob = self._probability(count,self.hyp_motion[word][j][k])
+                                    if prob>self.p_relation_pass:
+                                        if word not in self.hyp_motion_pass:
+                                            self.hyp_motion_pass[word] = {}
+                                            self.hyp_motion_pass[word]['possibilities'] = 0
+                                        if j not in self.hyp_motion_pass[word]:
+                                            self.hyp_motion_pass[word][j] = {}
+                                        self.hyp_motion_pass[word]['possibilities'] += 1
+                                        self.hyp_motion_pass[word][j][k] = prob
 
     #--------------------------------------------------------------------------------------------------------#
     def _test_obj_hyp(self):
@@ -1478,24 +1556,25 @@ class process_data():
         checked = []
         for s in self.phrases:
             for word in self.phrases[s]:
-                if word not in checked:
-                    checked.append(word)
-                    for f in self.gmm_obj[word]:
-                        N = self.gmm_obj[word][f]['N']
-                        for i in self.gmm_obj[word][f]['gmm']:
-                            value = self.gmm_obj[word][f]['gmm'][i]['mean']
-                            count = self.gmm_obj[word][f]['gmm'][i]['N']
-                            p = self._probability(N,count)
-                            if p >self.p_obj_pass:
-                                #print f,'>>>',word,value,p
-                                if word not in hyp_language_pass:
-                                    hyp_language_pass[word] = {}
-                                    hyp_language_pass[word]['possibilities'] = 1
-                                else:
-                                    hyp_language_pass[word]['possibilities'] += 1
-                                if f not in hyp_language_pass[word]:
-                                    hyp_language_pass[word][f] = {}
-                                hyp_language_pass[word][f][tuple(value)] = p
+                if 'il' not in word.split(' ') and 'la' not in word.split(' '):
+                    if word not in checked:
+                        checked.append(word)
+                        for f in self.gmm_obj[word]:
+                            N = self.gmm_obj[word][f]['N']
+                            for i in self.gmm_obj[word][f]['gmm']:
+                                value = self.gmm_obj[word][f]['gmm'][i]['mean']
+                                count = self.gmm_obj[word][f]['gmm'][i]['N']
+                                p = self._probability(N,count)
+                                if p >self.p_obj_pass:
+                                    #print f,'>>>',word,value,p
+                                    if word not in hyp_language_pass:
+                                        hyp_language_pass[word] = {}
+                                        hyp_language_pass[word]['possibilities'] = 1
+                                    else:
+                                        hyp_language_pass[word]['possibilities'] += 1
+                                    if f not in hyp_language_pass[word]:
+                                        hyp_language_pass[word][f] = {}
+                                    hyp_language_pass[word][f][tuple(value)] = p
         #for word in hyp_language_pass:
         self.hyp_obj_pass = copy.deepcopy(hyp_language_pass)
 
@@ -1507,7 +1586,6 @@ class process_data():
         self._combine_hyp(self.hyp_language_pass,self.hyp_obj_pass)
         self._combine_hyp(self.hyp_language_pass,self.hyp_relation_pass)
         self._combine_hyp(self.hyp_language_pass,self.hyp_motion_pass)
-
     #--------------------------------------------------------------------------------------------------------#
     # NOTE: this will pass all hypotheses that are .9 of maximum value
     def _combine_hyp(self,A,B):
@@ -1524,7 +1602,10 @@ class process_data():
                         if len(B[word][f]) > 1:
                             C = copy.deepcopy(B[word][f])
                             maxval = max(C.iteritems(), key=operator.itemgetter(1))[1]
-                            keys = [k for k,v in C.items() if v>.9*maxval]
+                            # if f == 'CH_POS':
+                            #     keys = [k for k,v in C.items() if v>.5*maxval]
+                            # else:
+                            keys = [k for k,v in C.items() if v>.7*maxval]
                             A[word][f] = {}
                             for key in keys:
                                 A[word]['possibilities'] += 1
@@ -1532,10 +1613,13 @@ class process_data():
                         else:
                             A[word][f] = copy.deepcopy(B[word][f])
                             A[word]['possibilities'] += 1
+        # print self.hyp_all_features['place']
+        # print tttt
 
     #--------------------------------------------------------------------------------------------------------#
     # NOTE: this will pass all hypotheses that are .7 of maximum value expect location
     def _filter_hyp(self):
+        self.hyp_language_pass_scenes = {}
         for word in self.hyp_language_pass:
             max_hyp = 0
             keys_remove = []
@@ -1547,7 +1631,7 @@ class process_data():
 
             # find all hypotheses that are within .9 of maximum hyp
             for f in self.hyp_language_pass[word]:
-                if f != 'possibilities' and f!= 'F_POS':
+                if f != 'possibilities' and f!= 'F_POS' and f!= 'CH_POS':
                     for key in self.hyp_language_pass[word][f].keys():
                         if self.hyp_language_pass[word][f][key]<.9*max_hyp:         keys_remove.append([f,key])
             for A in keys_remove:
@@ -1559,57 +1643,70 @@ class process_data():
     # remove sub phrases and bigger phrases based on their meanings
     # NOTE: this will remove sub phrases
     def _filter_phrases(self):
-        phrases_to_remove = {}                                                     # this contains the list of phrases that are already described in smaller phrases
-        hyp = self.hyp_language_pass
-        checked = []
-        for s in self.phrases:
-            for word in self.phrases[s]:
-                if word not in checked:
-                    checked.append(word)
-                    if word in hyp:
-                        words = self._get_phrases(word)
-                        for i in words:
-                            for feature in hyp[word]:
-                                if feature == 'possibilities': continue
-                                for p1 in hyp[word][feature]:
-                                    score = []
-                                    matching = {}
-                                    for sub_phrase in words[i]:
-                                        score.append(0)
-                                        if sub_phrase in hyp:
-                                            if feature in hyp[sub_phrase]:
-                                                for p2 in hyp[sub_phrase][feature]:
-                                                    m1 = np.asarray(list(p1))
-                                                    m2 = np.asarray(list(p2))
-                                                    if len(m1) != len(m2):          continue        # motions !
-                                                    if self._distance_test(m1,m2)<self.pass_distance_phrases:
-                                                        score[-1] = 1
-                                                        matching[sub_phrase] = p2
-                                    N = float(np.sum(score))/float(len(words[i]))
-                                    #print N
-                                    # case 1 if N == 1 it means I should remove sub phrases
-                                    # case 2 if N == 0 I should keep everything
-                                    # case 3 if N < 1  I should remove phrase
-                                    if N == 1:
-                                        if feature == 'CH_POS' or feature == 'F_DIR' or feature == 'F_HSV':
-                                            for key in matching:
-                                                if key in ['rosso','verde','blu','grigio','ciano','porpora','nero','rosa','magenta','bianco'] and feature == 'F_HSV':
-                                                    continue
-                                                if key not in phrases_to_remove:            phrases_to_remove[key] = {}
-                                                if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
-                                                if matching[key] not in phrases_to_remove[key][feature]:
-                                                    phrases_to_remove[key][feature].append(matching[key])
-                                    elif N > 0:
-                                        #print '##########################################################################',word,p1
-                                        if word not in phrases_to_remove:               phrases_to_remove[word] = {}
-                                        if feature not in phrases_to_remove[word]:      phrases_to_remove[word][feature] = []
-                                        if p1 not in phrases_to_remove[word][feature]:
-                                            phrases_to_remove[word][feature].append(p1)
-        #print phrases_to_remove.keys()
-        for word in phrases_to_remove:
-            for feature in phrases_to_remove[word]:
-                for key in phrases_to_remove[word][feature]:
-                    self._remove_phrase(word, feature, key)
+        self.hyp_language_pass_scenes = {}
+        for scene in self.phrases:
+            self.hyp_language_pass_scenes[scene] = {}
+            phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
+            phrases_to_remove = {}                                                     # this contains the list of phrases that are already described in smaller phrases
+            # hyp = self.hyp_language_pass
+            hyp = {}
+            for key in phrases_with_hyp:
+                hyp[key] = copy.deepcopy(self.hyp_language_pass[key])
+                self.hyp_language_pass_scenes[scene][key] = {}
+                self.hyp_language_pass_scenes[scene][key] = copy.deepcopy(self.hyp_language_pass[key])
+            # print self.hyp_language_pass_scenes
+            checked = []
+            for s in self.phrases:
+                for word in self.phrases[s]:
+                    if word not in checked:
+                        checked.append(word)
+                        if word in hyp:
+                            words = self._get_phrases(word)
+                            for i in words:
+                                for feature in hyp[word]:
+                                    if feature == 'possibilities': continue
+                                    for p1 in hyp[word][feature]:
+                                        score = []
+                                        matching = {}
+                                        for sub_phrase in words[i]:
+                                            score.append(0)
+                                            if sub_phrase in hyp:
+                                                if feature in hyp[sub_phrase]:
+                                                    for p2 in hyp[sub_phrase][feature]:
+                                                        m1 = np.asarray(list(p1))
+                                                        m2 = np.asarray(list(p2))
+                                                        if len(m1) != len(m2):          continue        # motions !
+                                                        if self._distance_test(m1,m2)<self.pass_distance_phrases:
+                                                            score[-1] = 1
+                                                            matching[sub_phrase] = p2
+                                        N = float(np.sum(score))/float(len(words[i]))
+                                        #print N
+                                        # case 1 if N == 1 it means I should remove sub phrases
+                                        # case 2 if N == 0 I should keep everything
+                                        # case 3 if N < 1  I should remove phrase
+                                        if N == 1:
+                                            if feature == 'CH_POS' or feature == 'F_DIR' or feature == 'F_HSV':
+                                                for key in matching:
+                                                    if key in ['red','green','blue','gray','grey','cyan','purple','black','pink','magenta','white'] and feature == 'F_HSV':
+                                                        continue
+                                                    if key not in phrases_to_remove:            phrases_to_remove[key] = {}
+                                                    if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []
+                                                    if matching[key] not in phrases_to_remove[key][feature]:
+                                                        phrases_to_remove[key][feature].append(matching[key])
+                                        elif N > 0:
+                                            #print '##########################################################################',word,p1
+                                            if word not in phrases_to_remove:               phrases_to_remove[word] = {}
+                                            if feature not in phrases_to_remove[word]:      phrases_to_remove[word][feature] = []
+                                            if p1 not in phrases_to_remove[word][feature]:
+                                                phrases_to_remove[word][feature].append(p1)
+            #print phrases_to_remove.keys()
+            for word in phrases_to_remove:
+                for feature in phrases_to_remove[word]:
+                    for key in phrases_to_remove[word][feature]:
+                        self._remove_phrase_for_scene(word, feature, key, scene)
+        #     print '-------'
+        #     print self.hyp_language_pass_scenes[0]
+        # print tttt
 
     #--------------------------------------------------------------------------------------------------------#
     # sub function
@@ -1624,6 +1721,20 @@ class process_data():
         self.hyp_language_pass[p]['possibilities'] -= 1
         if self.hyp_language_pass[p]['possibilities'] == 0:
             self.hyp_language_pass.pop(p,None)
+
+    #--------------------------------------------------------------------------------------------------------#
+    # sub function
+    def _remove_phrase_for_scene(self, p, f, p_remove, scene):
+        # p is the word
+        # f is the feature
+        # p_remove is the key in the feature in the word
+        # remove a phrase from self.hyp_language_pass
+        self.hyp_language_pass_scenes[scene][p][f].pop(p_remove, None)
+        if len(self.hyp_language_pass_scenes[scene][p][f].keys()) == 0:
+            self.hyp_language_pass_scenes[scene][p].pop(f,None)
+        self.hyp_language_pass_scenes[scene][p]['possibilities'] -= 1
+        if self.hyp_language_pass_scenes[scene][p]['possibilities'] == 0:
+            self.hyp_language_pass_scenes[scene].pop(p,None)
 
     #--------------------------------------------------------------------------------------------------------#
     def _distance_test(self,m1,m2):
@@ -1648,22 +1759,24 @@ class process_data():
     # generate all possible combinitaiton for each phrase in a single list
     def _get_all_valid_combinations(self):
         # update the all dictionery
-        for word in self.hyp_language_pass:
-            self.hyp_language_pass[word]['all'] = []
-            for f in self.hyp_language_pass[word]:
-                if f != 'all' and f != 'possibilities':
-                    for k in self.hyp_language_pass[word][f]:
-                        self.hyp_language_pass[word]['all'].append((f,k))
+        for scene in self.phrases:
+            for word in self.hyp_language_pass_scenes[scene]:
+                self.hyp_language_pass_scenes[scene][word]['all'] = []
+                for f in self.hyp_language_pass_scenes[scene][word]:
+                    if f != 'all' and f != 'possibilities':
+                        for k in self.hyp_language_pass_scenes[scene][word][f]:
+                            self.hyp_language_pass_scenes[scene][word]['all'].append((f,k))
         # will use this to see if the subset has a motion in it or not
         valid_motions = {}
-        for word in self.hyp_language_pass:
-            for f in self.hyp_language_pass[word]:
-                if f == 'CH_POS':
-                    for value in self.hyp_language_pass[word][f]:
-                        if word not in valid_motions:
-                            valid_motions[word] = [value]
-                        else:
-                            valid_motions[word].append(value)
+        for scene in self.phrases:
+            for word in self.hyp_language_pass_scenes[scene]:
+                for f in self.hyp_language_pass_scenes[scene][word]:
+                    if f == 'CH_POS':
+                        for value in self.hyp_language_pass_scenes[scene][word][f]:
+                            if word not in valid_motions:
+                                valid_motions[word] = [value]
+                            else:
+                                valid_motions[word].append(value)
         # get all valid subsets
         self.valid_configurations = {}
         valid_configurations = {}
@@ -1672,7 +1785,9 @@ class process_data():
             for scene in self.phrases:
                 valid_configurations[scene] = []
                 # get the words that have hypotheses and are in the sentence
-                phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
+                phrases_with_hyp = list(set(self.hyp_language_pass_scenes[scene].keys()).intersection(self.phrases[scene]))
+                # phrases_with_hyp =
+                print '-------------------------',phrases_with_hyp
                 intersection_not_valid = []
                 for subset in itertools.combinations(phrases_with_hyp, 2):
                     no_intersection = _intersection(subset,self.indices[scene])
@@ -1729,44 +1844,13 @@ class process_data():
         if 'CH_POS' in self.hyp_all_features:
             self._get_indices()
             for scene in self.phrases:
-                # if scene != 2:  continue
-            #     self.valid_combination[scene] = {}
-                # get the words that have hypotheses and self.valid_configurationsare in the sentence
-                # phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
-                # # generate all subsets (pick from 1 word to n words) with no repatetion in phrases
-                # for L in range(2, len(phrases_with_hyp)+1):
-                    # multi processing
-                    # self.valid_combination[scene][L] = zip(*self.pool.map(calc, [[subset,self.indices[scene],self.hyp_language_pass,self.all_total_motion[self.scene],self.S[scene],self.all_scene_features[self.scene],[self.G_i,self.G_f],scene,L,self.m_obj] for subset in itertools.combinations(phrases_with_hyp, L)]))
-                    #
-                    # for p in self.valid_combination[scene][L]:
-                    #     for p2 in p:
-                    #         if p2 != []:
-                    #             if self.scene not in self.correct_commands:
-                    #                 self.correct_commands[self.scene] = []
-                    #             if scene not in self.correct_commands[self.scene]:
-                    #                 self.correct_commands[self.scene].append(scene)
-
-                    # single core processing
-                # self.valid_combination[scene] = {}
-                # self.valid_hypotheses[scene] = {}
-                # for count,P in enumerate(self.valid_configurations[scene]):
-                #     phrases_with_hyp = P[0]
-                #     for L in range(2,np.min([len(phrases_with_hyp)+1,self.maximum_hyp_in_sentence+1])):#
-                #         if L not in self.valid_combination[scene]:
-                #             self.valid_combination[scene][L]    = []
-                #             self.valid_hypotheses[scene][L]     = []
-                #         print '>>',self.scene,'..',scene,count,L
-                #
-                #         for subset in itertools.combinations(phrases_with_hyp, L):
-                #             # print '>>>>>>>',subset
-                #             v1,v2 = calc([subset, self.indices[scene], [{word:self.hyp_language_pass[word]} for word in subset], self.all_total_motion[self.scene], self.S[scene], self.all_scene_features[self.scene], [self.G_i,self.G_f], scene,L,self.m_obj,P[1]])
-
+                # if scene != 9:  continue
 
                 self.valid_combination[scene] = {}
                 self.valid_hypotheses[scene] = {}
                 # Test
                 for count,P in enumerate(self.valid_configurations[scene]):
-                    # if count != 18: continue    # Note remove
+                    # if count != 8: continue    # Note remove
                     phrases_with_hyp = P[0]
                     for L in range(2,np.min([len(phrases_with_hyp)+1,self.maximum_hyp_in_sentence+1])):#
                         # if L != 7: continue     # Note remove
@@ -1775,7 +1859,11 @@ class process_data():
                             self.valid_hypotheses[scene][L]     = []
                         print '>>',self.scene,'..',scene,count,L
 
-                        v1,v2 = zip(*self.pool.map(calc, [[subset,self.indices[scene], [{word:self.hyp_language_pass[word]} for word in subset], self.all_total_motion[self.scene], self.S[scene], self.all_scene_features[self.scene], [self.G_i,self.G_f], scene,L,self.m_obj,P[1]] for subset in itertools.combinations(phrases_with_hyp, L)]))
+                        # for subset in itertools.combinations(phrases_with_hyp, L):
+                        #     # print '>>>',subset
+                        #     calc([subset,self.indices[scene], [{word:self.hyp_language_pass_scenes[scene][word]} for word in subset], self.all_total_motion[self.scene], self.S[scene], self.all_scene_features[self.scene], [self.G_i,self.G_f], scene,L,self.m_obj,P[1]])
+
+                        v1,v2 = zip(*self.pool.map(calc, [[subset,self.indices[scene], [{word:self.hyp_language_pass_scenes[scene][word]} for word in subset], self.all_total_motion[self.scene], self.S[scene], self.all_scene_features[self.scene], [self.G_i,self.G_f], scene,L,self.m_obj,P[1]] for subset in itertools.combinations(phrases_with_hyp, L)]))
 
                         for i in v1:
                             self.valid_combination[scene][L].append(i)
@@ -1791,7 +1879,7 @@ class process_data():
             self.indices[scene] = {}
             sentence = self.S[scene].split(' ')
             # build the indices
-            phrases_with_hyp = list(set(self.hyp_language_pass.keys()).intersection(self.phrases[scene]))
+            phrases_with_hyp = list(set(self.hyp_language_pass_scenes[scene].keys()).intersection(self.phrases[scene]))
             for word in phrases_with_hyp:
                 w = word.split(' ')
                 if len(w) == 1:
@@ -1823,9 +1911,11 @@ class process_data():
 
     #--------------------------------------------------------------------------------------------------------#
     # takes the valid hypotheses and build the grammar
+    # NOTE if there are more than 4 correct way to construct the sentence I reject it
     def _build_grammar(self):
         self.max_L = {}
         for scene in self.valid_combination:
+            correct_hyp_number = 0
             self.max_L[scene] = -1
             for L in self.valid_combination[scene]:
                 # print scene,L
@@ -1835,18 +1925,25 @@ class process_data():
                             if k != []:
                                 if L>self.max_L[scene]:
                                     self.max_L[scene] = L
+                                    correct_hyp_number = 1
+                                if L == self.max_L[scene]:
+                                    correct_hyp_number +=1
                                 # for k1 in k:
                                 #     print self.S[scene]
                                 #     print 'Scene:',scene,'L:',L,k1
                                 #     print '******'
+            # print '#################################################'
+            if correct_hyp_number>4:
+                self.max_L[scene]=-1
+            # print '#################################################'
         self._update_terminals()
         self._update_nonterminals()
         self._build_PCFG()
 
     #--------------------------------------------------------------------------------------------------------#
     def _update_terminals(self):
-        hypotheses = self.hyp_language_pass
         for scene in self.valid_combination:
+            hypotheses = self.hyp_language_pass_scenes[scene]
             #for L in self.valid_combination[scene]:
             L = self.max_L[scene]
             if L>0:
@@ -1868,11 +1965,11 @@ class process_data():
     #--------------------------------------------------------------------------------------------------------#
     def _update_nonterminals(self,):
         # there is a threshold in NLTK to drop a hypotheses 9.99500249875e-05 I think it;s 1e-4
-        hypotheses = self.hyp_language_pass
         entity = ['F_SHAPE','F_HSV','F_POS']
         relation = ['F_DIR']
         sentence_connectors = []
         for scene in self.valid_combination:
+            hypotheses = self.hyp_language_pass_scenes[scene]
             L = self.max_L[scene]
             if L>0:
                 for i in self.valid_combination[scene][L]:
@@ -1899,6 +1996,7 @@ class process_data():
                                             if len(order)==1:
                                                 TETV_grammar = order[0]
                                                 verb_grammar = value[0]+'_'+order[0]
+                                            #print TETV_grammar
                                             val = hypotheses[word][value[0]][value[1]]
                                             self._update_self_T(verb_grammar,verb_name,val)
                                     # print 'target E          :',TE
@@ -1937,9 +2035,9 @@ class process_data():
                                         # this is valid only for two parts !
                                         if ba == 'after':
                                             if part_of_sentence == 0:
-                                                if order[0] == 'PRE':
+                                                if order[0] == 'E1':
                                                     TE,connecter_sentence = self._find_connecter_sentences(TE,ba,entity,relation,connecter_sentence)
-                                                if order[0] == 'POST':
+                                                if order[0] == 'FV1':
                                                     TV,connecter_sentence = self._find_connecter_sentences(TV,ba,entity,relation,connecter_sentence)
                                                 if connecter_sentence != []:
                                                     self._update_self_N('_S','_S _S_connect _S')
@@ -1947,9 +2045,9 @@ class process_data():
                                                     self._update_self_N('_S','_S _S')
                                         if ba == 'before':
                                             if part_of_sentence == 1:
-                                                if order[0] == 'PRE':
+                                                if order[0] == 'E1':
                                                     TE,connecter = self._find_connecter_sentences(TE,ba,entity,relation,connecter_sentence)
-                                                if order[0] == 'POST':
+                                                if order[0] == 'FV1':
                                                     TV,connecter = self._find_connecter_sentences(TV,ba,entity,relation,connecter_sentence)
 
 
@@ -1966,10 +2064,17 @@ class process_data():
 
                                         #---------------------------------#
                                         # TE = the _entity
-                                        T = 'PRE'
-                                        self._update_self_N(T,TE_converted)
-                                        T = 'POST'
-                                        self._update_self_N(T,TV_converted)
+                                        if connecter != []:
+                                            T = 'E2c'
+                                            self._update_self_N(T,TE_converted)
+                                            T = 'FV2c'
+                                            self._update_self_N(T,TV_converted)
+
+                                        else:
+                                            T = 'E2'
+                                            self._update_self_N(T,TE_converted)
+                                            T = 'FV2'
+                                            self._update_self_N(T,TV_converted)
 
                                         #---------------------------------#
                                         # _entity and _shape and _location
@@ -1990,17 +2095,17 @@ class process_data():
                                                 self._update_self_no_match(word)
                                         #---------------------------------#
                                         if connecter != []:
-                                            S1 = order[0]+' '+order[0]+order[1]+'_connect'+' '+order[1]
+                                            S1 = order[0]+'c'+' '+order[0]+order[1]+'_connect'+' '+order[1]+'c'
                                         else:
                                             S1 = order[0]+' '+order[1]
                                         self._update_self_N(TETV_grammar,S1)
 
                                     elif len(order)==1:
-                                        if order[0] == 'PRE':
+                                        if order[0] == 'E1':
                                             TE_converted,e, e_bar = self._TE_TV_conversion(TE)
                                             TE_converted = self._more_conversion(TE_converted[:],e_bar[:])
                                             #---------------------------------#
-                                            T = 'PRE'
+                                            T = 'E1'
                                             self._update_self_N(T,TE_converted)
                                             #---------------------------------#
                                             # _entity and _shape and _location
@@ -2013,11 +2118,11 @@ class process_data():
                                                 if word[0] != '_':
                                                     self._update_self_no_match(word)
 
-                                        if order[0] == 'POST':
+                                        if order[0] == 'FV1':
                                             TV_converted,v, v_bar = self._TE_TV_conversion(TV)
                                             TV_converted = self._more_conversion(TV_converted[:],v_bar[:])
                                             #---------------------------------#
-                                            T = 'POST'
+                                            T = 'FV1'
                                             self._update_self_N(T,TV_converted)
                                             #---------------------------------#
                                             # _entity and _shape and _location
@@ -2137,7 +2242,7 @@ class process_data():
     #--------------------------------------------------------------------------------------------------------#
     def _find_connecter(self,ba,order,TE,TV,entity,relation,connecter):
         if ba == 'after':
-            if order[0] == 'PRE':
+            if order[0] == 'E2':
                 for l in reversed(range(len(TE))):
                     if TE[l] in entity or TE[l] in relation:
                         break
@@ -2150,7 +2255,7 @@ class process_data():
                 TV_f = TV[l:len(TV)]
                 for l1 in TV[0:l]:
                     connecter.append(l1)
-            if order[0] == 'POST':
+            if order[0] == 'FV2':
                 for l in reversed(range(len(TV))):
                     if TV[l] in entity or TV[l] in relation:
                         break
@@ -2165,7 +2270,7 @@ class process_data():
                     connecter.append(l1)
 
         if ba == 'before':
-            if order[0] == 'PRE':
+            if order[0] == 'E2':
                 for l in reversed(range(len(TE))):
                     if TE[l] in entity or TE[l] in relation:
                         break
@@ -2178,7 +2283,7 @@ class process_data():
                 TV_f = TV[l:len(TV)]
                 for l1 in TV[0:l]:
                     connecter.append(l1)
-            if order[0] == 'POST':
+            if order[0] == 'FV2':
                 for l in reversed(range(len(TV))):
                     if TV[l] in entity or TV[l] in relation:
                         break
@@ -2350,8 +2455,8 @@ class process_data():
                         self.grammar += feature+" -> '"+hyp+"' ["+str(val/self.T['sum'][feature])+"]"+'\n'
 
         # PCFG
-        # if self.grammar != '':
-        #     self.pcfg1 = PCFG.fromstring(self.grammar)
+        if self.grammar != '':
+            self.pcfg1 = PCFG.fromstring(self.grammar)
             #print self.pcfg1
 
         if self.scene<10:            sc = '0000'+str(self.scene)
@@ -2359,11 +2464,11 @@ class process_data():
         elif self.scene<1000:        sc = '00'+str(self.scene)
         elif self.scene<10000:       sc = '0'+str(self.scene)
 
-        # file1 = open("/home/omari/Datasets/robot_modified/grammar/grammar_"+sc+".txt", "w")
-        # file1.write(self.grammar)
-        # file1.close()
+        file1 = open("/home/omari/Datasets/robot_modified/grammar/grammar_"+sc+".txt", "w")
+        file1.write(self.grammar)
+        file1.close()
         # store the grammar files
-        # pickle.dump( [self.T, self.N, self.no_match], open( "/home/omari/Datasets/robot_modified/pickle/grammar_"+sc+".p", "wb" ) )
+        pickle.dump( [self.T, self.N, self.no_match], open( "/home/omari/Datasets/robot_modified/pickle/grammar_"+sc+".p", "wb" ) )
         # if you want to store values on dropbox
         if self.dropbox:
             pickle.dump( [self.T, self.N, self.no_match], open( "/home/omari/Dropbox/robot_modified/IT/pickle/grammar_"+sc+".p", "wb" ) )
@@ -2378,23 +2483,25 @@ class process_data():
     def _print_results(self):
         print '====-----------------------------------------------------------------===='
         self.number_of_valid_hypotheses = 0
-        for word in self.hyp_language_pass:
-            for f in self.hyp_language_pass[word]:
-                if f != 'possibilities' and f != 'all':
-                    for value in self.hyp_language_pass[word][f]:
-                        self.number_of_valid_hypotheses += 1
-                        if len(f) < 7:
-                            print f,'\t\t>>>\t',
-                        elif len(f) < 15:
-                            print f,'\t>>>\t',
-                        if len(word) < 7:
-                            print word,'\t\t\t>>>\t',
-                        elif len(word) < 15:
-                            print word,'\t\t>>>\t',
-                        elif len(word) < 23:
-                            print word,'\t>>>\t',
-                        print map(prettyfloat, value),
-                        print("{0:.3f}".format( self.hyp_language_pass[word][f][value]))
+        for scene in self.phrases:
+            for word in self.hyp_language_pass_scenes[scene]:
+                for f in self.hyp_language_pass_scenes[scene][word]:
+                    if f != 'possibilities' and f != 'all':
+                        for value in self.hyp_language_pass_scenes[scene][word][f]:
+                            self.number_of_valid_hypotheses += 1
+                            if len(f) < 7:
+                                print f,'\t\t>>>\t',
+                            elif len(f) < 15:
+                                print f,'\t>>>\t',
+                            if len(word) < 7:
+                                print word,'\t\t\t>>>\t',
+                            elif len(word) < 15:
+                                print word,'\t\t>>>\t',
+                            elif len(word) < 23:
+                                print word,'\t>>>\t',
+                            print map(prettyfloat, value),
+                            print("{0:.3f}".format( self.hyp_language_pass_scenes[scene][word][f][value]))
+            print '-------- end of scene ',scene,' hypotheses'
 
     #--------------------------------------------------------------------------------------------------------#
     def _create_scene_graph(self,simple):
@@ -2414,10 +2521,12 @@ class process_data():
                     else:
                         x = self.Data[key]['x'][I]/7.0
                         y = self.Data[key]['y'][I]/7.0
+                        z = np.floor(self.Data[key]['z'][I]/.9)
+                        # print 'this is z',key,self.Data[key]['z'][I]
                         if key == self.m_obj:
-                            G.add_node(str(key),type1='mo', _F_HSV=self.Data[key]['F_HSV'], _F_SHAPE=self.Data[key]['F_SHAPE'], _F_POS=[x,y])
+                            G.add_node(str(key),type1='mo', _F_HSV=self.Data[key]['F_HSV'], _F_SHAPE=self.Data[key]['F_SHAPE'], _F_POS=[x,y,z])
                         else:
-                            G.add_node(str(key),type1='o', _F_HSV=self.Data[key]['F_HSV'], _F_SHAPE=self.Data[key]['F_SHAPE'], _F_POS=[x,y])
+                            G.add_node(str(key),type1='o', _F_HSV=self.Data[key]['F_HSV'], _F_SHAPE=self.Data[key]['F_SHAPE'], _F_POS=[x,y,z])
                         # G.add_node(str(key)+'_F_HSV',type1='of',type2='F_HSV', value=self.Data[key]['F_HSV']);         #color
                         # G.add_node(str(key)+'_F_SHAPE',type1='of',type2='F_SHAPE', value=self.Data[key]['F_SHAPE']);         #shape
                         # x = self.Data[key]['x'][I]/7.0
@@ -2486,15 +2595,17 @@ class process_data():
     #--------------------------------------------------------------------------------------------------------#
     def _analysis(self):
         for scene in self.valid_combination:
-            for L in self.valid_combination[scene]:
-                for p in self.valid_combination[scene][L]:
-                    for p2 in p:
-                        for p3 in p2:
-                            if p3 != []:
-                                if self.scene not in self.correct_commands:
-                                    self.correct_commands[self.scene] = []
-                                if str(self.scene)+'-'+str(scene)+'-'+self.S[scene] not in self.correct_commands[self.scene]:
-                                    self.correct_commands[self.scene].append(str(self.scene)+'-'+str(scene)+'-'+self.S[scene])
+            L_max = self.max_L[scene]
+            if L_max>0:
+                for L in self.valid_combination[scene]:
+                    for p in self.valid_combination[scene][L]:
+                        for p2 in p:
+                            for p3 in p2:
+                                if p3 != []:
+                                    if self.scene not in self.correct_commands:
+                                        self.correct_commands[self.scene] = []
+                                    if str(self.scene)+'-'+str(scene)+'-'+self.S[scene] not in self.correct_commands[self.scene]:
+                                        self.correct_commands[self.scene].append(str(self.scene)+'-'+str(scene)+'-'+self.S[scene])
         for s in self.S:
             ok = 1
             if self.scene in self.correct_commands:
@@ -2529,31 +2640,31 @@ class process_data():
         elif self.scene<1000:        sc = '00'+str(self.scene)
         elif self.scene<10000:       sc = '0'+str(self.scene)
 
-        # file1 = open("/home/omari/Datasets/robot_modified/IT/analysis/analysis_"+sc+".txt", "w")
-        # file1.write(analysis)
-        # file1.close()
+        file1 = open("/home/omari/Datasets/robot_modified/analysis/analysis_"+sc+".txt", "w")
+        file1.write(analysis)
+        file1.close()
 
 
 
-        # file1 = open("/home/omari/Datasets/robot_modified/IT/hypotheses/all_scenes.txt", "w")
-        # scenes = sorted(self.correct_commands.keys())
-        # for s in scenes:
-        #     file1.write(str(s)+'\n')
-        # file1.close()
-        #
-        # file1 = open("/home/omari/Datasets/robot_modified/IT/hypotheses/matched_commands.txt", "w")
-        # scenes = sorted(self.correct_commands.keys())
-        # for s in scenes:
-        #     for c in self.correct_commands[s]:
-        #         file1.write(c+'\n')
-        # file1.close()
-        #
-        # file1 = open("/home/omari/Datasets/robot_modified/IT/hypotheses/failed_commands.txt", "w")
-        # scenes = sorted(self.wrong_commands.keys())
-        # for s in scenes:
-        #     for c in self.wrong_commands[s]:
-        #         file1.write(c+'\n')
-        # file1.close()
+        file1 = open("/home/omari/Datasets/robot_modified/hypotheses/all_scenes.txt", "w")
+        scenes = sorted(self.correct_commands.keys())
+        for s in scenes:
+            file1.write(str(s)+'\n')
+        file1.close()
+
+        file1 = open("/home/omari/Datasets/robot_modified/hypotheses/matched_commands.txt", "w")
+        scenes = sorted(self.correct_commands.keys())
+        for s in scenes:
+            for c in self.correct_commands[s]:
+                file1.write(c+'\n')
+        file1.close()
+
+        file1 = open("/home/omari/Datasets/robot_modified/hypotheses/failed_commands.txt", "w")
+        scenes = sorted(self.wrong_commands.keys())
+        for s in scenes:
+            for c in self.wrong_commands[s]:
+                file1.write(c+'\n')
+        file1.close()
 
         for scene in self.valid_hypotheses:
             L = self.max_L[scene]
@@ -2575,23 +2686,23 @@ class process_data():
                             if no_match:
                                 self.all_valid_hypotheses[F[0]][word][tuple(F[1])] = 1
 
-        # file1 = open("/home/omari/Datasets/robot_modified/IT/hypotheses/correct_hyp.txt", "w")
-        # for feature in self.all_valid_hypotheses:
-        #     x = self.all_valid_hypotheses[feature]
-        #     for word in self.all_valid_hypotheses[feature]:
-        #         x = self.all_valid_hypotheses[feature][word]
-        #         sorted_values = sorted(x.items(), key=operator.itemgetter(1))
-        #         for val in sorted_values:
-        #             line = feature+','+word+',['
-        #             for i in range(len(val[0])-1):
-        #                 line += str(val[0][i])+' '
-        #             line += str(val[0][-1])
-        #             line += '],'+str(self.all_valid_hypotheses[feature][word][val[0]])+'\n'
-        #             file1.write(line)
-        # file1.close()
+        file1 = open("/home/omari/Datasets/robot_modified/hypotheses/correct_hyp.txt", "w")
+        for feature in self.all_valid_hypotheses:
+            x = self.all_valid_hypotheses[feature]
+            for word in self.all_valid_hypotheses[feature]:
+                x = self.all_valid_hypotheses[feature][word]
+                sorted_values = sorted(x.items(), key=operator.itemgetter(1))
+                for val in sorted_values:
+                    line = feature+','+word+',['
+                    for i in range(len(val[0])-1):
+                        line += str(val[0][i])+' '
+                    line += str(val[0][-1])
+                    line += '],'+str(self.all_valid_hypotheses[feature][word][val[0]])+'\n'
+                    file1.write(line)
+        file1.close()
 
 
-        # pickle.dump( [self.correct_commands, self.wrong_commands, self.all_valid_hypotheses, self.scenes_so_far, self.commands_so_far], open( "/home/omari/Datasets/robot_modified/IT/pickle/analysis_"+sc+".p", "wb" ) )
+        pickle.dump( [self.correct_commands, self.wrong_commands, self.all_valid_hypotheses, self.scenes_so_far, self.commands_so_far], open( "/home/omari/Datasets/robot_modified/pickle/analysis_"+sc+".p", "wb" ) )
         if self.dropbox:
             pickle.dump( [self.correct_commands, self.wrong_commands, self.all_valid_hypotheses, self.scenes_so_far, self.commands_so_far], open( "/home/omari/Dropbox/robot_modified/IT/pickle/analysis_"+sc+".p", "wb" ) )
             file2 = open("/home/omari/Dropbox/robot_modified/IT/analysis/analysis_"+sc+".txt", "w")

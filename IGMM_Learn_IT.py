@@ -2,7 +2,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
-from data_processing_igmm_IT_2 import *
+from data_processing_igmm_IT import *
 import time
 import pickle
 
@@ -50,7 +50,7 @@ P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/IT/
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(1,121):
+  for scene in range(1,1001):
     if P.first_time:                P._read_grammar(scene,valid_scenes)
     #slightly hard [10,]
     if scene in [891,892]:          continue
