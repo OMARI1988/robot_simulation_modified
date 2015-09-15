@@ -1698,7 +1698,9 @@ class process_data():
                                         if N == 1:
                                             if feature == 'CH_POS' or feature == 'F_DIR' or feature == 'F_HSV':
                                                 for key in matching:
-                                                    if key in ['red','green','blue','gray','grey','cyan','purple','black','pink','magenta','white'] and feature == 'F_HSV':
+                                                    if key in ['bianche','bianca','rosse','rosso','rossa','verde','blu','grigio','grigia','grigi','ciano','porpora','nero','nera','rosa','magenta','bianco','turchese'] and feature == 'F_HSV':
+                                                        continue
+                                                    if key in ['sul','sull','sulla'] and feature == 'F_DIR':
                                                         continue
                                                     if key not in phrases_to_remove:            phrases_to_remove[key] = {}
                                                     if feature not in phrases_to_remove[key]:   phrases_to_remove[key][feature] = []

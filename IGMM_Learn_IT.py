@@ -49,6 +49,10 @@ P.hyp_relation  = pickle.load( open( "/home/omari/Dropbox/robot_modified/IT/pick
 print           'reading total motion'
 P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/IT/pickle/all_total_motion_1000.p", "rb" ) )
 
+# for w in ['muovere', 'rimuovere', 'mettere', 'passare', 'spostare', 'prendere', 'sollevare', 'posizionare', 'raccogliere', 'sposta', 'rilasciare', 'eliminare', 'tenere', 'collocare', 'dalla', 'posizionarlo', 'posizionarla', 'abbassare', 'si sposta', 'si', 'spostarla' ,'spostarlo', 'metterlo', 'metterla', 'posizionarla', 'muoversi' ,'raccoglierlo', 'raccoglierla']:
+P.hyp_motion['mettere']['CH_POS'][(0,1,0,)] = 214
+# print tt
+
 for scan in range(1):
   print 'scan number :',scan
   for scene in range(1,1001):
