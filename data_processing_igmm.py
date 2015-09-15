@@ -95,6 +95,8 @@ def calc(data):
                         for k2 in range(len(all_scene_features[f2])):
                             m1 = np.asarray(features[f1][k1])
                             m2 = np.asarray(all_scene_features[f2][k2])
+                            print 'AM HERE'
+                            print m1,m2
                             if f2=='F_POS':  m2 /= 7.0
                             if _distance_test(m1,m2)<.1:
                                 passed = 1
@@ -1619,7 +1621,7 @@ class process_data():
             for f in self.hyp_language_pass[word]:
                 if f != 'possibilities' and f!= 'F_POS' and f!= 'CH_POS':
                     for key in self.hyp_language_pass[word][f].keys():
-                        if self.hyp_language_pass[word][f][key]<.9*max_hyp:         keys_remove.append([f,key])
+                        if self.hyp_language_pass[word][f][key]<.7*max_hyp:         keys_remove.append([f,key])
             for A in keys_remove:
                 f=A[0]
                 key=A[1]

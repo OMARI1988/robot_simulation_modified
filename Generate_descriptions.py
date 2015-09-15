@@ -14,8 +14,8 @@ valid_scenes = [int(i.split('\n')[0]) for i in file1.readlines()]
 
 # for scene in [1,2,7,8,17,19,23,41,61,84]:
 # 24 is interesting
-for scene in [2]:
-    grammar_scene = 45
+for scene in [1]:
+    grammar_scene = 6
 # scene = 7
 
     #change data

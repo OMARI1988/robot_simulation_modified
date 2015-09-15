@@ -1,7 +1,5 @@
 #!/usr/bin/python
 # -*- coding: iso-8859-15 -*-
-import os, sys
-
 import numpy as np
 import networkx as nx
 import itertools
@@ -15,7 +13,6 @@ import copy
 import colorsys
 
 import multiprocessing
-
 
 
 #--------------------------------------------------------------------------------------------------------#
@@ -100,6 +97,8 @@ def calc(data):
                         for k2 in range(len(all_scene_features[f2])):
                             m1 = np.asarray(features[f1][k1])
                             m2 = np.asarray(all_scene_features[f2][k2])
+                            print 'AM HERE'
+                            print m1,m2
                             if f2=='F_POS':  m2 /= 7.0
                             if _distance_test(m1,m2)<.1:
                                 passed = 1
@@ -766,6 +765,7 @@ class process_data():
         self.all_valid_hypotheses = {}
         self.dropbox = dropbox
         self.a_lot_of_objects = []
+        self.all_scenes_with_no_commands = 0
 
 #--------------------------------------------------------------------------------------------------------#
     def _read_grammar(self, scene, valid_scenes):
@@ -803,20 +803,6 @@ class process_data():
 
     #--------------------------------------------------------------------------------------------------------#
     # read the sentences and data from file
-    def _read_Eriss_commands(self):
-        self.Eriss_commands = {}
-        file_Eris = open('/home/omari/Dropbox/robot_modified/IT/all_commands_it_edited.txt', 'r')
-        for line in file_Eris:
-            line = line.split('\n')[0]
-            line = line.split('-')
-            if line[0] not in self.Eriss_commands:
-                self.Eriss_commands[line[0]] = {}
-            if line[1] not in self.Eriss_commands[line[0]]:
-                self.Eriss_commands[line[0]][line[1]] = line[2]
-
-
-    #--------------------------------------------------------------------------------------------------------#
-    # read the sentences and data from file
     def _read(self,scene):
         self.scenes_so_far += 1
         self.scene = scene
@@ -838,10 +824,9 @@ class process_data():
             for count,s in enumerate(self.Eriss_commands[str(self.scene)]):
                 # if data[s].split(':')[0] == 'GOOD':
                 self.commands_so_far += 1
-                self.S[count] = self.Eriss_commands[str(self.scene)][s]
+                self.S[int(s)] = self.Eriss_commands[str(self.scene)][s]
         else:
             self.all_scenes_with_no_commands +=1
-
         # reading Data of objects
         self.Data = {}
         for count,o in enumerate(objects):
@@ -861,11 +846,18 @@ class process_data():
             self.Data['G'][data[o+2].split(':')[0]] = np.asarray(map(float,data[o+2].split(':')[1].split(',')[:-1]))  #z
 
     #--------------------------------------------------------------------------------------------------------#
-    # print sentences on terminal
-    def _fix_scentences(self):
-        for s in self.S:
-            print '>>>>>',self.S[s]
-        print tttt
+    # read the sentences and data from file
+    def _read_Eriss_commands(self):
+        self.Eriss_commands = {}
+        file_Eris = open('/home/omari/Dropbox/robot_modified/IT/all_commands_it_edited.txt', 'r')
+        for line in file_Eris:
+            line = line.split('\n')[0]
+            line = line.split('-')
+            if line[0] not in self.Eriss_commands:
+                self.Eriss_commands[line[0]] = {}
+            if line[1] not in self.Eriss_commands[line[0]]:
+                self.Eriss_commands[line[0]][line[1]] = line[2]
+
     #--------------------------------------------------------------------------------------------------------#
     # print sentences on terminal
     def _print_scentenses(self):
@@ -879,23 +871,34 @@ class process_data():
     # check to see if we can learn the sentence before we even process it
     def _check_for_words_we_cant_learn(self):
         remove_list = []
-        bad_words = ['torre','vicino','fra','mucchio','pila']
+        # bad_words = ['torre','vicino','fra','mucchio','pila']
         for i in self.S:
-            print i,self.S[i]
-            sent = self.S[i].split(' ')
-            ok = 1
-            for word in bad_words:
-                if word in sent:
-                    ok = 0
-            if not ok:
-                remove_list.append(i)
+            if str(self.scene) in self.valid_scenes:
+                if str(i) not in self.valid_scenes[str(self.scene)]:
+                    remove_list.append(i)
+            else:
+                self.S = {}
+        for i in remove_list:
+            self.S.pop(i,None)
+
+    #----------------------------------------------------------------copy----------------------------------------#
+    def _check_for_commands_we_cant_learn(self):
+        remove_list = []
+        if str(self.scene) in self.valid_scenes:
+            for i in self.S:
+                if str(i) not in self.valid_scenes[str(self.scene)]:
+                    remove_list.append(i)
+        else:
+            remove_list = self.S.keys()
+        # print self.S
+        # print self.valid_scenes
         for i in remove_list:
             self.S.pop(i,None)
 
     #--------------------------------------------------------------------------------------------------------#
     # print sentences on terminal
     def _save_all_sentences(self):
-        file1 = open("/home/omari/Dropbox/robot_modified/sentences.txt", "w")
+        file1 = open("/home/omari/Datasets/robot_modified/sentences.txt", "w")
         file1.write(self.all_Sentences)
         file1.close()
 
@@ -907,6 +910,13 @@ class process_data():
             self.Data[i]['x'] = np.delete(self.Data[i]['x'],[0,self.step,2*self.step])
             self.Data[i]['y'] = np.delete(self.Data[i]['y'],[0,self.step,2*self.step])
             self.Data[i]['z'] = np.delete(self.Data[i]['z'],[0,self.step,2*self.step])
+
+    #--------------------------------------------------------------------------------------------------------#
+    # print sentences on terminal
+    def _fix_sentences(self):
+        for s in self.S:
+            self.S[s] = self.S[s].replace("'",' ')
+        # print tttt
 
     #--------------------------------------------------------------------------------------------------------#
     # find phrases and words for each sentence
@@ -1090,8 +1100,8 @@ class process_data():
         # finding locations of moving object
         self.locations_m_i = []
         self.locations_m_f = []
-        self.locations_m_i.append((self.Data[self.m_obj]['x'][0],self.Data[self.m_obj]['y'][0]))
-        self.locations_m_f.append((self.Data[self.m_obj]['x'][-1],self.Data[self.m_obj]['y'][-1]))
+        self.locations_m_i.append((self.Data[self.m_obj]['x'][0],self.Data[self.m_obj]['y'][0],0))
+        self.locations_m_f.append((self.Data[self.m_obj]['x'][-1],self.Data[self.m_obj]['y'][-1],0))
         #self.locations.append(di)
         #if df not in self.locations: self.locations.append(df)
 
@@ -1275,14 +1285,14 @@ class process_data():
                     unique_shapes.append(s)
             # just a note to should reverce x and y in testing
             for i,l in enumerate(self.unique_locations):
-                    l = [l[0],l[1]]
+                    l = list(l)
                     for k in range(10):
-                        r = np.random.normal(0, .005, 2)
+                        r = np.random.normal(0, .005, len(l))
                         l += r
                         for j,l1 in enumerate(l):
                             if l1<0:      l[j]+=2*np.abs(r[j])
                             if l1>7:      l[j]-=2*np.abs(r[j])
-                        L = (l[0]/7.0,l[1]/7.0)
+                        L = (l[0]/7.0,l[1]/7.0,0)
                         unique_locations.append(L)
 
         gmm_c = self._bic_gmm(unique_colors,plot)
@@ -1319,7 +1329,7 @@ class process_data():
         if plot:
             plot_data(X, best_gmm, bic, k, self.cv_types,0, 1)
             plt.show()
-            # plt.savefig("/home/omari/Datasets/robot_modified/clusters/" + str(len(X[0])) + "-" + str(self.scene) +".png")
+            plt.savefig("/home/omari/Datasets/robot_modified/clusters/" + str(len(X[0])) + "-" + str(self.scene) +".png")
 
         for i, (mean, covar) in enumerate(zip(best_gmm.means_, best_gmm._get_covars())):
             gmm1[i] = {}
@@ -1332,7 +1342,7 @@ class process_data():
     def _build_obj_hyp_igmm(self):
         for s in self.phrases:
             for word in self.phrases[s]:
-                #if word == 'green':
+                # if 'the' not in word:
                     if word not in self.gmm_obj:
                         self.gmm_obj[word] = {}
                         for f in self.gmm_M:
@@ -1461,19 +1471,20 @@ class process_data():
     def _build_relation_hyp(self):
         for s in self.phrases:
             for word in self.phrases[s]:
-                # not_ok = 1
-                # for w in word.split(' '):
-                #     if w in ['top','over','on','above','placed','front','sitting','onto','underneath','infront','besides','resting','sit','sits','topmost','ontop','sat','stood','higher','downwords']:
-                #         not_ok = 0
-                if word not in self.hyp_relation:
-                    self.hyp_relation[word] = {}
-                    self.hyp_relation[word]['count'] = 0
-                    self.hyp_relation[word]['F_DIR'] = {}
-                # if self.unique_direction != []:
-                self.hyp_relation[word]['count'] += 1
-                for direction in self.unique_direction:
-                    if direction not in self.hyp_relation[word]['F_DIR']:   self.hyp_relation[word]['F_DIR'][direction] = 1
-                    else: self.hyp_relation[word]['F_DIR'][direction] += 1
+                # if 'the' not in word:
+                    # not_ok = 1
+                    # for w in word.split(' '):
+                    #     if w in ['top','over','on','above','placed','front','sitting','onto','underneath','infront','besides','resting','sit','sits','topmost','ontop','sat','stood','higher','downwords']:
+                    #         not_ok = 0
+                    if word not in self.hyp_relation:
+                        self.hyp_relation[word] = {}
+                        self.hyp_relation[word]['count'] = 0
+                        self.hyp_relation[word]['F_DIR'] = {}
+                    # if self.unique_direction != []:
+                    self.hyp_relation[word]['count'] += 1
+                    for direction in self.unique_direction:
+                        if direction not in self.hyp_relation[word]['F_DIR']:   self.hyp_relation[word]['F_DIR'][direction] = 1
+                        else: self.hyp_relation[word]['F_DIR'][direction] += 1
 
     #--------------------------------------------------------------------------------------------------------#
     # NOTE: this one has a hack, please make sure to clear it.
@@ -1482,9 +1493,8 @@ class process_data():
             for word in self.phrases[s]:
                 not_ok = 1
                 for w in word.split(' '):
-                    for b_word in ['muovere', 'rimuovere', 'mettere', 'passare', 'spostare', 'prendere', 'sollevare', 'posizionare', 'raccogliere', 'sposta', 'rilasciare', 'eliminare', 'tenere', 'collocare', 'dalla', 'posizionarlo', 'posizionarla', 'abbassare', 'si sposta', 'si', 'spostarla' ,'spostarlo', 'metterlo', 'metterla', 'posizionarla', 'muoversi' ,'raccoglierlo', 'raccoglierla']:
-                        if unicode(w,encoding='UTF-8') == unicode(b_word,encoding='UTF-8'):
-                            not_ok = 0
+                    if w in ['muovere', 'rimuovere', 'mettere', 'passare', 'spostare', 'prendere', 'sollevare', 'posizionare', 'raccogliere', 'sposta', 'rilasciare', 'eliminare', 'tenere', 'collocare', 'dalla', 'posizionarlo', 'posizionarla', 'abbassare', 'si sposta', 'si', 'spostarla' ,'spostarlo', 'metterlo', 'metterla', 'posizionarla', 'muoversi' ,'raccoglierlo', 'raccoglierla']:
+                        not_ok = 0
                 if word not in self.hyp_motion:
                     self.hyp_motion[word] = {}
                     self.hyp_motion[word]['count'] = 0
@@ -1510,7 +1520,7 @@ class process_data():
         checked = []
         for s in self.phrases:
             for word in self.phrases[s]:
-                if 'il' not in word.split(' ') and 'la' not in word.split(' '):
+                if 'il' not in word.split(' ') and 'la' not in word.split(' ') and 'è' not in word.split(' '):
                     if word not in checked:
                         checked.append(word)
                         count = float(self.hyp_relation[word]['count'])
@@ -1533,7 +1543,7 @@ class process_data():
         checked = []
         for s in self.phrases:
             for word in self.phrases[s]:
-                if 'il' not in word.split(' ') and 'la' not in word.split(' '):
+                if 'il' not in word.split(' ') and 'la' not in word.split(' ') and 'è' not in word.split(' '):
                     if word not in checked:
                         checked.append(word)
                         count = float(self.hyp_motion[word]['count'])
@@ -1556,7 +1566,7 @@ class process_data():
         checked = []
         for s in self.phrases:
             for word in self.phrases[s]:
-                if 'il' not in word.split(' ') and 'la' not in word.split(' '):
+                if 'il' not in word.split(' ') and 'la' not in word.split(' ') and 'è' not in word.split(' '):
                     if word not in checked:
                         checked.append(word)
                         for f in self.gmm_obj[word]:
@@ -1586,6 +1596,7 @@ class process_data():
         self._combine_hyp(self.hyp_language_pass,self.hyp_obj_pass)
         self._combine_hyp(self.hyp_language_pass,self.hyp_relation_pass)
         self._combine_hyp(self.hyp_language_pass,self.hyp_motion_pass)
+
     #--------------------------------------------------------------------------------------------------------#
     # NOTE: this will pass all hypotheses that are .9 of maximum value
     def _combine_hyp(self,A,B):
@@ -1633,7 +1644,7 @@ class process_data():
             for f in self.hyp_language_pass[word]:
                 if f != 'possibilities' and f!= 'F_POS' and f!= 'CH_POS':
                     for key in self.hyp_language_pass[word][f].keys():
-                        if self.hyp_language_pass[word][f][key]<.9*max_hyp:         keys_remove.append([f,key])
+                        if self.hyp_language_pass[word][f][key]<.7*max_hyp:         keys_remove.append([f,key])
             for A in keys_remove:
                 f=A[0]
                 key=A[1]

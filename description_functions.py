@@ -327,7 +327,7 @@ class Robot():
         # print self.all_valid_hypotheses.keys()
         for p in self.all_valid_hypotheses['F_POS']:
             for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
-                m1 = np.asarray([x1,y1,z1])
+                m1 = np.asarray([x1,y1])
                 m2 = np.asarray(list(p1))
                 print p,m1,m2
                 if self._distance_test(m1,m2)<.10:
@@ -455,10 +455,10 @@ class Robot():
         use_pos = 0
         for p in self.all_valid_hypotheses['F_POS']:
             for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
-                m1 = np.asarray([x1,y1,z1])
+                m1 = np.asarray([x1,y1])
                 m2 = np.asarray(list(p1))
                 # print p,m1,m2
-                if self._distance_test(m1,m2)<.25:
+                if self._distance_test(m1,m2)<.1:
                     if 'F_POS' not in features:
                         features.append('F_POS')
         self.u_pos_f.append(m1)
@@ -1027,7 +1027,7 @@ class Robot():
         sorted_x = sorted(all_sentences.items(), key=operator.itemgetter(1))
         counter = 0
         for count,i in enumerate(reversed(sorted_x)):
-            print count
+            # print count
             # if '_' not in i[0]:
             #     print '>>>>>>>>',i
 
