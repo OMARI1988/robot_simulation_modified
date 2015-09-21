@@ -21,7 +21,7 @@ class Robot():
         self._initilize_values()
         self.all_sentences_count = 1
         self.draw_scene()
-        # self.draw_robot()
+        self.draw_robot()
         self.Data = read_data()
 
     #-----------------------------------------------------------------------------------------------------#     initial
@@ -189,7 +189,7 @@ class Robot():
     #-----------------------------------------------------------------------------------------------------#     initilize scene
     def _initialize_scene(self):
         self._add_objects_to_scene()
-        # self._initialize_robot()
+        self._initialize_robot()
         self._update_scene_number()
 
     #-----------------------------------------------------------------------------------------------------#     add objects to scene
@@ -327,7 +327,7 @@ class Robot():
         # print self.all_valid_hypotheses.keys()
         for p in self.all_valid_hypotheses['F_POS']:
             for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
-                m1 = np.asarray([x1,y1])
+                m1 = np.asarray([x1,y1,z1])
                 m2 = np.asarray(list(p1))
                 print p,m1,m2
                 if self._distance_test(m1,m2)<.10:
@@ -455,7 +455,7 @@ class Robot():
         use_pos = 0
         for p in self.all_valid_hypotheses['F_POS']:
             for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
-                m1 = np.asarray([x1,y1])
+                m1 = np.asarray([x1,y1,z1])
                 m2 = np.asarray(list(p1))
                 # print p,m1,m2
                 if self._distance_test(m1,m2)<.1:
@@ -763,6 +763,7 @@ class Robot():
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
 
+        # print all_sentences
         print '--------------------------- Updating non_terminals'
         new_sentences = {}
         for S in all_sentences:
@@ -781,6 +782,8 @@ class Robot():
         all_sentences = new_sentences.copy()
 
 
+        # print all_sentences
+        # print self.u_hsv_name
         # if self.motion == [0,1,0]:
         # update the E
         print '--------------------------- Updating E-condition'
@@ -831,7 +834,7 @@ class Robot():
                                 ok_features.append(f2)
                         if part == '_entity':
                             for i in self.N[part]:
-                                print i
+                                # print i
                                 if i != 'sum' and '_entity' not in i:
                                     # print '>>',i
                                     for j in ok_features:
@@ -861,6 +864,7 @@ class Robot():
                 new_sentences[' '.join(S[:])] = V1
         all_sentences = new_sentences.copy()
 
+        # print all_sentences
 
         if self.motion == [0,1,0] or self.motion == [1,0]:
             # update the FV
@@ -870,7 +874,7 @@ class Robot():
             counter = 0
             for S in all_sentences:
                 counter += 1
-                print counter
+                # print counter
                 V1 = all_sentences[S]
                 S = S.split(' ')
                 changed = 0
@@ -912,9 +916,9 @@ class Robot():
                                                         if i3 != 'sum' and '_entity' not in i3:
                                                             i2[count2] = i3
                                                             # print '>>>>.',i3
-                                                            P1 *= self.N[part2][i3]/self.N[part2]['sum']
+                                                            # P1 *= self.N[part2][i3]/self.N[part2]['sum']
                                                             S[count] = ' '.join(i2)
-                                                            new_sentences[' '.join(S[:])] = V1*self.N[part][i]/self.N[part]['sum']*P1
+                                                            new_sentences[' '.join(S[:])] = V1*self.N[part2][i3]/self.N[part2]['sum']
                                                             changed = 1
                                                 # print '>>>',S
 
@@ -922,7 +926,7 @@ class Robot():
                     new_sentences[' '.join(S[:])] = V1
             all_sentences = new_sentences.copy()
 
-            print len(all_sentences.keys())
+            # print len(all_sentences.keys())
 
             if self.feature_F[0][1] == 1:
                 new_sentences = {}
@@ -952,8 +956,9 @@ class Robot():
                                         else:
                                             i2 = i
                                         S[count] = i2
+                                        # print i2,self.T['features'][part][i]/self.T['sum'][part]
                                         new_sentences[' '.join(S[:])] = V1*self.T['features'][part][i]/self.T['sum'][part]
-                                        # print S
+                                        # print S,V1*self.T['features'][part][i]/self.T['sum'][part]
                             break
                         # if its a relation
                     if not changed:
@@ -962,50 +967,60 @@ class Robot():
 
             if 'F_HSV' not in self.features_final:  self.features_final.append('F_HSV')
             if 'F_SHAPE' not in self.features_final:  self.features_final.append('F_SHAPE')
-            for just_a_counter in range(len(self.features_final)):
-                if self.feature_F[0][1] == 1:
-                    new_sentences = {}
-                    for S in all_sentences:
-                        # print S
-                        V1 = all_sentences[S]
-                        S = S.split(' ')
-                        changed = 0
-                        for count,part in enumerate(S):
-                            # print '>>>>>>>',part
-                            if '_' in part:
-                                # print '>>>>>>>',part
-                                if part in self.features_final:
-                                    if part == 'F_HSV':
-                                        for c,cv in zip(self.u_hsvR_name, self.u_hsvR_value):
-                                            changed = 1
-                                            S[count] = c
-                                            new_sentences[' '.join(S[:])] = V1*cv
-                                            A = ' '.join(S[:])
-                                            if len(A.split('_')) == 2:
-                                                print A
-                                                print '-------------------------------'
 
-                                    if part == 'F_SHAPE':
-                                        for c,cv in zip(self.u_shpR_name, self.u_shpR_value):
-                                            changed = 1
-                                            S[count] = c
-                                            # print '-6-6-6-6-6-',' '.join(S[:])
-                                            new_sentences[' '.join(S[:])] = V1*cv
-                                            A = ' '.join(S[:])
+            if self.feature_F[0][1] == 1:
+                new_sentences = {}
+                for S in all_sentences:
+                    V1 = all_sentences[S]
+                    S = S.split(' ')
+                    changed = 0
+                    for count,part in enumerate(S):
+                        if '_' in part and part in self.features_final:
+                            if part == 'F_HSV':
+                                for c,cv in zip(self.u_hsvR_name, self.u_hsvR_value):
+                                    changed = 1
+                                    S[count] = c
+                                    new_sentences[' '.join(S[:])] = V1*cv
+                    if not changed:
+                        new_sentences[' '.join(S[:])] = V1
+            all_sentences = new_sentences.copy()
 
-                                    if part == 'F_POS':
-                                        for p in self.all_valid_hypotheses['F_POS']:
-                                            for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
-                                                m1 = self.u_pos_f[0]
-                                                m2 = np.asarray(list(p1))
-                                                if self._distance_test(m1,m2)<.25:
-                                                    S[count] = p
-                                                    new_sentences[' '.join(S[:])] = V1#/self._distance_test(m1,m2)
-                                            # print S
-                                    break
-                        if not changed:
-                            new_sentences[' '.join(S[:])] = V1
-                all_sentences = new_sentences.copy()
+            if self.feature_F[0][1] == 1:
+                new_sentences = {}
+                for S in all_sentences:
+                    V1 = all_sentences[S]
+                    S = S.split(' ')
+                    changed = 0
+                    for count,part in enumerate(S):
+                        if '_' in part and part in self.features_final:
+                            if part == 'F_SHAPE':
+                                for c,cv in zip(self.u_shpR_name, self.u_shpR_value):
+                                    changed = 1
+                                    S[count] = c
+                                    new_sentences[' '.join(S[:])] = V1*cv
+                    if not changed:
+                        new_sentences[' '.join(S[:])] = V1
+            all_sentences = new_sentences.copy()
+
+            if self.feature_F[0][1] == 1:
+                new_sentences = {}
+                for S in all_sentences:
+                    V1 = all_sentences[S]
+                    S = S.split(' ')
+                    changed = 0
+                    for count,part in enumerate(S):
+                        if '_' in part and part in self.features_final:
+                            if part == 'F_POS':
+                                for p in self.all_valid_hypotheses['F_POS']:
+                                    for p1 in self.all_valid_hypotheses['F_POS'][p].keys():
+                                        m1 = self.u_pos_f[0]
+                                        m2 = np.asarray(list(p1))
+                                        if self._distance_test(m1,m2)<.25:
+                                            S[count] = p
+                                            new_sentences[' '.join(S[:])] = V1#/self._distance_test(m1,m2)
+                    if not changed:
+                        new_sentences[' '.join(S[:])] = V1
+            all_sentences = new_sentences.copy()
 
             # # including words order
             # print '--------------------------- Updating Word Order'
@@ -1035,10 +1050,11 @@ class Robot():
             words =  i[0].split(' ')
             ok = 1
             for j in range(len(words)-1):
-                if words[j] == words[j+1] or '_' in words[j] or '_' in words[j+1]:
+                if words[j] == words[j+1] or '_' in words[j] or '_' in words[j+1] or words[j] == '' or words[j+1] == '':
                     ok = 0
             if ok:
                 counter += 1
+                # print test
                 print ' '.join(words),':',i[1]
                 sentences += str(counter)+'-'+' '.join(words)+'\n'
             if counter==30: break
@@ -1331,19 +1347,20 @@ class Robot():
     #-----------------------------------------------------------------------------------------------------#     initial draw scene
     def draw_scene(self):
         self.display = display(title='simultaneous learning and grounding',
-            x=0, y=0, width=1000, height=1000,
+            x=0, y=0, width=2000, height=2000,
             center=(self.chess_shift_x,self.chess_shift_y,0),
             forward=(self.chess_shift_x-10,self.chess_shift_y-3,-7),
             background=(1,1,1))
+        distant_light(direction=(-150,-150,1), color=color.white)
         self.label = label(pos=(10,10,10), text='Scene number : ',height=20,color=(0,0,0))
-        checkerboard = ( (.8,1,.8,1,.8,1,.8,1),
-				 (1,.8,1,.8,1,.8,1,.8),
-				 (.8,1,.8,1,.8,1,.8,1),
-				 (1,.8,1,.8,1,.8,1,.8),
-		 		 (.8,1,.8,1,.8,1,.8,1),
-				 (1,.8,1,.8,1,.8,1,.8),
-				 (.8,1,.8,1,.8,1,.8,1),
-				 (1,.8,1,.8,1,.8,1,.8) )
+        checkerboard = ( (.9,1,.9,1,.9,1,.9,1),
+				 (1,.9,1,.9,1,.9,1,.9),
+				 (.9,1,.9,1,.9,1,.9,1),
+				 (1,.9,1,.9,1,.9,1,.9),
+		 		 (.9,1,.9,1,.9,1,.9,1),
+				 (1,.9,1,.9,1,.9,1,.9),
+				 (.9,1,.9,1,.9,1,.9,1),
+				 (1,.9,1,.9,1,.9,1,.9) )
         tex = materials.texture(data=checkerboard,
             mapping="sign",
             interpolate=False)
@@ -1351,19 +1368,21 @@ class Robot():
             color=color.orange,material=materials.wood)
         chess2 = box(pos=(self.chess_shift_x,self.chess_shift_y,-.25),axis=(0,0,1), size=(.5,8,8),
             color=color.orange, material=tex)
-        x = arrow(pos=(1,6,0),axis=(1,0,0),length=2,shaftwidth=.2,color=color.red)
-        y = arrow(pos=(1,6,0),axis=(0,1,0),length=2,shaftwidth=.2,color=color.green)
-        z = arrow(pos=(1,6,0),axis=(0,0,1),length=2,shaftwidth=.2,color=color.blue)
+        # x = arrow(pos=(1,6,0),axis=(1,0,0),length=2,shaftwidth=.2,color=color.red)
+        # y = arrow(pos=(1,6,0),axis=(0,1,0),length=2,shaftwidth=.2,color=color.green)
+        # z = arrow(pos=(1,6,0),axis=(0,0,1),length=2,shaftwidth=.2,color=color.blue)
 
     #-----------------------------------------------------------------------------------------------------#     initial draw robot
     def draw_robot(self):
 		base_1 = box(pos=(0,self.chess_shift_y,-.25),axis=(0,0,1), size=(.5,2,2),color=color.black,
 		    material=materials.plastic)
+		c1 = .35
+		c2 = .15
 		base_2 = Polygon( [(-1,0), (-.75,self.len_base), (.75,self.len_base), (1,0)] )
 		base_3 = shapes.circle(pos=(0,self.len_base), radius=.75)
 		base_4 = shapes.circle(pos=(0,self.len_base), radius=0.2)
 		base_s = [(0,self.chess_shift_y-.5,0),(0,self.chess_shift_y+.5,0)]
-		self.base = extrusion(pos=base_s, shape=base_2+base_3-base_4, color=color.red)
+		self.base = extrusion(pos=base_s, shape=base_2+base_3-base_4, color=(c1,c1,c1))
 
 		arm1_1 = Polygon( [(0,.75), (self.len_arm1,.5), (self.len_arm1,-.5), (0,-.75)] )
 		arm1_2 = shapes.circle(pos=(0,0), radius=.75)
@@ -1371,7 +1390,7 @@ class Robot():
 		arm1_4 = shapes.circle(pos=(self.len_arm1,0), radius=.5)
 		arm1_5 = shapes.circle(pos=(self.len_arm1,0), radius=0.2)
 		arm1_s = [(0,self.chess_shift_y+.5,self.len_base),(0,self.chess_shift_y+1.5,self.len_base)]
-		self.arm1 = extrusion(pos=arm1_s, shape=arm1_1+arm1_2-arm1_3+arm1_4-arm1_5, color=color.blue)
+		self.arm1 = extrusion(pos=arm1_s, shape=arm1_1+arm1_2-arm1_3+arm1_4-arm1_5, color=(c2,c2,c2))
 
 		arm2_1 = Polygon( [(0,.5), (self.len_arm2,.4), (self.len_arm2,-.4), (0,-.5)] )
 		arm2_2 = shapes.circle(pos=(0,0), radius=.5)
@@ -1379,7 +1398,7 @@ class Robot():
 		arm2_4 = shapes.circle(pos=(self.len_arm2,0), radius=.4)
 		arm2_5 = shapes.circle(pos=(self.len_arm2,0), radius=0.2)
 		arm2_s = [(self.len_arm1,self.chess_shift_y-.5,self.len_base),(self.len_arm1,self.chess_shift_y+.5,self.len_base)]
-		self.arm2 = extrusion(pos=arm2_s, shape=arm2_1+arm2_2-arm2_3+arm2_4-arm2_5, color=color.red)
+		self.arm2 = extrusion(pos=arm2_s, shape=arm2_1+arm2_2-arm2_3+arm2_4-arm2_5, color=(c1,c1,c1))
 
 		gripper_1 = Polygon( [(0,.4), (self.len_gripper,.3), (self.len_gripper,-.3), (0,-.4)] )
 		gripper_2 = shapes.circle(pos=(0,0), radius=.4)
@@ -1387,8 +1406,8 @@ class Robot():
 		gripper1_s = [(self.len_arm1+self.len_arm2,self.chess_shift_y-.6,self.len_base),(self.len_arm1+self.len_arm2,self.chess_shift_y-.5,self.len_base)]
 		gripper2_s = [(self.len_arm1+self.len_arm2,self.chess_shift_y+.5,self.len_base),(self.len_arm1+self.len_arm2,self.chess_shift_y+.6,self.len_base)]
 
-		self.gripper1 = extrusion(pos=gripper1_s, shape=gripper_1+gripper_2+gripper_4, color=color.green)
-		self.gripper2 = extrusion(pos=gripper2_s, shape=gripper_1+gripper_2+gripper_4, color=color.green)
+		self.gripper1 = extrusion(pos=gripper1_s, shape=gripper_1+gripper_2+gripper_4, color=(c2,c2,c2))
+		self.gripper2 = extrusion(pos=gripper2_s, shape=gripper_1+gripper_2+gripper_4, color=(c2,c2,c2))
 
 		self.base_faces = self.base.create_faces()
 		self.arm1_faces = self.arm1.create_faces()

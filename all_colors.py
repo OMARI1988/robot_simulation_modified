@@ -9,12 +9,18 @@ analysis                    = pickle.load( open( "/home/omari/Dropbox/robot_modi
 # self.wrong_commands         = analysis[1]
 all_valid_hypotheses   = analysis[2]
 
-colors = ['red','green','blue','cyan','sky','black','yellow','magenta','pink','purple','turquoise']
+colors = ['default','red','green','blue','cyan','sky','black','yellow','magenta','pink','purple','turquoise','white']
 for color in colors:
 	# sorted_x = sorted(all_valid_hypotheses['F_HSV'][color].items(), key=operator.itemgetter(1))
 	# print
 
 
+	img = cv2.imread('/home/omari/Dropbox/Reports/AAAI16/Muhannad/pics/'+color+'.png')
+	img = img[35:265,35:265,:]
+	cv2.imwrite('/home/omari/Dropbox/Reports/AAAI16/Muhannad/pics/1-'+color+'.png',img)
+
+
+"""
 	img2 = np.zeros(shape=(300,300,3),dtype=np.uint8)+255
 	img = cv2.imread('/home/omari/Dropbox/Reports/AAAI16/Muhannad/pics/default.png')
 	mask_final = np.zeros(shape=(300,300,3),dtype=float)
@@ -88,3 +94,4 @@ for count,color in enumerate(['all','red','green','blue','cyan','sky','black','y
 	print count
 
 cv2.imwrite('/home/omari/Dropbox/Reports/AAAI16/Muhannad/pics/all_colors.png',img)
+"""
