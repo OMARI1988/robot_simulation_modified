@@ -1188,7 +1188,7 @@ class process_data():
     #--------------------------------------------------------------------------------------------------------#
     # making simulation as real world
     def _convert_color_shape_location_to_gmm(self,plot):
-        self.real = 0
+        self.real = 1
         unique_colors = []
         unique_shapes = []
         unique_locations = []
@@ -1204,8 +1204,8 @@ class process_data():
                         #c += r
                         hsv = colorsys.rgb_to_hsv(c[0], c[1], c[2])
                         r1 = np.random.normal(0, .06, 1)
-                        r2 = np.random.normal(0, .05, 1)
-                        r3 = np.random.normal(0, .04, 1)
+                        r2 = np.random.normal(0, .21, 1)
+                        r3 = np.random.normal(0, .21, 1)
                         h = hsv[0]*2*np.pi  + r1[0]
                         s = hsv[1]          + r2[0]
                         v = hsv[2]          + r3[0]

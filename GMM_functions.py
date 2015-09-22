@@ -41,7 +41,7 @@ def plot_data(X, best_gmm, bic, k, cv_types, GT, fig):
 	n_components_range = range(1, k)
 
 	bic = np.array(bic)
-	color_iter = itertools.cycle(['k', 'r', 'g', 'b', 'c', 'm', 'y'])
+	color_iter = itertools.cycle(['r', 'g', 'b', 'c', 'y', 'k' ,'m'])
 	clf = best_gmm
 	bars = []
 
@@ -60,7 +60,7 @@ def plot_data(X, best_gmm, bic, k, cv_types, GT, fig):
 	spl.legend([b[0] for b in bars], cv_types)
 
 	color_iter = find_RGB_map(clf.n_components)
-	color_iter = ['r','g','y','gray','purple']
+	color_iter = ['r', 'g', 'b', 'c', 'y']
 	# Plot the winner
 	spl = plt.subplot(2, 1, 2, projection='3d')
 	spl.cla()
@@ -78,11 +78,113 @@ def plot_data(X, best_gmm, bic, k, cv_types, GT, fig):
 		if np.size(X[0]) == 3:
 			spl.scatter([r for r in X[Y_ == i, 0]], [r for r in X[Y_ == i, 1]], [r for r in X[Y_ == i, 2]], c=color_iter[i], marker='o')
 
+	plt.scatter([.0], [.0], [.0], marker='o', alpha=0.0)
+
+# Cylinder
+	x=np.linspace(-1, 1, 100)
+	z=np.linspace(0, 1, 100)
+	Xc, Zc=np.meshgrid(x, z)
+	Yc = np.sqrt(1-Xc**2)
+
+	# Draw parameters
+	rstride = 20
+	cstride = 10
+	spl.plot_surface(Xc, Yc, Zc, alpha=0.1, rstride=rstride, cstride=cstride)
+	spl.plot_surface(Xc, -Yc, Zc, alpha=0.1, rstride=rstride, cstride=cstride)
+
 	plt.xlim(-1.2, 1.2)
 	plt.ylim(-1.2, 1.2)
 	#plt.xticks(())
 	#plt.yticks(())
-	plt.title('Selected GMM: full model, '+str(clf.n_components)+' components')
+	plt.title('Selected HSV GMM: full model, '+str(clf.n_components)+' components')
+	plt.subplots_adjust(hspace=.35, bottom=.02)
+
+	if GT != 0:
+		spl = plt.subplot(3, 1, 3)
+		spl.cla()
+		make_ellipses2(GT, spl)
+		make_ellipses(clf, spl)
+		plt.xlim(-20, 50)
+		plt.ylim(-50, 50)
+
+
+
+#######################################
+#----------- plot function -----------#
+#######################################
+# plot function takes as input the Data vector, the best GMM, the BIC results, the maximum components number, and the covariance types
+def plot_data_1d(X, best_gmm, bic, k, cv_types, GT, fig):
+	plt.figure(num=fig, figsize=(14, 10), dpi=80, facecolor='w', edgecolor='k')
+	#plt.figure(fig)
+
+	n_samples = len(X)
+	if k>(n_samples+1):
+		k = n_samples+1
+
+	n_components_range = range(1, k)
+
+	bic = np.array(bic)
+	color_iter = itertools.cycle(['r', 'g', 'b', 'c', 'y', 'k' ,'m'])
+	clf = best_gmm
+	bars = []
+
+	# Plot the BIC scores
+	# spl = plt.subplot(2, 1, 1)
+	# spl.cla()
+	# for i, (cv_type, color) in enumerate(zip(cv_types, color_iter)):
+	# 	xpos = np.array(n_components_range) + .2 * (i - 2)
+	# 	bars.append(plt.bar(xpos, bic[i * len(n_components_range): (i + 1) * len(n_components_range)], width=.2, color=color))
+	# plt.xticks(n_components_range)
+	# plt.ylim([bic.min() * 1.01 - .01 * bic.max(), bic.max()])
+	# plt.title('BIC score per model')
+	# xpos = np.mod(bic.argmin(), len(n_components_range)) + .65 + .2 * np.floor(bic.argmin() / len(n_components_range))
+	# plt.text(xpos, bic.min() * 0.97 + .03 * bic.max(), '*', fontsize=14)
+	# spl.set_xlabel('Number of components')
+	# spl.legend([b[0] for b in bars], cv_types)
+
+	color_iter = find_RGB_map(clf.n_components)
+	color_iter = ['r', 'g', 'b', 'c', 'y']
+	# Plot the winner
+	# spl = plt.subplot(2, 1, 2)
+	# spl.cla()
+	import matplotlib.mlab as mlab
+	for i, (mean, covar) in enumerate(zip(best_gmm.means_, best_gmm._get_covars())):
+		print i,mean,covar
+		x = np.linspace(0,14,1000)
+		plt.plot(x,mlab.normpdf(x,mean[0],covar[0][0]),linewidth=2.0)
+	# Y_ = clf.predict(X)
+	# #print Y_
+	# for i in range(clf.n_components):
+	# 	if not np.any(Y_ == i):
+	# 		continue
+	# 	c=color_iter[i]
+	# 	#print c
+	# 	if np.size(X[0]) == 1:
+	# 		spl.scatter([r for r in X[Y_ == i, 0]], [.5 for r in X[Y_ == i, 0]], [.5 for r in X[Y_ == i, 0]], c=c, marker='o', alpha=1.0)
+	# 	if np.size(X[0]) == 2:
+	# 		spl.scatter([r for r in X[Y_ == i, 0]], [r for r in X[Y_ == i, 1]], [.5 for r in X[Y_ == i, 0]], c=color_iter[i], marker='o')
+	# 	if np.size(X[0]) == 3:
+	# 		spl.scatter([r for r in X[Y_ == i, 0]], [r for r in X[Y_ == i, 1]], [r for r in X[Y_ == i, 2]], c=color_iter[i], marker='o')
+
+	plt.scatter([.0], [.0], [.0], marker='o', alpha=0.0)
+
+# # Cylinder
+# 	x=np.linspace(-1, 1, 100)
+# 	z=np.linspace(0, 1, 100)
+# 	Xc, Zc=np.meshgrid(x, z)
+# 	Yc = np.sqrt(1-Xc**2)
+#
+# 	# Draw parameters
+# 	rstride = 20
+# 	cstride = 10
+# 	spl.plot_surface(Xc, Yc, Zc, alpha=0.1, rstride=rstride, cstride=cstride)
+# 	spl.plot_surface(Xc, -Yc, Zc, alpha=0.1, rstride=rstride, cstride=cstride)
+
+	plt.xlim(0, 14)
+	# plt.ylim(-1.2, 1.2)
+	#plt.xticks(())
+	#plt.yticks(())
+	plt.title('Selected HSV GMM: full model, '+str(clf.n_components)+' components')
 	plt.subplots_adjust(hspace=.35, bottom=.02)
 
 	if GT != 0:

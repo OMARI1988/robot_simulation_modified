@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 from data_processing_igmm_IT import *
 # from xml_functions import *
-from description_functions import *
+from draw_directions_functions import *
 
 
 
@@ -38,6 +38,9 @@ for scene in [1002]:
     R._fix_sentences()
     R._change_data(black,sphere,cylinder)
     R._initialize_scene()                       # place the robot and objects in the initial scene position without saving or motion
+    R._draw_directions()                       # place the robot and objects in the initial scene position without saving or motion
+    R._plot_distances()                       # place the robot and objects in the initial scene position without saving or motion
+
     # R._draw_the_arrow()
     # R._move_robot(0)
 

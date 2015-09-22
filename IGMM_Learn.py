@@ -30,26 +30,26 @@ for i in valid_lines:
     valid_scenes[scene].append(command)
 file1.close()
 
-plot = 0                                #
+plot = 1                                #
 simple = 1                              # simple graph structure for multi processing
 dropbox = 1                             # update dropbox
 
 P = process_data(dropbox)
 P.valid_scenes = valid_scenes
-P.first_time = 1
+P.first_time = 0
 
-print           'reading object hypotheses'
-P.gmm_obj       = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/gmm_obj_1000.p", "rb" ) )
-print           'reading motion hypotheses'
-P.hyp_motion    = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/hyp_motion_1000.p", "rb" ) )
-print           'reading relation hypotheses'
-P.hyp_relation  = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/hyp_relation_1000.p", "rb" ) )
-print           'reading total motion'
-P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/all_total_motion_1000.p", "rb" ) )
+# print           'reading object hypotheses'
+# P.gmm_obj       = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/gmm_obj_1000.p", "rb" ) )
+# print           'reading motion hypotheses'
+# P.hyp_motion    = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/hyp_motion_1000.p", "rb" ) )
+# print           'reading relation hypotheses'
+# P.hyp_relation  = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/hyp_relation_1000.p", "rb" ) )
+# print           'reading total motion'
+# P.all_total_motion  = pickle.load( open( "/home/omari/Dropbox/robot_modified/EN/pickle/all_total_motion_1000.p", "rb" ) )
 
 for scan in range(1):
   print 'scan number :',scan
-  for scene in range(189,190):      #_entity = _entity  _entity
+  for scene in range(1002,1003):      #_entity = _entity  _entity
     if P.first_time:                P._read_grammar(scene,valid_scenes)
     #if scene not in valid_scenes:   continue
     #slightly hard [10,]
@@ -97,29 +97,29 @@ for scan in range(1):
     #########################################################################################################
     #   Testing hypotheses                                                                                  #
     #########################################################################################################
-    P._test_relation_hyp()                          # self.hyp_relation_pass
-    P._test_motion_hyp()                            # self.hyp_motion_pass
-    P._test_obj_hyp()                               # self.hyp_language_pass > .7
-    P._combine_language_hyp()                       # combine object, relations and motion hypotheses in one place.
-    P._filter_hyp()                                 # filter hypotheses to include only .9 of the best hypothesis
-    P._filter_phrases()                             # remove larger phrases (and small phrases commented) = self.hyp_language_pass
-
-    #########################################################################################################
-    #   Comparing language hypotheses to scene                                                              #
-    #########################################################################################################
-    P._create_scene_graph(simple)
-    P._print_results()
-    # if P.number_of_valid_hypotheses <= 50:
-    P._get_all_valid_combinations()
-    P._test_all_valid_combinations()
+    # P._test_relation_hyp()                          # self.hyp_relation_pass
+    # P._test_motion_hyp()                            # self.hyp_motion_pass
+    # P._test_obj_hyp()                               # self.hyp_language_pass > .7
+    # P._combine_language_hyp()                       # combine object, relations and motion hypotheses in one place.
+    # P._filter_hyp()                                 # filter hypotheses to include only .9 of the best hypothesis
+    # P._filter_phrases()                             # remove larger phrases (and small phrases commented) = self.hyp_language_pass
     #
     # #########################################################################################################
-    # #   Build the grammar                                                                                   #
+    # #   Comparing language hypotheses to scene                                                              #
     # #########################################################################################################
-    P._build_grammar()                               #
-    P._analysis()
-    print '**================= end of scene '+str(P.scene)+' ===================**'
-    print '\n\n\n'
+    # P._create_scene_graph(simple)
+    # P._print_results()
+    # # if P.number_of_valid_hypotheses <= 50:
+    # P._get_all_valid_combinations()
+    # P._test_all_valid_combinations()
+    # #
+    # # #########################################################################################################
+    # # #   Build the grammar                                                                                   #
+    # # #########################################################################################################
+    # P._build_grammar()                               #
+    # P._analysis()
+    # print '**================= end of scene '+str(P.scene)+' ===================**'
+    # print '\n\n\n'
 
 # print 'started saving'
 # P._save_all_sentences()
