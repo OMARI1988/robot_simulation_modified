@@ -1,7 +1,7 @@
 import numpy as np
 # from nltk import PCFG
 import pickle
-from data_processing_igmm_IT import *
+from data_processing_igmm import *
 # from xml_functions import *
 from description_functions import *
 

@@ -122,8 +122,8 @@ class ViterbiParser(ParserI):
 
         # Initialize the constituents dictionary with the words from
         # the text.
-        if self._trace: print(('Inserting tokens into the most likely'+
-                               ' constituents table...'))
+        #if self._trace: print(('Inserting tokens into the most likely'+
+                            #    ' constituents table...'))
         for index in range(len(tokens)):
             token = tokens[index]
             constituents[index,index+1,token] = token
@@ -133,9 +133,9 @@ class ViterbiParser(ParserI):
         # Consider each span of length 1, 2, ..., n; and add any trees
         # that might cover that span to the constituents dictionary.
         for length in range(1, len(tokens)+1):
-            if self._trace:
-                print(('Finding the most likely constituents'+
-                       ' spanning %d text elements...' % length))
+            #if self._trace:
+            #    print(('Finding the most likely constituents'+
+                    #    ' spanning %d text elements...' % length))
             for start in range(len(tokens)-length+1):
                 span = (start, start+length)
                 self._add_constituents_spanning(span, constituents,
@@ -206,10 +206,10 @@ class ViterbiParser(ParserI):
                 c = constituents.get((span[0], span[1], production.lhs()))
                 if self._trace > 1:
                     if c is None or c != tree:
-                        if c is None or c.prob() < tree.prob():
-                            print('   Insert:', end=' ')
-                        else:
-                            print('  Discard:', end=' ')
+                        # if c is None or c.prob() < tree.prob():
+                        #     print('   Insert:', end=' ')
+                        # else:
+                        #     print('  Discard:', end=' ')
                         self._trace_production(production, p, span, len(tokens))
                 if c is None or c.prob() < tree.prob():
                     constituents[span[0], span[1], production.lhs()] = tree
@@ -309,12 +309,12 @@ class ViterbiParser(ParserI):
         str += '%s' % production
         if self._trace > 2: str = '%-40s %12.10f ' % (str, p)
 
-        print(str)
+        #print(str)
 
     def _trace_lexical_insertion(self, token, index, width):
         str = '   Insert: |' + '.' * index + '=' + '.' * (width-index-1) + '| '
         str += '%s' % (token,)
-        print(str)
+        #print(str)
 
     def __repr__(self):
         return '<ViterbiParser for %r>' % self._grammar
@@ -338,112 +338,105 @@ def demo():
     from nltk import Tree
     from nltk.draw.util import CanvasFrame
     from nltk.draw import TreeWidget
+    ALL_SCORES = []
+    ALL_SENT = []
+    ALL_SENT2 = []
+    for max_scene in range(20,1020,20):
+    # max_scene = 25
+        SCORE = 0
+        SENT = 0
+        SENT2 = 0
+        if max_scene<10:            sc = '0000'+str(max_scene)
+        elif max_scene<100:         sc = '000'+str(max_scene)
+        elif max_scene<1000:        sc = '00'+str(max_scene)
+        elif max_scene<10000:       sc = '0'+str(max_scene)
 
-    # Define two demos.  Each demo has a sentence and a grammar.
-    # demos = [('move the green sphere to the bottom left corner', learned_pcfg),
-    #          ('move the green ball over the red block', learned_pcfg),
-    #          ('take the green pyramid and put it in the top left corner', learned_pcfg),
-    #           ('put the green pyramid on the red block', learned_pcfg),
-    #           ('move the red cylinder and place it on top of the blue cylinder that is on top of a green cylinder', learned_pcfg),]
+        g = 'grammar_'+sc+'.txt'
+        file1 = open('/home/omari/Dropbox/robot_modified/EN/grammar/'+g, 'r')
+        grammar = ''
+        g1 = [i for i in file1.readlines()]
+        for i in g1:
+            grammar += i
+        learned_pcfg = PCFG.fromstring(grammar)
+        grammar = learned_pcfg
 
-    # Ask the user which demo they want to use.
-    # print()
-    # for i in range(len(demos)):
-    #     print('%3s: %s' % (i+1, demos[i][0]))
-    #     print('     %r' % demos[i][1])
-    #     print()
-    # print('Which demo (%d-%d)? ' % (1, len(demos)), end=' ')
-    # try:
-    #     snum = int(sys.stdin.readline().strip())-1
-    #     sent, grammar = demos[snum]
-    # except:
-    #     print('Bad sentence number')
-    #     return
+        file1 = open('/home/omari/Dropbox/robot_modified/EN/hypotheses/commands_we_can_learn.txt', 'r')
+        g1 = [i for i in file1.readlines()]
+        for line in g1:
+            sent = line.split('\n')[0].split('-')[-1]
+            scene = line.split('\n')[0].split('-')[0]
+            sent_num = line.split('\n')[0].split('-')[1]
+            if int(scene)<=max_scene:
+                SENT+=1
 
-    max_scene = 300
-
-    if max_scene<10:            sc = '0000'+str(max_scene)
-    elif max_scene<100:         sc = '000'+str(max_scene)
-    elif max_scene<1000:        sc = '00'+str(max_scene)
-    elif max_scene<10000:       sc = '0'+str(max_scene)
-
-    g = 'grammar_'+sc+'.txt'
-    file1 = open('/home/omari/Dropbox/robot_modified/grammar/'+g, 'r')
-    grammar = ''
-    g1 = [i for i in file1.readlines()]
-    for i in g1:
-        grammar += i
-    learned_pcfg = PCFG.fromstring(grammar)
-    grammar = learned_pcfg
-
-    file1 = open('/home/omari/Dropbox/robot_modified/hypotheses/matched_commands.txt', 'r')
-    g1 = [i for i in file1.readlines()]
-    for line in g1:
-        sent = line.split('\n')[0].split('-')[-1]
-        scene = line.split('\n')[0].split('-')[0]
-        sent_num = line.split('\n')[0].split('-')[1]
-        print(line)
-        if scene == '239' and sent_num == '0':  continue 
-
-
-        # Tokenize the sentence.
-        tokens = sent.split()
-
-        parser = ViterbiParser(grammar)
-        all_parses = {}
-
-        # print('\nsent: %s\nparser: %s\ngrammar: %s' % (sent,parser,grammar))
-        parser.trace(3)
-        parses = parser.parse_all(tokens)
-        average = (reduce(lambda a,b:a+b.prob(), parses, 0)/len(parses)
-                   if parses else 0)
-        num_parses = len(parses)
-        for p in parses:
-            all_parses[p.freeze()] = 1
-
-        # Print some summary statistics
-        # print()
-        # print('Time (secs)   # Parses   Average P(parse)')
-        # print('-----------------------------------------')
-        # print('%11.4f%11d%19.14f' % (time, num_parses, average))
-        parses = all_parses.keys()
-        if parses:
-            p = reduce(lambda a,b:a+b.prob(), parses, 0)/len(parses)
-        else: p = 0
-        # print('------------------------------------------')
-        # print('%11s%11d%19.14f' % ('n/a', len(parses), p))
-
-        # Ask the user if we should draw the parses.
-        # print()
-        # print('Draw parses (y/n)? ', end=' ')
-        # if sys.stdin.readline().strip().lower().startswith('y'):
-
-        #     print('  please wait...')
-        # draw_trees(*parses)
-
-        cf = CanvasFrame()
-        # t = Tree(parses)
-        t = Tree.fromstring('(S  (CH_POS_PREPOST move)  (PRE_POST    (PRE      (the the)      (_entity (F_HSV green) (F_SHAPE sphere)))    (PREPOST_connect (to to) (the the))    (POST      (_F_POS (F_POS (_bottom_left (bottom bottom) (left left)))) (corner corner))))')
-
-        tc = TreeWidget(cf.canvas(), t, draggable=1,
-                        node_font=('helvetica', -14),
-                        leaf_font=('helvetica', -12),
-                        roof_fill='white', roof_color='black',
-                        leaf_color='green4', node_color='blue4')
-        cf.add_widget(tc,10,10)
-
-        # tc = TreeWidget(cf.canvas(),t)
-        # cf.add_widget(tc,10,10) # (10,10) offsets
-        cf.print_to_file('/home/omari/Dropbox/robot_modified/trees/scene-'+scene+'-'+sent_num+'.ps')
-        cf.destroy()
+        file1 = open('/home/omari/Dropbox/robot_modified/EN/hypotheses/matched_commands.txt', 'r')
+        g1 = [i for i in file1.readlines()]
+        for line in g1:
+            sent = line.split('\n')[0].split('-')[-1]
+            scene = line.split('\n')[0].split('-')[0]
+            sent_num = line.split('\n')[0].split('-')[1]
+            if int(scene)<=max_scene:
+                SENT2+=1
 
 
 
-        # Ask the user if we should print the parses.
-        # print()
-        # print(parses)
-        # for parse in parses:
-        #     print(parse)
+            #print(line)
+
+            # Tokenize the sentence.
+            tokens = sent.split()
+
+            parser = ViterbiParser(grammar)
+            all_parses = {}
+
+            # print('\nsent: %s\nparser: %s\ngrammar: %s' % (sent,parser,grammar))
+            parser.trace(3)
+            try:
+                parses = parser.parse_all(tokens)
+                average = (reduce(lambda a,b:a+b.prob(), parses, 0)/len(parses)
+                           if parses else 0)
+                num_parses = len(parses)
+                for p in parses:
+                    all_parses[p.freeze()] = 1
+
+                parses = all_parses.keys()
+                if parses:
+                    p = reduce(lambda a,b:a+b.prob(), parses, 0)/len(parses)
+                    SCORE += 1
+                else: p = 0
+
+
+                # cf = CanvasFrame()
+                # t = Tree.fromstring('(S  (CH_POS_PREPOST move)  (PRE_POST    (PRE      (the the)      (_entity (F_HSV green) (F_SHAPE sphere)))    (PREPOST_connect (to to) (the the))    (POST      (_F_POS (F_POS (_bottom_left (bottom bottom) (left left)))) (corner corner))))')
+
+                # tc = TreeWidget(cf.canvas(), t, draggable=1,
+                #                 node_font=('helvetica', -14),
+                #                 leaf_font=('helvetica', -12),
+                #                 roof_fill='white', roof_color='black',
+                #                 leaf_color='green4', node_color='blue4')
+                # cf.add_widget(tc,10,10)
+
+                # cf.print_to_file('/home/omari/Dropbox/robot_modified/trees/scene-'+scene+'-'+sent_num+'.ps')
+                # cf.destroy()
+            except:
+                pass
+
+        print('Grammar Rules : ',max_scene,' results : ',SCORE)
+        ALL_SCORES.append(SCORE)
+        ALL_SENT.append(SENT)
+        ALL_SENT2.append(SENT2)
+        f = open('/home/omari/Dropbox/robot_modified/EN/hypotheses/grammar_parsing_results.txt', 'w')
+        count = 0
+        for s1,s2,value in zip(ALL_SENT,ALL_SENT2,ALL_SCORES):
+            s = str(20+20*count)+','+str(s1)+'='+str(s2)+','+str(value)
+            f.write(s+'\n')
+            count+=1
+        f.close()
+    print(ALL_SCORES)
+            # Ask the user if we should print the parses.
+            # print()
+            # print(parses)
+            # for parse in parses:
+            #     print(parse)
 
 if __name__ == '__main__':
     demo()

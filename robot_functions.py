@@ -15,8 +15,9 @@ class Robot():
         self._initilize_values()
         self.all_sentences_count = 1
         self.draw_scene()
-        self.draw_robot()
+        # self.draw_robot()
         self.Data = read_data()
+        print self.Data
 
 
     #-----------------------------------------------------------------------------------------------------#     initial
@@ -33,15 +34,15 @@ class Robot():
         self.a0 = 0
         self.a1 = 0
         self.a2 = 0
-        self.step = 3
+        self.step = 8
         self.frame_number = 0
         self.object = {}
         self.object_shape = {}
         self.words = []
         self.positions = {}
         # manage diroctories to store data and images
-        self.image_dir = '/home/omari/Datasets/robot_modified/scenes/'
-        self.image_dir2 = '/home/omari/Dropbox/robot_modified/scenes/'
+        self.image_dir = '/home/omari/Datasets_old/robot_modified/scenes/'
+        # self.image_dir2 = '/home/omari/Dropbox/robot_modified/scenes/'
         if not os.path.isdir(self.image_dir):
 	        print 'please change the diroctory in extract_data.py'
 
@@ -186,8 +187,8 @@ class Robot():
     #-----------------------------------------------------------------------------------------------------#     initilize scene
     def _initialize_scene(self):
         self._add_objects_to_scene()
-        self._initialize_robot()
-        self._update_scene_number()
+        # self._initialize_robot()
+        # self._update_scene_number()
 
     #-----------------------------------------------------------------------------------------------------#     add objects to scene
     def _add_objects_to_scene(self):
@@ -221,14 +222,14 @@ class Robot():
     def _find_color(self,a):
         c = (0,0,0)
         if a == 'red': c = color.red                #(1,0,0)
-        elif a == 'blue': c = color.blue            #(0,0,1)
+        elif a == 'blue': c = (0.2,.2,1)
         elif a == 'green': c = color.green          #(0,1,0)
-        elif a == 'gray': c = (.5,.5,.5)            #(.6,.6,.6)
+        elif a == 'gray': c = (.7,.7,.7)            #(.6,.6,.6)
         elif a == 'cyan': c = color.cyan
         elif a == 'yellow': c = color.yellow
         elif a == 'white': c = color.white
         elif a == 'magenta': c = color.magenta
-        elif a == 'black': c = (0,0,0)
+        elif a == 'black': c = (0.2,0.2,0.2)
         elif a == 'brown': c = (0.55, 0.27, 0.07)
         else:
             print '********* error no color match',a
@@ -268,7 +269,7 @@ class Robot():
             final_position = l1[I]['position']
             if final_position != initial_position:
                 a1,a2,a3 = self._inverse_kinematics(final_position[0],final_position[1],final_position[2])
-                self.rotate_robot(-a1,-a2,-a3,save)
+                # self.rotate_robot(-a1,-a2,-a3,save)
             if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'cube':
                 z_offset = +.22
             if self.object_shape[(final_position[0],final_position[1],final_position[2])] == 'sphere':
@@ -280,20 +281,20 @@ class Robot():
             # move the robot and the object
             initial_position = final_position
             final_position = l2[F]['position']
-            if final_position != initial_position:
-                self.rotate_robot_with_object(initial_position, final_position, z_offset, save)
+            # if final_position != initial_position:
+            #     self.rotate_robot_with_object(initial_position, final_position, z_offset, save)
             # move the robot and the object down
             initial_position = final_position
             final_position = self.Data['gripper'][self.Data['scenes'][self.scene]['final']]
-            if final_position != initial_position:
-                a1,a2,a3 = self._inverse_kinematics(final_position[0],final_position[1],final_position[2])
-                self.rotate_robot(-a1,-a2,-a3,save)
+            # if final_position != initial_position:
+            #     a1,a2,a3 = self._inverse_kinematics(final_position[0],final_position[1],final_position[2])
+            #     self.rotate_robot(-a1,-a2,-a3,save)
 
     #-----------------------------------------------------------------------------------------------------#     save motion
     def _save_motion(self):
-        target = open('/home/omari/Datasets/robot_modified/motion/scene'+str(self.scene)+'.txt', 'w')
-        target2 = open('/home/omari/Dropbox/robot_modified/EN/motion/scene'+str(self.scene)+'.txt', 'w')
-        for F in [target,target2]:
+        target = open('/home/omari/Datasets_old/robot_modified/motion/scene'+str(self.scene)+'.txt', 'w')
+        # target2 = open('/home/omari/Dropbox/robot_modified/EN/motion/scene'+str(self.scene)+'.txt', 'w')
+        for F in [target]:
             for i in self.sentences:
                 F.write('sentence:'+str(i)+'\n')
                 F.write(self.sentences[i][0]+':'+self.sentences[i][1]+'\n')
@@ -315,7 +316,7 @@ class Robot():
                 if key != 'gripper':
                     c = self.positions[key]['F_HSV']
                     s = self.positions[key]['F_SHAPE']
-                    F.write('F_HSV:'+str(c[0])+','+str(c[1])+','+str(c[2]))
+                    F.write('F_RGB:'+str(c[0])+','+str(c[1])+','+str(c[2]))
                     F.write("\n")
                     F.write('F_SHAPE:'+str(s))
                     F.write("\n")
@@ -495,7 +496,7 @@ class Robot():
     #-----------------------------------------------------------------------------------------------------#     initial draw scene
     def draw_scene(self):
         self.display = display(title='simultaneous learning and grounding',
-            x=0, y=0, width=1000, height=1000,
+            x=0, y=0, width=1000, height=900,
             center=(self.chess_shift_x,self.chess_shift_y,0),
             forward=(self.chess_shift_x-10,self.chess_shift_y,-7),
             background=(1,1,1))
@@ -512,9 +513,9 @@ class Robot():
             mapping="sign",
             interpolate=False)
         chess1 = box(pos=(self.chess_shift_x,self.chess_shift_y,-.3),axis=(0,0,1),size=(.4,9,9),
-            color=color.orange,material=materials.wood)
+            color=color.white,material=materials.wood)
         chess2 = box(pos=(self.chess_shift_x,self.chess_shift_y,-.25),axis=(0,0,1), size=(.5,8,8),
-            color=color.orange, material=tex)
+            color=color.white, material=tex)
         x = arrow(pos=(0,0,0),axis=(1,0,0),length=2,shaftwidth=.2,color=color.red)
         y = arrow(pos=(0,0,0),axis=(0,1,0),length=2,shaftwidth=.2,color=color.green)
         z = arrow(pos=(0,0,0),axis=(0,0,1),length=2,shaftwidth=.2,color=color.blue)
@@ -523,11 +524,13 @@ class Robot():
     def draw_robot(self):
 		base_1 = box(pos=(0,self.chess_shift_y,-.25),axis=(0,0,1), size=(.5,2,2),color=color.black,
 		    material=materials.plastic)
+		c1 = .35
+		c2 = .15
 		base_2 = Polygon( [(-1,0), (-.75,self.len_base), (.75,self.len_base), (1,0)] )
 		base_3 = shapes.circle(pos=(0,self.len_base), radius=.75)
 		base_4 = shapes.circle(pos=(0,self.len_base), radius=0.2)
 		base_s = [(0,self.chess_shift_y-.5,0),(0,self.chess_shift_y+.5,0)]
-		self.base = extrusion(pos=base_s, shape=base_2+base_3-base_4, color=color.red)
+		self.base = extrusion(pos=base_s, shape=base_2+base_3-base_4, color=(c1,c1,c1))
 
 		arm1_1 = Polygon( [(0,.75), (self.len_arm1,.5), (self.len_arm1,-.5), (0,-.75)] )
 		arm1_2 = shapes.circle(pos=(0,0), radius=.75)
@@ -535,7 +538,7 @@ class Robot():
 		arm1_4 = shapes.circle(pos=(self.len_arm1,0), radius=.5)
 		arm1_5 = shapes.circle(pos=(self.len_arm1,0), radius=0.2)
 		arm1_s = [(0,self.chess_shift_y+.5,self.len_base),(0,self.chess_shift_y+1.5,self.len_base)]
-		self.arm1 = extrusion(pos=arm1_s, shape=arm1_1+arm1_2-arm1_3+arm1_4-arm1_5, color=color.blue)
+		self.arm1 = extrusion(pos=arm1_s, shape=arm1_1+arm1_2-arm1_3+arm1_4-arm1_5, color=(c2,c2,c2))
 
 		arm2_1 = Polygon( [(0,.5), (self.len_arm2,.4), (self.len_arm2,-.4), (0,-.5)] )
 		arm2_2 = shapes.circle(pos=(0,0), radius=.5)
@@ -543,7 +546,7 @@ class Robot():
 		arm2_4 = shapes.circle(pos=(self.len_arm2,0), radius=.4)
 		arm2_5 = shapes.circle(pos=(self.len_arm2,0), radius=0.2)
 		arm2_s = [(self.len_arm1,self.chess_shift_y-.5,self.len_base),(self.len_arm1,self.chess_shift_y+.5,self.len_base)]
-		self.arm2 = extrusion(pos=arm2_s, shape=arm2_1+arm2_2-arm2_3+arm2_4-arm2_5, color=color.red)
+		self.arm2 = extrusion(pos=arm2_s, shape=arm2_1+arm2_2-arm2_3+arm2_4-arm2_5, color=(c1,c1,c1))
 
 		gripper_1 = Polygon( [(0,.4), (self.len_gripper,.3), (self.len_gripper,-.3), (0,-.4)] )
 		gripper_2 = shapes.circle(pos=(0,0), radius=.4)
@@ -551,8 +554,8 @@ class Robot():
 		gripper1_s = [(self.len_arm1+self.len_arm2,self.chess_shift_y-.6,self.len_base),(self.len_arm1+self.len_arm2,self.chess_shift_y-.5,self.len_base)]
 		gripper2_s = [(self.len_arm1+self.len_arm2,self.chess_shift_y+.5,self.len_base),(self.len_arm1+self.len_arm2,self.chess_shift_y+.6,self.len_base)]
 
-		self.gripper1 = extrusion(pos=gripper1_s, shape=gripper_1+gripper_2+gripper_4, color=color.green)
-		self.gripper2 = extrusion(pos=gripper2_s, shape=gripper_1+gripper_2+gripper_4, color=color.green)
+		self.gripper1 = extrusion(pos=gripper1_s, shape=gripper_1+gripper_2+gripper_4, color=(c2,c2,c2))
+		self.gripper2 = extrusion(pos=gripper2_s, shape=gripper_1+gripper_2+gripper_4, color=(c2,c2,c2))
 
 		self.base_faces = self.base.create_faces()
 		self.arm1_faces = self.arm1.create_faces()
@@ -619,8 +622,9 @@ class Robot():
         if self.scene<10:      k = '000'+str(self.scene)
         elif self.scene<100:    k = '00'+str(self.scene)
         elif self.scene<1000:   k = '0'+str(self.scene)
+        elif self.scene<10000:   k = str(self.scene)
         img.SaveFile(self.image_dir+str(self.scene)+'/scene_'+k+'_frame_'+j+'.png', wx.BITMAP_TYPE_PNG)
-        img.SaveFile(self.image_dir2+str(self.scene)+'/scene_'+k+'_frame_'+j+'.png', wx.BITMAP_TYPE_PNG)
+        # img.SaveFile(self.image_dir2+str(self.scene)+'/scene_'+k+'_frame_'+j+'.png', wx.BITMAP_TYPE_PNG)
 
         print self.frame_number,'image saved..'
         self.frame_number+=1
